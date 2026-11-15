@@ -4,7 +4,7 @@ Conventions for this codebase. Short on purpose: if the code and this file disag
 
 ## Where code goes
 
-- Anything that doesn't need Windows goes in `PromptForge.Core`, so it can be unit-tested on any machine. `PromptForge.App` holds only UI, Win32 and OS integration, and calls into Core.
+- Anything that doesn't need Windows goes in `Phrasor.Core`, so it can be unit-tested on any machine. `Phrasor.App` holds only UI, Win32 and OS integration, and calls into Core.
 - Core types the App or tests need are `public`; things only the tests need are `internal` (the test project sees them through `InternalsVisibleTo`).
 - New provider behaviour goes in `Llm/ProviderPreset.cs` (a preset), not in `if (provider == ...)` checks elsewhere.
 
@@ -37,10 +37,10 @@ Conventions for this codebase. Short on purpose: if the code and this file disag
 
 ## Tests
 
-- xUnit, in `tests/PromptForge.Core.Tests`. Test names are sentences with underscores, e.g. `Complete_finish_reason_length_is_a_truncation_error`.
+- xUnit, in `tests/Phrasor.Core.Tests`. Test names are sentences with underscores, e.g. `Complete_finish_reason_length_is_a_truncation_error`.
 - HTTP is faked with an `HttpMessageHandler` subclass; don't call real providers from tests.
 - Every bug fix gets a test that fails without the fix. Check by temporarily reverting the fix.
-- Run `dotnet test tests/PromptForge.Core.Tests` before committing. UI and Win32 changes can't be unit-tested here: say in the PR which apps you tried (Notepad, a browser chat and Word cover most cases).
+- Run `dotnet test tests/Phrasor.Core.Tests` before committing. UI and Win32 changes can't be unit-tested here: say in the PR which apps you tried (Notepad, a browser chat and Word cover most cases).
 
 ## Debugging
 

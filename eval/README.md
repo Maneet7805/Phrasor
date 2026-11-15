@@ -78,7 +78,7 @@ Each answer is `yes` or `no`; leave it blank if you didn't grade that question. 
 & "$env:LOCALAPPDATA\Programs\PromptForge\PromptForge.exe" --rejudge eval\results\before\results.json eval\cases.json eval\results\calibration-1 --grades D:\grades.csv | Out-Null
 ```
 
-`calibration.md` shows, for each question, how often the judge agreed with you and which runs it got wrong. Change the judge's instructions (`JudgeInstructions` in `src/PromptForge.Core/Eval/EvalRunner.cs`) and re-judge until it mostly agrees; only then trust its numbers.
+`calibration.md` shows, for each question, how often the judge agreed with you and which runs it got wrong. Change the judge's instructions (`JudgeInstructions` in `src/Phrasor.Core/Eval/EvalRunner.cs`) and re-judge until it mostly agrees; only then trust its numbers.
 
 To test a branch before it's released, download its exe from the pull request's CI run (**Checks → Build and test → Artifacts**) and run that exe instead of the installed one.
 

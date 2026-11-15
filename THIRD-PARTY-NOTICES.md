@@ -4,7 +4,7 @@ PromptForge itself is MIT licensed (see `LICENSE`). It includes the following th
 
 ## Silero VAD
 
-The voice recording check uses the Silero VAD model (`src/PromptForge.Core/Voice/silero_vad.onnx`, version 5) from https://github.com/snakers4/silero-vad to tell speech from other sound.
+The voice recording check uses the Silero VAD model (`src/Phrasor.Core/Voice/silero_vad.onnx`, version 5) from https://github.com/snakers4/silero-vad to tell speech from other sound.
 
 ```
 MIT License

@@ -1,0 +1,638 @@
+using System.Net;
+using Phrasor.Core.Diffing;
+using Phrasor.Core.Eval;
+using Phrasor.Core.Llm;
+using Phrasor.Core.Optimization;
+using Phrasor.Core.Settings;
+
+namespace Phrasor.Core.Tests;
+
+public class ErrorMappingTests
+{
+    private static LlmException Map(HttpStatusCode status, string body, string? retryAfter = null)
+    {
+        var response = new HttpResponseMessage(status);
+        if (retryAfter is not null) response.Headers.TryAddWithoutValidation("retry-after", retryAfter);
+        return OpenAiCompatibleClient.MapError(response, body);
+    }
+
+    [Fact]
+    public void Groq_tpm_limit_parses_wait_time()
+    {
+        var ex = Map(HttpStatusCode.TooManyRequests,
+            """{"error":{"message":"Rate limit reached for model `openai/gpt-oss-120b` on tokens per minute (TPM): Limit 8000, Used 7000, Requested 2000. Please try again in 7.5s."}}""");
+        Assert.Equal(LlmErrorKind.RateLimit, ex.Kind);
+        Assert.Equal(TimeSpan.FromSeconds(7.5), ex.RetryAfter);
+    }
+
+    [Fact]
+    public void Request_larger_than_the_whole_limit_is_too_large_not_rate_limited()
+    {
+        var ex = Map(HttpStatusCode.TooManyRequests,
+            """{"error":{"message":"Request too large for model on tokens per minute (TPM): Limit 8000, Requested 12000."}}""");
+        Assert.Equal(LlmErrorKind.TooLarge, ex.Kind);
+    }
+
+    [Fact]
+    public void Log_summary_has_the_kind_and_size_numbers_only()
+    {
+        var ex = Map(HttpStatusCode.TooManyRequests,
+            """{"error":{"message":"Request too large for model `openai/gpt-oss-120b` on tokens per minute (TPM): Limit 8000, Requested 12000."}}""");
+        Assert.Equal("llmError=TooLarge limit=8000 requested=12000", ex.LogSummary);
+    }
+
+    [Fact]
+    public void Log_summary_without_numbers_has_the_kind_only()
+    {
+        var ex = Map(HttpStatusCode.Unauthorized, """{"error":{"message":"Invalid API key sk-test-123"}}""");
+        Assert.Equal("llmError=Auth", ex.LogSummary);
+    }
+
+    [Fact]
+    public void Log_summary_includes_tokens_used_and_the_wait_the_provider_asked_for()
+    {
+        var ex = new LlmException(LlmErrorKind.RateLimit,
+            "Rate limit reached for model on tokens per minute (TPM): Limit 8000, Used 7462, Requested 6913. Please try again in 8.1s. secret draft text",
+            TimeSpan.FromSeconds(8.1));
+        Assert.Equal("llmError=RateLimit limit=8000 used=7462 requested=6913 retryAfter=9s", ex.LogSummary);
+        Assert.DoesNotContain("secret", ex.LogSummary);
+    }
+
+    [Fact]
+    public void Log_summary_shows_the_wait_even_without_token_numbers()
+    {
+        var ex = new LlmException(LlmErrorKind.RateLimit, "Too many requests", TimeSpan.FromSeconds(30));
+        Assert.Equal("llmError=RateLimit retryAfter=30s", ex.LogSummary);
+    }
+
+    [Theory]
+    [InlineData("450ms", 0.45)]
+    [InlineData("1m3s", 63)]
+    [InlineData("2s", 2)]
+    public void Try_again_formats(string text, double seconds)
+    {
+        var ex = Map(HttpStatusCode.TooManyRequests, "{\"error\":{\"message\":\"Please try again in " + text + ".\"}}");
+        Assert.Equal(seconds, ex.RetryAfter!.Value.TotalSeconds, 3);
+    }
+
+    [Fact]
+    public void Retry_after_header_wins()
+    {
+        Assert.Equal(TimeSpan.FromSeconds(12), Map(HttpStatusCode.TooManyRequests, "{}", "12").RetryAfter);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.Unauthorized, "{\"error\":{\"message\":\"Invalid API Key\"}}", LlmErrorKind.Auth)]
+    [InlineData(HttpStatusCode.NotFound, "{\"error\":{\"message\":\"The model `x` does not exist\"}}", LlmErrorKind.ModelNotFound)]
+    [InlineData(HttpStatusCode.BadRequest, "{\"error\":{\"message\":\"response_format json_object is not supported\"}}", LlmErrorKind.JsonModeUnsupported)]
+    [InlineData(HttpStatusCode.BadRequest, "[{\"error\":{\"message\":\"API key not valid. Please pass a valid API key.\"}}]", LlmErrorKind.Auth)]
+    [InlineData(HttpStatusCode.ServiceUnavailable, "upstream down", LlmErrorKind.Server)]
+    public void Status_codes_map_to_kinds(HttpStatusCode status, string body, LlmErrorKind kind) =>
+        Assert.Equal(kind, Map(status, body).Kind);
+}
+
+public class HotkeyChordTests
+{
+    [Theory]
+    [InlineData("Ctrl+Alt+P", true, true, false, "P")]
+    [InlineData("ctrl + shift + f8", true, false, true, "f8")]
+    [InlineData("Alt+1", false, true, false, "D1")]
+    public void Parses(string text, bool ctrl, bool alt, bool shift, string key)
+    {
+        Assert.True(HotkeyChord.TryParse(text, out var chord));
+        Assert.Equal((ctrl, alt, shift, key), (chord.Ctrl, chord.Alt, chord.Shift, chord.Key));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("Ctrl+Alt")]
+    [InlineData("Ctrl+A+B")]
+    public void Rejects_invalid(string text) => Assert.False(HotkeyChord.TryParse(text, out _));
+
+    [Fact]
+    public void Requires_ctrl_or_alt()
+    {
+        HotkeyChord.TryParse("Shift+P", out var chord);
+        Assert.NotNull(chord.Problem());
+        HotkeyChord.TryParse("Ctrl+Alt+Space", out chord);
+        Assert.Null(chord.Problem());
+    }
+
+    [Fact]
+    public void Round_trips_to_display_text()
+    {
+        HotkeyChord.TryParse("alt+ctrl+1", out var chord);
+        Assert.Equal("Ctrl+Alt+1", chord.ToString());
+    }
+
+    [Fact]
+    public void Ctrl_alt_delete_is_reserved_by_windows_but_adding_shift_is_allowed()
+    {
+        Assert.True(HotkeyChord.TryParse("Ctrl+Alt+Delete", out var chord));
+        Assert.Contains("reserved", chord.Problem());
+
+        Assert.True(HotkeyChord.TryParse("Ctrl+Alt+Shift+Delete", out chord));
+        Assert.Null(chord.Problem());
+    }
+
+    [Fact]
+    public void A_chord_with_no_key_has_a_problem()
+    {
+        Assert.False(HotkeyChord.TryParse("", out var chord));
+        Assert.NotNull(chord.Problem());
+    }
+
+    [Theory]
+    [InlineData("Ctrl+LControlKey")]
+    [InlineData("Alt+Menu")]
+    [InlineData("Shift+RShiftKey")]
+    public void Rejects_a_modifier_key_name_used_as_the_key(string text) =>
+        Assert.False(HotkeyChord.TryParse(text, out _));
+
+    [Fact]
+    public void Win_is_parsed_and_printed_after_the_other_modifiers()
+    {
+        Assert.True(HotkeyChord.TryParse("Win+Shift+Alt+Ctrl+K", out var chord));
+        Assert.True(chord.Win);
+        Assert.Equal("Ctrl+Alt+Shift+Win+K", chord.ToString());
+    }
+}
+
+public class TextDiffTests
+{
+    [Fact]
+    public void Word_level_segments_reconstruct_both_texts()
+    {
+        var a = "fix my login page it doesnt work";
+        var b = "Fix my login page. It doesn't work after adding JWT.";
+        var segments = TextDiff.Compute(a, b);
+
+        Assert.Equal(a, string.Concat(segments.Where(s => s.Kind != DiffKind.Inserted).Select(s => s.Text)));
+        Assert.Equal(b, string.Concat(segments.Where(s => s.Kind != DiffKind.Deleted).Select(s => s.Text)));
+        Assert.Contains(segments, s => s.Kind == DiffKind.Inserted && s.Text.Contains("JWT"));
+    }
+
+    [Fact]
+    public void Identical_text_is_one_equal_segment()
+    {
+        var segments = TextDiff.Compute("same text", "same text");
+        Assert.Single(segments);
+        Assert.Equal(0, TextDiff.ChangedFraction(segments));
+    }
+
+    [Fact]
+    public void Handles_several_thousand_words()
+    {
+        var words = Enumerable.Range(0, 4000).Select(i => "word" + i);
+        var a = string.Join(" ", words);
+        var b = a.Replace("word2000", "changed");
+        var segments = TextDiff.Compute(a, b);
+        Assert.Contains(segments, s => s.Kind == DiffKind.Inserted && s.Text == "changed");
+    }
+}
+
+public class SettingsTests
+{
+    [Fact]
+    public void Round_trips_and_defaults_to_groq()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".json");
+        try
+        {
+            var settings = new AppSettings { DefaultMode = OptimizeMode.Light, PersonalContext = "CS student" };
+            SettingsStore.Save(path, settings);
+            var loaded = SettingsStore.Load(path);
+            Assert.Equal(OptimizeMode.Light, loaded.DefaultMode);
+            Assert.Equal("CS student", loaded.PersonalContext);
+            Assert.Equal("groq", loaded.Primary.Provider);
+            Assert.Contains("\"Light\"", File.ReadAllText(path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void Corrupt_file_gives_defaults_and_is_kept_aside()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".json");
+        File.WriteAllText(path, "{ not json");
+        try
+        {
+            var loaded = SettingsStore.Load(path);
+            Assert.Equal(OptimizeMode.Standard, loaded.DefaultMode);
+            Assert.True(File.Exists(path + ".bad"));
+        }
+        finally
+        {
+            File.Delete(path);
+            File.Delete(path + ".bad");
+        }
+    }
+
+    [Fact]
+    public void Resolver_orders_endpoints_and_requires_keys()
+    {
+        var secrets = new MemorySecrets();
+        var settings = new AppSettings();
+        Assert.Throws<MissingKeyException>(() => EndpointResolver.Resolve(settings, secrets));
+
+        secrets.Set("groq", "gsk_test");
+        var endpoints = EndpointResolver.Resolve(settings, secrets);
+        Assert.Equal(["openai/gpt-oss-120b", "openai/gpt-oss-20b"], endpoints.Select(e => e.Model));
+        Assert.All(endpoints, e => Assert.Equal("https://api.groq.com/openai/v1", e.BaseUrl));
+    }
+
+    [Fact]
+    public void Ollama_needs_no_key_and_custom_uses_its_own_url()
+    {
+        var secrets = new MemorySecrets();
+        var settings = new AppSettings
+        {
+            Primary = new EndpointSettings { Provider = "ollama", Model = "qwen3:4b" },
+            Fallback = new EndpointSettings { Provider = "custom", Model = "m", BaseUrl = "https://example.com/v1/" },
+        };
+        secrets.Set("custom", "abc");
+        var endpoints = EndpointResolver.Resolve(settings, secrets);
+        Assert.Equal("http://localhost:11434/v1", endpoints[0].BaseUrl);
+        Assert.Equal("https://example.com/v1/", endpoints[1].BaseUrl);
+    }
+
+    [Fact]
+    public void Judge_uses_its_own_provider_when_the_key_is_saved()
+    {
+        var secrets = new MemorySecrets();
+        secrets.Set("groq", "gsk_test");
+        var settings = new AppSettings();
+        var optimiser = EndpointResolver.Resolve(settings, secrets);
+
+        var (fallbackJudge, independent) = EndpointResolver.ResolveJudge(settings, secrets, optimiser);
+        Assert.Equal("openai/gpt-oss-20b", fallbackJudge.Model);
+        Assert.False(independent);
+
+        secrets.Set("gemini", "g_test");
+        var (judge, independentNow) = EndpointResolver.ResolveJudge(settings, secrets, optimiser);
+        Assert.Equal(ProviderPresets.Gemini.DefaultModel, judge.Model);
+        Assert.True(independentNow);
+    }
+
+    [Fact]
+    public void Judge_on_the_optimisers_provider_is_not_independent()
+    {
+        var secrets = new MemorySecrets();
+        secrets.Set("groq", "gsk_test");
+        var settings = new AppSettings { Judge = new EndpointSettings { Provider = "groq", Model = "qwen/qwen3-32b" } };
+        var (judge, independent) = EndpointResolver.ResolveJudge(settings, secrets, EndpointResolver.Resolve(settings, secrets));
+        Assert.Equal("qwen/qwen3-32b", judge.Model);
+        Assert.False(independent);
+    }
+
+    [Fact]
+    public void Settings_saved_before_the_judge_existed_get_the_default_judge()
+    {
+        var settings = System.Text.Json.JsonSerializer.Deserialize<AppSettings>("""{"version":1}""", SettingsStore.JsonOptions)!;
+        Assert.Equal("gemini", settings.Judge.Provider);
+    }
+
+    [Fact]
+    public void A_null_judge_in_the_settings_file_gets_the_default()
+    {
+        var path = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(path, """{"version":1,"judge":null}""");
+            Assert.Equal("gemini", SettingsStore.Load(path).Judge.Provider);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void Same_hosted_provider_at_another_url_is_not_independent()
+    {
+        var secrets = new MemorySecrets();
+        secrets.Set("groq", "gsk_test");
+        var settings = new AppSettings { Judge = new EndpointSettings { Provider = "groq", Model = "qwen/qwen3-32b" } };
+        var optimiser = new[] { new LlmEndpoint(ProviderPresets.Groq, "https://api.groq.com/openai/v1/", "openai/gpt-oss-120b", "k") };
+        Assert.False(EndpointResolver.ResolveJudge(settings, secrets, optimiser).Independent);
+    }
+
+    internal sealed class MemorySecrets : ISecretStore
+    {
+        private readonly Dictionary<string, string> _values = [];
+        public string? Get(string providerId) => _values.GetValueOrDefault(providerId);
+        public void Set(string providerId, string? value) { if (value is null) _values.Remove(providerId); else _values[providerId] = value; }
+        public void Clear() => _values.Clear();
+    }
+}
+
+public class EvalGradingTests
+{
+    private static OptimizeResult Result(string draft, string prompt, Verdict verdict = Verdict.Rewritten) => new()
+    {
+        Original = draft, Prompt = prompt, TaskType = TaskType.General, Verdict = verdict, Model = "m",
+    };
+
+    [Fact]
+    public void Flags_placeholders_filler_and_expansion()
+    {
+        var c = new EvalCase { Id = "t", Category = "simple", Draft = "capital of france?", MaxLengthRatio = 3 };
+        var failures = EvalRunner.Grade(c, Result(c.Draft,
+            "You are a world-class geographer. What is the capital of [insert country]? Explain step by step with sources and context."));
+        Assert.Contains(failures, f => f.Contains("placeholder"));
+        Assert.Contains(failures, f => f.Contains("filler"));
+        Assert.Contains(failures, f => f.Contains("over-expanded"));
+    }
+
+    [Fact]
+    public void Flags_a_rewrite_that_shrinks_below_the_cases_floor()
+    {
+        var draft = string.Join(' ', Enumerable.Repeat("keep the amount RM 8,000 and every other point", 20));
+        var c = new EvalCase { Id = "t", Category = "long", Draft = draft, MinLengthRatio = 0.5 };
+
+        var shrunk = EvalRunner.Grade(c, Result(draft, "Keep the amount RM 8,000."));
+        var kept = EvalRunner.Grade(c, Result(draft, draft[..(draft.Length * 6 / 10)]));
+
+        Assert.Contains(shrunk, f => f.StartsWith("shrunk:"));
+        Assert.DoesNotContain(kept, f => f.StartsWith("shrunk:"));
+    }
+
+    [Fact]
+    public void Cases_without_a_floor_may_shrink()
+    {
+        var c = new EvalCase { Id = "t", Category = "long", Draft = new string('a', 600) + " fix this" };
+        Assert.DoesNotContain(EvalRunner.Grade(c, Result(c.Draft, "Fix this.")), f => f.StartsWith("shrunk:"));
+    }
+
+    [Fact]
+    public void The_length_floor_is_read_from_the_case_file()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".json");
+        File.WriteAllText(path, """[{"id":"a","category":"long","draft":"x","expect":"Clarify","minLengthRatio":0.5},{"id":"b","category":"long","draft":"y","expect":"Clarify"}]""");
+        try
+        {
+            var cases = EvalRunner.LoadCases(path);
+            Assert.Equal(0.5, cases[0].MinLengthRatio);
+            Assert.Null(cases[1].MinLengthRatio);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void Every_required_text_appears_in_its_own_draft()
+    {
+        var dir = AppContext.BaseDirectory;
+        while (dir is not null && !File.Exists(Path.Combine(dir, "eval", "cases.json"))) dir = Path.GetDirectoryName(dir);
+        Assert.NotNull(dir);
+        foreach (var c in EvalRunner.LoadCases(Path.Combine(dir!, "eval", "cases.json")))
+            foreach (var required in c.MustContain)
+                Assert.True(c.Draft.Contains(required, StringComparison.Ordinal), $"{c.Id}: \"{required}\" is not in the draft");
+    }
+
+    [Fact]
+    public void Every_long_case_has_a_length_floor()
+    {
+        var dir = AppContext.BaseDirectory;
+        while (dir is not null && !File.Exists(Path.Combine(dir, "eval", "cases.json"))) dir = Path.GetDirectoryName(dir);
+        Assert.NotNull(dir);
+        var longCases = EvalRunner.LoadCases(Path.Combine(dir!, "eval", "cases.json")).Where(c => c.Draft.Length > 1000).ToList();
+        Assert.NotEmpty(longCases);
+        Assert.All(longCases, c => Assert.NotNull(c.MinLengthRatio));
+    }
+
+    [Fact]
+    public void Clean_result_passes()
+    {
+        var c = new EvalCase { Id = "t", Category = "coding", Draft = "fix getUser in users.ts", MaxLengthRatio = 20 };
+        Assert.Empty(EvalRunner.Grade(c, Result(c.Draft, "Fix the bug in getUser in users.ts. Explain the cause and show the changed code.")));
+    }
+
+    [Fact]
+    public void Placeholder_already_in_draft_is_not_flagged()
+    {
+        var c = new EvalCase { Id = "t", Category = "writing", Draft = "fill this template: Dear [your name], thanks" };
+        Assert.Empty(EvalRunner.Grade(c, Result(c.Draft, "Fill in this template: Dear [your name], thanks")));
+    }
+}
+
+public class EvalCasesFileTests
+{
+    [Fact]
+    public void Shipped_eval_cases_parse_and_have_unique_ids()
+    {
+        var dir = AppContext.BaseDirectory;
+        while (dir is not null && !File.Exists(Path.Combine(dir, "eval", "cases.json"))) dir = Path.GetDirectoryName(dir);
+        Assert.NotNull(dir);
+        var cases = EvalRunner.LoadCases(Path.Combine(dir!, "eval", "cases.json"));
+        Assert.True(cases.Count >= 40);
+        Assert.Equal(cases.Count, cases.Select(c => c.Id).Distinct().Count());
+        Assert.Contains(cases, c => c.Mode == OptimizeMode.Detailed);
+        Assert.Contains(cases, c => c.Repeat == 3);
+        Assert.Contains(cases, c => c.WrittenIn is not null);
+    }
+
+    [Fact]
+    public void Shipped_v1_0_0_system_prompt_is_a_full_prompt()
+    {
+        var dir = AppContext.BaseDirectory;
+        while (dir is not null && !File.Exists(Path.Combine(dir, "eval", "prompts", "v1.0.0.txt"))) dir = Path.GetDirectoryName(dir);
+        Assert.NotNull(dir);
+        var text = File.ReadAllText(Path.Combine(dir!, "eval", "prompts", "v1.0.0.txt"));
+        Assert.StartsWith("You are PromptForge", text);
+        Assert.Contains("Respond with only one JSON object", text);
+        Assert.NotEqual(SystemPrompt.Text, text.TrimEnd('\n'));
+    }
+}
+
+public class EvalGradingNumberTests
+{
+    [Fact]
+    public void Flags_numbers_and_missing_questions()
+    {
+        var c = new EvalCase { Id = "t", Category = "vague", Draft = "explain databases", ExpectQuestions = true };
+        var result = new OptimizeResult { Original = c.Draft, Prompt = "Explain databases in 3 paragraphs.", TaskType = TaskType.Study, Verdict = Verdict.Rewritten, Model = "m" };
+        var failures = EvalRunner.Grade(c, result);
+        Assert.Contains(failures, f => f.Contains("no questions"));
+        Assert.Contains(failures, f => f.Contains("added numbers") && f.Contains('3'));
+    }
+
+    [Fact]
+    public void Numbers_from_the_draft_are_fine()
+    {
+        var c = new EvalCase { Id = "t", Category = "simple", Draft = "what does http 418 mean" };
+        var result = new OptimizeResult { Original = c.Draft, Prompt = "What does HTTP status 418 mean?", TaskType = TaskType.General, Verdict = Verdict.LightEdit, Model = "m" };
+        Assert.Empty(EvalRunner.Grade(c, result));
+    }
+
+    [Fact]
+    public void Report_counts_dropped_requirements_from_the_judge()
+    {
+        var c = new EvalCase { Id = "t", Category = "stated-rule", Draft = "decide which issues to build, only ones that work in every situation" };
+        var result = new OptimizeResult { Original = c.Draft, Prompt = "Decide which issues to build.", TaskType = TaskType.Planning, Verdict = Verdict.Rewritten, Model = "m" };
+        var judge = new JudgeVerdict(false, false, "", true, true, "dropped the rule", DroppedRequirements: true, DroppedExamples: "only ones that work in every situation");
+        var report = EvalRunner.BuildReport([new EvalCaseResult { Case = c, Result = result, Judge = judge }], "m");
+        Assert.Contains("| Judge: dropped a stated requirement | 1/1 |", report);
+        Assert.Contains("dropped=True only ones that work in every situation", report);
+    }
+
+    [Fact]
+    public void Report_counts_changed_intent_from_the_judge()
+    {
+        var c = new EvalCase { Id = "t", Category = "intent", Draft = "also just merging to main deploy it to my laptop?" };
+        var result = new OptimizeResult { Original = c.Draft, Prompt = "Explain how to merge to main and deploy to my laptop.", TaskType = TaskType.Planning, Verdict = Verdict.Rewritten, Model = "m" };
+        var judge = new JudgeVerdict(false, false, "", true, true, "question became instruction", ChangedIntent: true);
+        var report = EvalRunner.BuildReport([new EvalCaseResult { Case = c, Result = result, Judge = judge }], "m");
+        Assert.Contains("| Judge: changed the kind of request | 1/1 |", report);
+    }
+
+    [Fact]
+    public void Assistant_voice_is_left_to_the_judge_not_a_phrase_list()
+    {
+        var c = new EvalCase { Id = "t", Category = "voice", Draft = "i have turned on the memory" };
+        var result = new OptimizeResult
+        {
+            Original = c.Draft,
+            Prompt = "I have turned on the memory. Please let me know what you would like me to do with this information.",
+            TaskType = TaskType.General, Verdict = Verdict.Rewritten, Model = "m",
+        };
+        Assert.Empty(EvalRunner.Grade(c, result));
+        var judge = new JudgeVerdict(false, false, "", false, true, "reply voice", WrittenAsReply: true, AddedRequests: true, AddedExamples: "asks the user what to do");
+        var report = EvalRunner.BuildReport([new EvalCaseResult { Case = c, Result = result, Judge = judge }], "m");
+        Assert.Contains("| Judge: written as the AI's reply | 1/1 |", report);
+        Assert.Contains("| Judge: added requests | 1/1 |", report);
+        Assert.Contains("added=True asks the user what to do", report);
+    }
+
+    [Fact]
+    public void Report_shows_pass_rate_per_case_lowest_first()
+    {
+        var flaky = new EvalCase { Id = "flaky", Category = "intent", Draft = "d" };
+        var solid = new EvalCase { Id = "solid", Category = "simple", Draft = "d" };
+        var ok = new OptimizeResult { Original = "d", Prompt = "d", TaskType = TaskType.General, Verdict = Verdict.LightEdit, Model = "m" };
+        EvalCaseResult R(EvalCase c, int run, params string[] failures) => new() { Case = c, Run = run, Result = ok, Failures = [.. failures] };
+        var results = new[]
+        {
+            R(solid, 1), R(solid, 2), R(solid, 3),
+            R(flaky, 1, "judge: invented details (React)"), R(flaky, 2), R(flaky, 3, "judge: invented details (Vue)"),
+        };
+        var report = EvalRunner.BuildReport(results, new EvalRunInfo("m", "judge-model (gemini)", JudgeIndependent: true, InstructionsLabel: "v1.0.0.txt"));
+
+        Assert.Contains("| Cases / runs | 2 / 6 |", report);
+        Assert.Contains("| Cases with mixed results | 1 |", report);
+        Assert.Contains("| flaky | intent | 1/3 | judge: invented details |", report);
+        Assert.True(report.IndexOf("| flaky |", StringComparison.Ordinal) < report.IndexOf("| solid |", StringComparison.Ordinal));
+        Assert.Contains("Judge: judge-model (gemini) (independent provider)", report);
+        Assert.Contains("System prompt: v1.0.0.txt", report);
+    }
+
+    [Theory]
+    [InlineData(1, 1, 1)]
+    [InlineData(1, 3, 3)]
+    [InlineData(5, 3, 5)]
+    [InlineData(0, 0, 1)]
+    public void Each_case_runs_at_least_its_own_repeat_count(int caseRepeat, int runRepeat, int expected) =>
+        Assert.Equal(expected, EvalRunner.RunsFor(new EvalCase { Id = "t", Category = "c", Draft = "d", Repeat = caseRepeat }, runRepeat));
+
+    [Fact]
+    public async Task Runner_repeats_cases_and_uses_the_given_system_prompt()
+    {
+        var client = new PromptOptimizerTests.FakeClient(_ =>
+            System.Text.Json.JsonSerializer.Serialize(new { task_type = "general", verdict = "light_edit", prompt = "What is DNS?", changes = Array.Empty<string>(), questions = Array.Empty<string>() }));
+        var endpoint = new LlmEndpoint(ProviderPresets.Groq, "https://x", "m", "k");
+        var runner = new EvalRunner(new PromptOptimizer(client, (_, _) => Task.CompletedTask), client);
+        var results = await runner.RunAsync([new EvalCase { Id = "dns", Category = "simple", Draft = "what is dns", WrittenIn = "a web page" }], [endpoint], null,
+            TimeSpan.Zero, null, CancellationToken.None, repeat: 3, options: new OptimizerOptions { Instructions = "old prompt" });
+
+        Assert.Equal([1, 2, 3], results.Select(r => r.Run));
+        Assert.All(client.Calls, c => Assert.Equal("old prompt", c.Messages[0].Content));
+        Assert.All(client.Calls, c => Assert.Contains("written_in: a web page", c.Messages[1].Content));
+    }
+
+    [Fact]
+    public void Comparison_separates_real_changes_from_noise()
+    {
+        static IEnumerable<CaseRun> Runs(string id, int passed, int runs) => Enumerable.Range(0, runs).Select(i => new CaseRun(id, i < passed));
+        var before = Runs("fixed", 0, 3).Concat(Runs("broke", 3, 3)).Concat(Runs("wobble", 1, 3)).Concat(Runs("steady", 3, 3)).Concat(Runs("gone", 1, 1)).ToList();
+        var after = Runs("fixed", 3, 3).Concat(Runs("broke", 1, 3)).Concat(Runs("wobble", 2, 3)).Concat(Runs("steady", 3, 3)).Concat(Runs("new", 1, 1)).ToList();
+        var report = EvalComparison.Build(before, after, "v1.0.0", "main");
+
+        Assert.Contains("| fixed | 0/3 | 3/3 | better |", report);
+        Assert.Contains("| broke | 3/3 | 1/3 | worse |", report);
+        Assert.Contains("| wobble | 1/3 | 2/3 | noise |", report);
+        Assert.DoesNotContain("| steady |", report);
+        Assert.Contains("Better: 1. Worse: 1. Noise: 1.", report);
+        Assert.Contains("Only in before: gone", report);
+        Assert.Contains("Only in after: new", report);
+        Assert.True(report.IndexOf("| broke |", StringComparison.Ordinal) < report.IndexOf("| fixed |", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_single_run_flip_is_noise()
+    {
+        var report = EvalComparison.Build([new CaseRun("once", true)], [new CaseRun("once", false)], "a", "b");
+        Assert.Contains("| once | 1/1 | 0/1 | noise |", report);
+        Assert.Contains("counted as noise", report);
+    }
+
+    [Fact]
+    public void Duplicate_case_ids_are_rejected()
+    {
+        var path = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(path, """[{"id":"a","category":"c","draft":"x"},{"id":"a","category":"c","draft":"y"}]""");
+            Assert.Throws<InvalidDataException>(() => EvalRunner.LoadCases(path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void Comparison_reads_results_json()
+    {
+        var path = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(path, """[{"Id":"a","Category":"c","Run":1,"Passed":true,"Error":null},{"Id":"a","Category":"c","Run":2,"Passed":false,"Error":"x"}]""");
+            Assert.Equal([new CaseRun("a", true), new CaseRun("a", false, Errored: true)], EvalComparison.LoadRuns(path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void Repair_request_asks_for_details_back_without_meta_instructions()
+    {
+        var message = UserMessageBuilder.BuildRepairRequest("Ship it.", ["merge and deploy"], "please merge and deploy on friday");
+        Assert.Contains("- merge and deploy", message);
+        Assert.Contains("Don't add an instruction telling the AI to use or include them", message);
+        Assert.Contains("<rewrite>\nShip it.\n</rewrite>", message);
+    }
+
+    [Fact]
+    public void Repair_request_quotes_only_the_part_of_the_draft_around_each_detail()
+    {
+        var draft = "first line about something else entirely\nthe budget is 4,000 for the whole project, no more\n" + new string('x', 5000);
+        var message = UserMessageBuilder.BuildRepairRequest("Plan it.", ["4,000"], draft);
+        Assert.Contains("the budget is 4,000 for the whole project, no more", message);
+        Assert.DoesNotContain("first line about something else", message);
+        Assert.True(message.Length < 800);
+    }
+
+    [Fact]
+    public void Repair_request_still_lists_a_detail_that_cannot_be_found_as_written()
+    {
+        var message = UserMessageBuilder.BuildRepairRequest("Plan it.", ["no such text"], "a draft");
+        Assert.Contains("- no such text\n", message);
+    }
+}

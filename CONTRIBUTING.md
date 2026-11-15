@@ -23,13 +23,13 @@ You need the [.NET 10 SDK](https://dotnet.microsoft.com/download). Any editor wo
 git clone https://github.com/Maneet7805/PromptForge.git
 cd PromptForge
 dotnet build
-dotnet test tests/PromptForge.Core.Tests
+dotnet test tests/Phrasor.Core.Tests
 ```
 
 To try a local build without touching your installed copy:
 
 ```bash
-dotnet publish src/PromptForge.App -c Release -o publish
+dotnet publish src/Phrasor.App -c Release -o publish
 publish\PromptForge.exe --portable
 ```
 
@@ -39,11 +39,11 @@ Quit the installed PromptForge first, because only one copy can run at a time.
 
 | Area | Location |
 | --- | --- |
-| Rewriting rules (system prompt) | `src/PromptForge.Core/Optimization/SystemPrompt.cs` |
-| Optimiser pipeline, masking, detail checks | `src/PromptForge.Core/Optimization/` |
-| Provider client and presets | `src/PromptForge.Core/Llm/` |
-| Text capture / paste / verification | `src/PromptForge.App/TextAccess/` |
-| Review and settings windows | `src/PromptForge.App/UI/` |
+| Rewriting rules (system prompt) | `src/Phrasor.Core/Optimization/SystemPrompt.cs` |
+| Optimiser pipeline, masking, detail checks | `src/Phrasor.Core/Optimization/` |
+| Provider client and presets | `src/Phrasor.Core/Llm/` |
+| Text capture / paste / verification | `src/Phrasor.App/TextAccess/` |
+| Review and settings windows | `src/Phrasor.App/UI/` |
 | Quality test set | `eval/cases.json` (how to run and compare: `eval/README.md`) |
 
 ## Working on an issue
@@ -65,7 +65,7 @@ These steps apply to everyone, whether you work in a branch of this repo or in a
 ## Pull requests
 
 1. Branch from `main`. Collaborators create the branch in this repo. Everyone else forks the repo first and creates it in their fork. Use the branch name from the section above either way.
-2. Keep each pull request to one change, and add or update tests in `tests/PromptForge.Core.Tests` for anything in `PromptForge.Core`.
+2. Keep each pull request to one change, and add or update tests in `tests/Phrasor.Core.Tests` for anything in `Phrasor.Core`.
 3. Make sure `dotnet test` passes. CI runs it on Windows for every pull request. Mark the draft ready once it is green. Only the owner merges.
 4. If you change the system prompt or optimiser behaviour, run the quality check (Settings → Data → *Run quality check*) and paste the before/after pass counts in the pull request.
 5. For app (UI or Win32) changes, say which apps you tested in. Notepad, a browser chat and Word cover most cases.
@@ -80,7 +80,7 @@ These steps apply to everyone, whether you work in a branch of this repo or in a
 
 ## Releasing (maintainers)
 
-1. Update `<Version>` in `src/PromptForge.App/PromptForge.App.csproj` and move the `Unreleased` notes in `CHANGELOG.md` under the new version and date. Merge that change to `main` through a pull request.
+1. Update `<Version>` in `src/Phrasor.App/Phrasor.App.csproj` and move the `Unreleased` notes in `CHANGELOG.md` under the new version and date. Merge that change to `main` through a pull request.
 2. Wait for "Build and test" to pass on `main`.
 3. Only the owner can create tags. Tag the merged commit and push the tag: `git checkout main && git pull && git tag v1.2.3 && git push origin v1.2.3`. Don't create the tag by publishing a release on the GitHub website: the Release workflow creates the release itself and would fail on an existing one. Don't name a branch like a tag.
 4. The [Release workflow](.github/workflows/release.yml) builds the exe, creates the GitHub release, and uses the changelog section as release notes. Check that the release has `PromptForge.exe`, the zip and `SHA256SUMS.txt`.

@@ -28,15 +28,15 @@ jobs:
 
       - name: Check the project version matches the tag
         run: |
-          [xml]$proj = Get-Content src/PromptForge.App/PromptForge.App.csproj
+          [xml]$proj = Get-Content src/Phrasor.App/Phrasor.App.csproj
           $projVersion = ($proj.Project.PropertyGroup | Where-Object { $_.Version } | Select-Object -First 1).Version
-          if ($projVersion -ne $env:VERSION) { throw "Tag v$env:VERSION doesn't match <Version>$projVersion</Version> in PromptForge.App.csproj" }
+          if ($projVersion -ne $env:VERSION) { throw "Tag v$env:VERSION doesn't match <Version>$projVersion</Version> in Phrasor.App.csproj" }
 
       - name: Test
-        run: dotnet test tests/PromptForge.Core.Tests -c Release
+        run: dotnet test tests/Phrasor.Core.Tests -c Release
 
       - name: Publish
-        run: dotnet publish src/PromptForge.App -c Release -o publish
+        run: dotnet publish src/Phrasor.App -c Release -o publish
 
       - name: Package
         run: |
