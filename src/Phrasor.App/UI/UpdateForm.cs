@@ -77,7 +77,7 @@ internal sealed class UpdateForm : Form
 
     public void ShowOffer(string version, string current)
     {
-        Set(Mode.Offer, $"PromptForge {version} is available", $"You have {current}. Your settings and API keys are kept.", bar: false);
+        Set(Mode.Offer, $"Phrasor {version} is available", $"You have {current}. Your settings and API keys are kept.", bar: false);
         _buttons = [new("Update now", () => UpdateClicked?.Invoke(), true), new("Later", () => LaterClicked?.Invoke(), false)];
         Present();
     }

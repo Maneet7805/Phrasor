@@ -55,7 +55,7 @@ internal sealed class OptimizeController(AppServices services)
         if (target.IsOwnWindow) return;
         if (target.IsPasswordField)
         {
-            services.Notify("PromptForge doesn't read password fields.", ToolTipIcon.Info);
+            services.Notify("Phrasor doesn't read password fields.", ToolTipIcon.Info);
             return;
         }
 
@@ -116,7 +116,7 @@ internal sealed class OptimizeController(AppServices services)
             InitialMode = settings.DefaultMode,
             Run = (optimizeMode, task, answers, ct) => OptimizeAsync(text, optimizeMode, task, answers, appLabel, ct),
             Preloaded = IsOwnOutput(text) ? Unchanged(text) : null,
-            PreloadedNote = IsOwnOutput(text) ? "This is the prompt PromptForge just produced, so it wasn't sent again. Press Ctrl+R to optimise it anyway." : null,
+            PreloadedNote = IsOwnOutput(text) ? "This is the prompt Phrasor just produced, so it wasn't sent again. Press Ctrl+R to optimise it anyway." : null,
         };
 
         if (!settings.ReviewBeforeReplace && context.Preloaded is null)

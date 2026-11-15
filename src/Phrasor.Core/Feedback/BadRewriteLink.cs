@@ -69,7 +69,7 @@ public sealed record BadRewriteLink(string Url, bool TextIncluded, bool Truncate
         string Candidate(int n)
         {
             if (n > 0 && char.IsHighSurrogate(text[n - 1])) n--;
-            return text[..n] + $"\n[...cut by PromptForge: {n:N0} of {text.Length:N0} characters shown]";
+            return text[..n] + $"\n[...cut by Phrasor: {n:N0} of {text.Length:N0} characters shown]";
         }
 
         var low = 0;

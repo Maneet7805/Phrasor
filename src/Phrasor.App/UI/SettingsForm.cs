@@ -21,7 +21,7 @@ internal sealed class SettingsForm : Form
     // General
     private readonly ComboBox _defaultMode = Combo(Enum.GetNames<OptimizeMode>());
     private readonly CheckBox _review = new() { Text = "Show the review window before replacing text (recommended)", AutoSize = true };
-    private readonly CheckBox _startup = new() { Text = "Start PromptForge when Windows starts", AutoSize = true };
+    private readonly CheckBox _startup = new() { Text = "Start Phrasor when Windows starts", AutoSize = true };
     private readonly CheckBox _appHint = new() { Text = "Tell the optimiser what kind of app I'm typing in (e.g. \"Claude (browser)\")", AutoSize = true };
     private readonly CheckBox _updates = new() { Text = "Check for updates once a day (contacts GitHub; sends no prompt text, settings or keys)", AutoSize = true };
     private readonly CheckBox _repair = new() { Text = "If exact details (paths, numbers, names) get dropped, ask the model to fix it (one extra call)", AutoSize = true };
@@ -72,7 +72,7 @@ internal sealed class SettingsForm : Form
         _hotkeys = hotkeys;
         _client = client;
 
-        Text = "PromptForge settings";
+        Text = "Phrasor settings";
         Icon = AppIcon.Get();
         StartPosition = FormStartPosition.CenterScreen;
         Size = new Size(780, 660);
@@ -119,7 +119,7 @@ internal sealed class SettingsForm : Form
         _reqTask.SelectedIndexChanged += (_, _) => ShowRequirements();
         return Stack(
             Heading("Your standing requirements, per kind of task"),
-            Hint("Written once, added word for word to the end of every rewrite of that kind. \"All tasks\" is added to every rewrite, after the text for its kind. PromptForge never changes this text and never sends it to the model. Rewrites that come back unchanged get nothing added."),
+            Hint("Written once, added word for word to the end of every rewrite of that kind. \"All tasks\" is added to every rewrite, after the text for its kind. Phrasor never changes this text and never sends it to the model. Rewrites that come back unchanged get nothing added."),
             Row(new Label { Text = "Task type", AutoSize = true, Padding = new Padding(0, 4, 0, 0) }, _reqTask),
             _reqText,
             Hint("For example, Coding: find the root cause, follow existing conventions, no workarounds, check for regressions. Coding agents also read the same text from a repo's CLAUDE.md or AGENTS.md."));
@@ -185,7 +185,7 @@ internal sealed class SettingsForm : Form
         Hint("Only the selected text. Use this in documents and code editors, where select-all would take the whole file."),
         Row(Label("Voice (tap to toggle, or hold)", 220), _hkVoice),
         Hint("Tap once to start and again to stop, or hold the keys while you talk and release to finish."),
-        Hint("In terminals, PromptForge never sends keystrokes: copy your prompt first, press the optimise shortcut, then paste the result."));
+        Hint("In terminals, Phrasor never sends keystrokes: copy your prompt first, press the optimise shortcut, then paste the result."));
 
     private Control BuildVoice() => Stack(
         _voiceOn,
@@ -202,10 +202,10 @@ internal sealed class SettingsForm : Form
         openData.Click += (_, _) => { Directory.CreateDirectory(AppPaths.DataDir); OpenUrl(AppPaths.DataDir); };
         var openLogs = new Button { Text = "Open logs", AutoSize = true };
         openLogs.Click += (_, _) => { Directory.CreateDirectory(AppPaths.LogDir); OpenUrl(AppPaths.LogDir); };
-        var wipe = new Button { Text = "Delete all PromptForge data…", AutoSize = true };
+        var wipe = new Button { Text = "Delete all Phrasor data…", AutoSize = true };
         wipe.Click += (_, _) =>
         {
-            if (MessageBox.Show(this, "Delete your settings, saved API keys and logs? PromptForge will close.", "PromptForge",
+            if (MessageBox.Show(this, "Delete your settings, saved API keys and logs? Phrasor will close.", "Phrasor",
                     MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) != DialogResult.OK) return;
             _secrets.Clear();
             StartupRegistration.Set(false);
@@ -226,7 +226,7 @@ internal sealed class SettingsForm : Form
             Row(Label("Judge"), _judgeProvider, Label("Model"), _judgeModel),
             Hint("Grades each rewrite. Pick a different provider from the main model, so it isn't grading its own model family, and save that provider's key in the Model tab. Without a key, the main model's fallback grades instead and the report says it isn't independent."),
             quality,
-            Heading("What PromptForge stores"),
+            Heading("What Phrasor stores"),
             Hint("Settings: %APPDATA%\\Phrasor\\settings.json. API keys: secrets.dat, encrypted for your Windows account."),
             Hint("Logs: events, timings and error types for 7 days. Never prompt text, transcripts or keys."),
             Hint("No prompt history is kept. Only the last original text is held in memory so you can restore it from the tray menu."),
@@ -336,7 +336,7 @@ internal sealed class SettingsForm : Form
         foreach (var d in duplicates) errors.Add($"{d.Key} is assigned to more than one action.");
         if (errors.Count > 0)
         {
-            MessageBox.Show(this, string.Join("\n", errors), "PromptForge", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(this, string.Join("\n", errors), "Phrasor", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
@@ -346,7 +346,7 @@ internal sealed class SettingsForm : Form
             .OfType<string>()
             .ToList();
         if (conflicts.Count > 0 &&
-            MessageBox.Show(this, string.Join("\n\n", conflicts) + "\n\nSave these shortcuts anyway?", "PromptForge",
+            MessageBox.Show(this, string.Join("\n\n", conflicts) + "\n\nSave these shortcuts anyway?", "Phrasor",
                 MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
         {
             return;

@@ -28,7 +28,7 @@ internal sealed class HotkeyManager : NativeWindow, IDisposable
         Unregister(action);
         if (!HotkeyChord.TryParse(text, out var chord)) return $"\"{text}\" isn't a valid shortcut.";
         if (chord.Problem() is { } problem) return problem;
-        if (!TryGetVirtualKey(chord, out var vk)) return $"\"{chord.Key}\" isn't a key PromptForge recognises.";
+        if (!TryGetVirtualKey(chord, out var vk)) return $"\"{chord.Key}\" isn't a key Phrasor recognises.";
 
         var modifiers = Win32.MOD_NOREPEAT
                         | (chord.Ctrl ? Win32.MOD_CONTROL : 0)
@@ -62,7 +62,7 @@ internal sealed class HotkeyManager : NativeWindow, IDisposable
         if (!HotkeyChord.TryParse(text, out var chord)) return $"\"{text}\" isn't a valid shortcut.";
         if (chord.Problem() is { } problem) return problem;
         if (_registered.Values.Contains(chord)) return null; // already ours
-        if (!TryGetVirtualKey(chord, out var vk)) return $"\"{chord.Key}\" isn't a key PromptForge recognises.";
+        if (!TryGetVirtualKey(chord, out var vk)) return $"\"{chord.Key}\" isn't a key Phrasor recognises.";
         const int probeId = 99;
         var modifiers = (chord.Ctrl ? Win32.MOD_CONTROL : 0) | (chord.Alt ? Win32.MOD_ALT : 0)
                         | (chord.Shift ? Win32.MOD_SHIFT : 0) | (chord.Win ? Win32.MOD_WIN : 0);
@@ -74,7 +74,7 @@ internal sealed class HotkeyManager : NativeWindow, IDisposable
 
     /// <summary>
     /// Windows treats Ctrl+Alt as AltGr, so on many keyboard layouts (German, Polish, French, English (India)…)
-    /// Ctrl+Alt+key types a character. A shortcut on that chord blocks the character while PromptForge runs,
+    /// Ctrl+Alt+key types a character. A shortcut on that chord blocks the character while Phrasor runs,
     /// and if the shortcut isn't registered the character gets typed instead. Returns a warning naming the
     /// character for any installed layout, or null.
     /// </summary>
@@ -98,7 +98,7 @@ internal sealed class HotkeyManager : NativeWindow, IDisposable
             var n = Win32.ToUnicodeEx((uint)key, scan, state, buffer, buffer.Capacity, Win32.TOUNICODE_NO_STATE_CHANGE, layout);
             if (n == 0 || buffer.Length == 0 || char.IsControl(buffer[0])) continue;
             var typed = n > 0 ? buffer.ToString(0, Math.Min(n, buffer.Length)) : buffer.ToString(0, 1); // n < 0: dead key
-            return $"{chord} types \"{typed}\" on one of your keyboard layouts, so you can't type that character while PromptForge uses it. If you need it, pick a shortcut without Ctrl+Alt in Settings → Shortcuts.";
+            return $"{chord} types \"{typed}\" on one of your keyboard layouts, so you can't type that character while Phrasor uses it. If you need it, pick a shortcut without Ctrl+Alt in Settings → Shortcuts.";
         }
         return null;
     }

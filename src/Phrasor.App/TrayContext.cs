@@ -31,7 +31,7 @@ internal sealed class TrayContext : ApplicationContext
         _optimize = new OptimizeController(_services);
         _voice = new VoiceController(_services, _optimize);
         _updates = new UpdateController(_services);
-        _tray = new NotifyIcon { Icon = AppIcon.Get(), Text = "PromptForge", Visible = true, ContextMenuStrip = BuildMenu() };
+        _tray = new NotifyIcon { Icon = AppIcon.Get(), Text = "Phrasor", Visible = true, ContextMenuStrip = BuildMenu() };
         _tray.DoubleClick += (_, _) => OpenSettings();
         _tray.MouseUp += (_, e) =>
         {
@@ -41,7 +41,7 @@ internal sealed class TrayContext : ApplicationContext
         };
         _services.Notify = (message, icon) =>
         {
-            _tray.ShowBalloonTip(4000, "PromptForge", message, icon);
+            _tray.ShowBalloonTip(4000, "Phrasor", message, icon);
         };
         _updates.AvailableChanged += () =>
         {
@@ -65,13 +65,13 @@ internal sealed class TrayContext : ApplicationContext
         }
     }
 
-    /// <summary>Called when the user launches PromptForge again while it's already running.</summary>
+    /// <summary>Called when the user launches Phrasor again while it's already running.</summary>
     public void OnSecondInstance() => OpenSettings();
 
     private ContextMenuStrip BuildMenu()
     {
         var menu = new ContextMenuStrip();
-        menu.Items.Add(new ToolStripMenuItem($"PromptForge {Application.ProductVersion}") { Enabled = false, Font = new Font(menu.Font, FontStyle.Bold) });
+        menu.Items.Add(new ToolStripMenuItem($"Phrasor {Application.ProductVersion}") { Enabled = false, Font = new Font(menu.Font, FontStyle.Bold) });
         menu.Items.Add(_shortcutsInfo);
         menu.Items.Add(new ToolStripSeparator());
 
@@ -99,7 +99,7 @@ internal sealed class TrayContext : ApplicationContext
         {
             if (_pause.Checked) _hotkeys.UnregisterAll();
             else RegisterHotkeys(reportProblems: true);
-            _tray.Text = _pause.Checked ? "PromptForge (paused)" : "PromptForge";
+            _tray.Text = _pause.Checked ? "Phrasor (paused)" : "Phrasor";
         };
         menu.Items.Add(_pause);
         menu.Items.Add(new ToolStripSeparator());
@@ -142,7 +142,7 @@ internal sealed class TrayContext : ApplicationContext
         if (dialog.ShowDialog() != DialogResult.OK) return;
         var judge = MessageBox.Show(
             $"Also grade each rewrite with the judge model (Settings → Data)? It checks for invented details, dropped requirements, changed intent, added requests and replies written in the AI's voice.\n\nEach case runs {EvalCommand.DefaultRepeat} times so results can be told apart from noise. The judge doubles the number of requests.",
-            "PromptForge quality check", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes;
+            "Phrasor quality check", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes;
         var outDir = Path.Combine(Path.GetDirectoryName(dialog.FileName)!, "results", DateTime.Now.ToString("yyyyMMdd-HHmm"));
         _evalRunning = true;
         _services.Notify($"Quality check started. Results will be in {outDir}", ToolTipIcon.Info);

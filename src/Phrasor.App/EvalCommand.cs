@@ -29,7 +29,7 @@ internal static class EvalCommand
     {
         if (args.Length < 2)
         {
-            MessageBox.Show(Usage, "PromptForge eval");
+            MessageBox.Show(Usage, "Phrasor eval");
             return 2;
         }
         var pause = TimeSpan.FromSeconds(Option(args, "--pause-seconds") is { } p && double.TryParse(p, out var s) ? s : 8);
@@ -43,14 +43,14 @@ internal static class EvalCommand
     {
         if (args.Length < 3)
         {
-            MessageBox.Show(Usage, "PromptForge eval");
+            MessageBox.Show(Usage, "Phrasor eval");
             return 2;
         }
         var output = Path.GetFullPath(args[2]);
         if (output.Equals(Path.GetFullPath(args[0]), StringComparison.OrdinalIgnoreCase) ||
             output.Equals(Path.GetFullPath(args[1]), StringComparison.OrdinalIgnoreCase))
         {
-            MessageBox.Show("The comparison would overwrite one of the runs. Choose a different output file.", "PromptForge eval");
+            MessageBox.Show("The comparison would overwrite one of the runs. Choose a different output file.", "Phrasor eval");
             return 2;
         }
         try
@@ -61,7 +61,7 @@ internal static class EvalCommand
         }
         catch (Exception ex) when (ex is IOException or JsonException or KeyNotFoundException or InvalidOperationException or UnauthorizedAccessException)
         {
-            MessageBox.Show("Couldn't compare the runs: " + ex.Message, "PromptForge eval");
+            MessageBox.Show("Couldn't compare the runs: " + ex.Message, "Phrasor eval");
             return 1;
         }
     }
@@ -70,14 +70,14 @@ internal static class EvalCommand
     {
         if (args.Length < 3)
         {
-            MessageBox.Show(Usage, "PromptForge eval");
+            MessageBox.Show(Usage, "Phrasor eval");
             return 2;
         }
         var outDir = Path.GetFullPath(args[2]);
         var savedDir = Path.GetDirectoryName(Path.GetFullPath(args[0]));
         if (outDir.Equals(savedDir, StringComparison.OrdinalIgnoreCase))
         {
-            MessageBox.Show("The re-judge would overwrite the run it grades. Choose a different output folder.", "PromptForge eval");
+            MessageBox.Show("The re-judge would overwrite the run it grades. Choose a different output folder.", "Phrasor eval");
             return 2;
         }
         var pause = TimeSpan.FromSeconds(Option(args, "--pause-seconds") is { } p && double.TryParse(p, out var s) ? s : DefaultRejudgePauseSeconds);
