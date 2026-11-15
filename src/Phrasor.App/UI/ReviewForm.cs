@@ -32,7 +32,7 @@ internal sealed record ReviewContext
     /// <summary>Runs the optimiser with the chosen mode, task type and the user's answers, if any.</summary>
     public required Func<OptimizeMode, TaskType, ReviewAnswers?, CancellationToken, Task<OptimizeResult>> Run { get; init; }
 
-    /// <summary>Shown immediately instead of calling the model (e.g. the text is PromptForge's own last output).</summary>
+    /// <summary>Shown immediately instead of calling the model (e.g. the text is Phrasor's own last output).</summary>
     public OptimizeResult? Preloaded { get; init; }
     public string? PreloadedNote { get; init; }
 }
@@ -78,7 +78,7 @@ internal sealed class ReviewForm : Form
     {
         _ctx = ctx;
         _runMode = ctx.InitialMode;
-        Text = "PromptForge — review";
+        Text = "Phrasor — review";
         Icon = AppIcon.Get();
         StartPosition = FormStartPosition.Manual;
         Size = new Size(820, 600);
@@ -190,7 +190,7 @@ internal sealed class ReviewForm : Form
     {
         // A re-run replaces the Improved box, so hand edits would be lost without a way back.
         if (HasUserEdits() &&
-            MessageBox.Show(this, "Re-run will replace the edits you made to the improved prompt.\n\nReplace them?", "PromptForge",
+            MessageBox.Show(this, "Re-run will replace the edits you made to the improved prompt.\n\nReplace them?", "Phrasor",
                 MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) != DialogResult.Yes)
             return;
 
@@ -289,7 +289,7 @@ internal sealed class ReviewForm : Form
             "No: open the form with only the version, mode and model.\n" +
             "Cancel: open nothing.\n\n" +
             "Nothing is sent until you submit the form yourself.",
-            "PromptForge", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
+            "Phrasor", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
         if (choice == DialogResult.Cancel) return;
 
         var include = choice == DialogResult.Yes;
@@ -305,13 +305,13 @@ internal sealed class ReviewForm : Form
         catch (Exception ex)
         {
             Log.Info($"bad-rewrite form failed error={ex.GetType().Name}");
-            MessageBox.Show(this, "Couldn't open your browser.", "PromptForge", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(this, "Couldn't open your browser.", "Phrasor", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
         if (link.SkippedForSecret)
             MessageBox.Show(this, "Your draft or the rewrite looks like it contains a key or token, so the form was opened without them. Paste them in yourself after removing anything private.",
-                "PromptForge", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                "Phrasor", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
     private void RenderNotes(OptimizeResult result, string? note)

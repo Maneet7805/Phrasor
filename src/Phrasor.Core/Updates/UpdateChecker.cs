@@ -10,7 +10,7 @@ public sealed record ReleaseInfo(Version Version, string Tag, string ExeUrl, str
 public sealed class UpdateException(string message, Exception? inner = null) : Exception(message, inner);
 
 /// <summary>
-/// Checks GitHub Releases for a newer PromptForge and downloads it with its SHA-256 verified.
+/// Checks GitHub Releases for a newer Phrasor and downloads it with its SHA-256 verified.
 /// Sends one anonymous request to api.github.com; no prompt text, settings or keys are involved.
 /// Installing is left to the caller (the downloaded exe installs itself like a manual download).
 /// </summary>

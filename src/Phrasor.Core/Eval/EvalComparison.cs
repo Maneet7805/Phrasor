@@ -64,7 +64,7 @@ public static class EvalComparison
             return clean == 0 ? "0/0" : $"{passed}/{clean} ({100.0 * passed / clean:0}%)";
         }
         var sb = new StringBuilder();
-        sb.AppendLine("# PromptForge quality check comparison");
+        sb.AppendLine("# Phrasor quality check comparison");
         sb.AppendLine();
         sb.AppendLine(inv, $"Before: {beforeLabel}  ");
         sb.AppendLine(inv, $"After: {afterLabel}");

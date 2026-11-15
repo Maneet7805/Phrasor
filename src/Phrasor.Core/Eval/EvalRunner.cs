@@ -446,7 +446,7 @@ public sealed partial class EvalRunner(PromptOptimizer optimizer, ILlmClient cli
         var latencies = ok.Select(r => r.Result!.Elapsed.TotalMilliseconds).OrderBy(x => x).ToList();
         double Pct(double p) => latencies.Count == 0 ? 0 : latencies[Math.Clamp((int)Math.Ceiling(p * latencies.Count) - 1, 0, latencies.Count - 1)];
 
-        sb.AppendLine("# PromptForge optimiser eval");
+        sb.AppendLine("# Phrasor optimiser eval");
         sb.AppendLine();
         sb.AppendLine(inv, $"Run {DateTime.Now:yyyy-MM-dd HH:mm} · model {info.ModelLabel}");
         if (info.InstructionsLabel is not null) sb.AppendLine(inv, $"\nSystem prompt: {info.InstructionsLabel}");

@@ -89,7 +89,7 @@ internal static class TextBridge
     public static async Task<ReplaceResult> ReplaceAsync(TargetInfo target, CaptureMode mode, string original, string replacement)
     {
         if (mode == CaptureMode.Clipboard)
-            return CopyInstead(replacement, "Copied. Paste it into the terminal yourself; PromptForge never pastes into terminals because a multi-line paste can run commands.");
+            return CopyInstead(replacement, "Copied. Paste it into the terminal yourself; Phrasor never pastes into terminals because a multi-line paste can run commands.");
 
         if (!target.IsAlive)
             return CopyInstead(replacement, "The original window was closed, so the prompt was copied instead.");

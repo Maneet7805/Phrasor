@@ -52,7 +52,7 @@ public class BadRewriteLinkTests
         var query = Query(link.Url);
         Assert.True(link.Truncated);
         Assert.True(link.Url.Length <= BadRewriteLink.MaxUrlLength);
-        Assert.Matches(@"\[\.\.\.cut by PromptForge: [\d,]+ of 20,000 characters shown\]$", query["original"]);
+        Assert.Matches(@"\[\.\.\.cut by Phrasor: [\d,]+ of 20,000 characters shown\]$", query["original"]);
         Assert.Equal("short rewrite", query["rewrite"]);
     }
 
@@ -128,7 +128,7 @@ public class BadRewriteLinkTests
     }
 
     private static int Shown(string field) =>
-        int.Parse(Regex.Match(field, @"cut by PromptForge: ([\d,]+) of").Groups[1].Value.Replace(",", ""));
+        int.Parse(Regex.Match(field, @"cut by Phrasor: ([\d,]+) of").Groups[1].Value.Replace(",", ""));
 
     private static string RepoRoot()
     {

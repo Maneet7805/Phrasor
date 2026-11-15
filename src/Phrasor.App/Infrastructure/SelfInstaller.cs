@@ -30,16 +30,16 @@ internal static class SelfInstaller
         {
             var installedVersion = installed ? FileVersionInfo.GetVersionInfo(InstalledExe).ProductVersion ?? "unknown" : null;
             var question = installed
-                ? $"Update the installed PromptForge ({installedVersion}) to this version ({version})?\n\nYour settings and API keys are kept. A running PromptForge will restart."
-                : $"Install PromptForge {version} for {Environment.UserName}?\n\nIt goes to {InstallDir}, gets a Start menu shortcut and an entry in Settings → Apps, and runs in the system tray. No admin rights needed.";
-            var answer = MessageBox.Show(question + "\n\nChoose No to run this copy without installing.", "PromptForge setup",
+                ? $"Update the installed Phrasor ({installedVersion}) to this version ({version})?\n\nYour settings and API keys are kept. A running Phrasor will restart."
+                : $"Install Phrasor {version} for {Environment.UserName}?\n\nIt goes to {InstallDir}, gets a Start menu shortcut and an entry in Settings → Apps, and runs in the system tray. No admin rights needed.";
+            var answer = MessageBox.Show(question + "\n\nChoose No to run this copy without installing.", "Phrasor setup",
                 MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1);
             if (answer == DialogResult.Cancel) return true;
             if (answer == DialogResult.No) return false;
         }
 
         // Asked before the progress window opens, so no dialog sits on top of it.
-        var autostart = !installed && MessageBox.Show("Start PromptForge automatically when Windows starts?", "PromptForge setup",
+        var autostart = !installed && MessageBox.Show("Start Phrasor automatically when Windows starts?", "Phrasor setup",
             MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes;
 
         try
@@ -50,7 +50,7 @@ internal static class SelfInstaller
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
         {
             Log.Error("install failed", ex);
-            MessageBox.Show("Couldn't install PromptForge: " + ex.Message, "PromptForge setup", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show("Couldn't install Phrasor: " + ex.Message, "Phrasor setup", MessageBoxButtons.OK, MessageBoxIcon.Error);
             return true;
         }
     }
@@ -86,15 +86,15 @@ internal static class SelfInstaller
     /// <summary>Handles "--uninstall" from Settings → Apps. Returns the process exit code.</summary>
     public static int Uninstall()
     {
-        const string title = "PromptForge uninstall";
+        const string title = "Phrasor uninstall";
         var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         if (!IsRunningFromInstallDir || !InstallPaths.IsSafeToDelete(InstallDir, localAppData))
         {
-            MessageBox.Show("This copy of PromptForge isn't the installed one, so there is nothing to uninstall.\n\nA copy run from another folder can simply be deleted.",
+            MessageBox.Show("This copy of Phrasor isn't the installed one, so there is nothing to uninstall.\n\nA copy run from another folder can simply be deleted.",
                 title, MessageBoxButtons.OK, MessageBoxIcon.Information);
             return 1;
         }
-        if (MessageBox.Show("Uninstall PromptForge?\n\nThe app is removed from this computer. Your settings and API keys are kept unless you choose to delete them next.",
+        if (MessageBox.Show("Uninstall Phrasor?\n\nThe app is removed from this computer. Your settings and API keys are kept unless you choose to delete them next.",
                 title, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return 0;
         var deleteData = MessageBox.Show("Also delete your settings and API keys?\n\nChoose No to keep them, for example to reinstall later.",
             title, MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) == DialogResult.Yes;
@@ -115,7 +115,7 @@ internal static class SelfInstaller
             return 1;
         }
 
-        MessageBox.Show("PromptForge was uninstalled.", title, MessageBoxButtons.OK, MessageBoxIcon.Information);
+        MessageBox.Show("Phrasor was uninstalled.", title, MessageBoxButtons.OK, MessageBoxIcon.Information);
         RemoveInstallFolderAfterExit(localAppData);
         return 0;
     }
@@ -130,7 +130,7 @@ internal static class SelfInstaller
         Process.Start(new ProcessStartInfo("cmd.exe", command) { CreateNoWindow = true, UseShellExecute = false, WindowStyle = ProcessWindowStyle.Hidden });
     }
 
-    /// <summary>Asks a running PromptForge to exit and waits for it; kills it only as a last resort.</summary>
+    /// <summary>Asks a running Phrasor to exit and waits for it; kills it only as a last resort.</summary>
     private static void StopRunningInstance()
     {
         if (EventWaitHandle.TryOpenExisting(ExitEventName, out var exitEvent))

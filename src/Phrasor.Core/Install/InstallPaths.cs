@@ -1,6 +1,6 @@
 namespace Phrasor.Core.Install;
 
-/// <summary>Where the self-installer puts PromptForge, and the check that guards deleting it.</summary>
+/// <summary>Where the self-installer puts Phrasor, and the check that guards deleting it.</summary>
 public static class InstallPaths
 {
     /// <summary>The per-user install folder: <c>%LOCALAPPDATA%\Programs\Phrasor</c>.</summary>
@@ -41,7 +41,7 @@ public static class InstallPaths
     public const string FromUpdaterFlag = "--from-updater";
 
     /// <summary>
-    /// True when setup may skip its "Update the installed PromptForge?" question: the user already chose
+    /// True when setup may skip its "Update the installed Phrasor?" question: the user already chose
     /// "Update now" in the update card, the flag says so, and there is an installed copy to update.
     /// A first install always asks. The caller still applies <see cref="CanInstallFrom"/> before any offer.
     /// </summary>

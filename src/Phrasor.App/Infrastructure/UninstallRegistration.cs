@@ -2,7 +2,7 @@ using Microsoft.Win32;
 
 namespace Phrasor.App.Infrastructure;
 
-/// <summary>The per-user "Installed apps" entry (Settings → Apps), so PromptForge can be uninstalled like any app. No admin rights.</summary>
+/// <summary>The per-user "Installed apps" entry (Settings → Apps), so Phrasor can be uninstalled like any app. No admin rights.</summary>
 internal static class UninstallRegistration
 {
     private const string KeyPath = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\Phrasor";
