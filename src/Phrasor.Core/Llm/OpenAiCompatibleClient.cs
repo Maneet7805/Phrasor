@@ -144,7 +144,7 @@ public sealed partial class OpenAiCompatibleClient(HttpClient http) : ILlmClient
     {
         if (!string.IsNullOrWhiteSpace(endpoint.ApiKey))
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", endpoint.ApiKey.Trim());
-        request.Headers.UserAgent.ParseAdd("PromptForge/0.1");
+        request.Headers.UserAgent.ParseAdd("Phrasor/0.1");
     }
 
     private static string Combine(string baseUrl, string path) => baseUrl.TrimEnd('/') + "/" + path;

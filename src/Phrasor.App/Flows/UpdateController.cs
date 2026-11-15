@@ -156,7 +156,7 @@ internal sealed class UpdateController : IDisposable
                 if (!card.IsDisposed) card.SetProgress(version, p);
             });
             Log.Info($"update download started version={version}");
-            var dir = Path.Combine(Path.GetTempPath(), "PromptForge-update", version);
+            var dir = Path.Combine(Path.GetTempPath(), "Phrasor-update", version);
             var exe = await _checker.DownloadVerifiedAsync(release, dir, CurrentVersion, cancel.Token, progress);
             Log.Info($"update downloaded and verified version={version} ms={clock.ElapsedMilliseconds}");
 

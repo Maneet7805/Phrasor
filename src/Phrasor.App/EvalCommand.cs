@@ -8,19 +8,19 @@ namespace Phrasor.App;
 /// <summary>
 /// Runs the optimiser over a test set with the saved settings and API keys, writing report.md and
 /// results.json. Available as
-/// "PromptForge.exe --eval cases.json outDir [--judge] [--repeat N] [--system-prompt file] [--pause-seconds N]"
+/// "Phrasor.exe --eval cases.json outDir [--judge] [--repeat N] [--system-prompt file] [--pause-seconds N]"
 /// and from the tray menu (Developer → Run quality check). Keys never leave this PC.
-/// "PromptForge.exe --eval-compare before\results.json after\results.json compare.md" compares two runs.
-/// "PromptForge.exe --rejudge run\results.json cases.json outDir [--grades grades.csv]" grades a saved run again (#34).
+/// "Phrasor.exe --eval-compare before\results.json after\results.json compare.md" compares two runs.
+/// "Phrasor.exe --rejudge run\results.json cases.json outDir [--grades grades.csv]" grades a saved run again (#34).
 /// </summary>
 internal static class EvalCommand
 {
     public const int DefaultRepeat = EvalRunner.DefaultRepeat;
 
     private const string Usage =
-        "Usage:\nPromptForge.exe --eval <cases.json> <output folder> [--judge] [--repeat N] [--system-prompt <file>] [--pause-seconds N] [--include-held-out]\n" +
-        "PromptForge.exe --eval-compare <before results.json> <after results.json> <output .md>\n" +
-        "PromptForge.exe --rejudge <results.json> <cases.json> <output folder> [--grades <grades.csv>] [--pause-seconds N]";
+        "Usage:\nPhrasor.exe --eval <cases.json> <output folder> [--judge] [--repeat N] [--system-prompt <file>] [--pause-seconds N] [--include-held-out]\n" +
+        "Phrasor.exe --eval-compare <before results.json> <after results.json> <output .md>\n" +
+        "Phrasor.exe --rejudge <results.json> <cases.json> <output folder> [--grades <grades.csv>] [--pause-seconds N]";
 
     /// <summary>Judge calls only, so a shorter default wait than a full run, which also calls the optimiser.</summary>
     private const double DefaultRejudgePauseSeconds = 4;

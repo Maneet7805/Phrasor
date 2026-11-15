@@ -5,18 +5,18 @@ using Phrasor.Core.Install;
 namespace Phrasor.App.Infrastructure;
 
 /// <summary>
-/// Double-clicking a downloaded PromptForge.exe installs (or updates) it for the current user:
-/// copies itself to %LOCALAPPDATA%\Programs\PromptForge, adds a Start menu shortcut and an "Installed apps"
+/// Double-clicking a downloaded Phrasor.exe installs (or updates) it for the current user:
+/// copies itself to %LOCALAPPDATA%\Programs\Phrasor, adds a Start menu shortcut and an "Installed apps"
 /// entry, optionally registers start-with-Windows, asks any running copy to exit, and launches the installed copy.
 /// "--uninstall" (from Settings → Apps) undoes all of it. No admin rights, no installer framework.
 /// </summary>
 internal static class SelfInstaller
 {
-    public const string ExitEventName = @"Local\PromptForge.Exit";
+    public const string ExitEventName = @"Local\Phrasor.Exit";
 
-    public static string InstallDir { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "PromptForge");
-    public static string InstalledExe => Path.Combine(InstallDir, "PromptForge.exe");
-    private static string ShortcutPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs), "PromptForge.lnk");
+    public static string InstallDir { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "Phrasor");
+    public static string InstalledExe => Path.Combine(InstallDir, "Phrasor.exe");
+    private static string ShortcutPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs), "Phrasor.lnk");
 
     public static bool IsRunningFromInstallDir =>
         string.Equals(Path.GetFullPath(AppPaths.ExePath), Path.GetFullPath(InstalledExe), StringComparison.OrdinalIgnoreCase);
@@ -151,7 +151,7 @@ internal static class SelfInstaller
     }
 
     private static IEnumerable<Process> OtherInstances() =>
-        Process.GetProcessesByName("PromptForge").Where(p => p.Id != Environment.ProcessId);
+        Process.GetProcessesByName("Phrasor").Where(p => p.Id != Environment.ProcessId);
 
     private static void CopyWithRetry(string source, string destination)
     {

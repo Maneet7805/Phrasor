@@ -11,14 +11,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AssemblyName>PromptForge</AssemblyName>
+    <AssemblyName>Phrasor</AssemblyName>
     <RootNamespace>Phrasor.App</RootNamespace>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <ApplicationVisualStyles>true</ApplicationVisualStyles>
-    <ApplicationIcon>Assets\PromptForge.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\Phrasor.ico</ApplicationIcon>
     <Version>1.6.0</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
-    <Product>PromptForge</Product>
+    <Product>Phrasor</Product>
     <Authors>Maneet Arvind Mehta</Authors>
     <Copyright>Copyright (c) 2026 Maneet Arvind Mehta. MIT License.</Copyright>
     <RepositoryUrl>https://github.com/Maneet7805/PromptForge</RepositoryUrl>
@@ -54,7 +54,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Assets\PromptForge.ico" />
+    <EmbeddedResource Include="Assets\Phrasor.ico" />
   </ItemGroup>
 
 </Project>

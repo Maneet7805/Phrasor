@@ -41,10 +41,10 @@ jobs:
       - name: Package
         run: |
           New-Item -ItemType Directory -Force out | Out-Null
-          Copy-Item publish/PromptForge.exe out/PromptForge.exe
+          Copy-Item publish/Phrasor.exe out/Phrasor.exe
           Copy-Item installer/uninstall.cmd out/uninstall.cmd
           Copy-Item LICENSE out/LICENSE.txt
-          Compress-Archive -Path out/PromptForge.exe, out/uninstall.cmd, out/LICENSE.txt -DestinationPath "out/PromptForge-$env:VERSION-win-x64.zip"
+          Compress-Archive -Path out/Phrasor.exe, out/uninstall.cmd, out/LICENSE.txt -DestinationPath "out/Phrasor-$env:VERSION-win-x64.zip"
           $lines = Get-ChildItem out -File -Include *.exe, *.zip -Recurse | ForEach-Object {
             "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)"
           }
@@ -62,7 +62,7 @@ jobs:
           ---
 
           ### Install or update
-          1. Download **PromptForge.exe** below and double-click it. If SmartScreen appears: **More info → Run anyway** (the exe isn't code-signed).
+          1. Download **Phrasor.exe** below and double-click it. If SmartScreen appears: **More info → Run anyway** (the exe isn't code-signed).
           2. Choose **Yes** to install, or to update an existing copy (settings and keys are kept).
           3. Paste a free key from https://console.groq.com/keys in Settings → Model → **Test connection** → **Save**.
 
@@ -76,7 +76,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "${{ github.ref_name }}" `
-            out/PromptForge.exe "out/PromptForge-$env:VERSION-win-x64.zip" out/SHA256SUMS.txt `
-            --title "PromptForge $env:VERSION" `
+            out/Phrasor.exe "out/Phrasor-$env:VERSION-win-x64.zip" out/SHA256SUMS.txt `
+            --title "Phrasor $env:VERSION" `
             --notes-file notes.md `
             --verify-tag

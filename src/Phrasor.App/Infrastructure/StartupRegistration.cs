@@ -6,7 +6,7 @@ namespace Phrasor.App.Infrastructure;
 internal static class StartupRegistration
 {
     private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string ValueName = "PromptForge";
+    private const string ValueName = "Phrasor";
 
     public static bool IsEnabled() => IsEnabledFor(AppPaths.ExePath);
 

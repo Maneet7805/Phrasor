@@ -4,8 +4,8 @@ namespace Phrasor.App;
 
 internal static class Program
 {
-    private const string MutexName = @"Local\PromptForge.SingleInstance";
-    private const string ShowSettingsEventName = @"Local\PromptForge.ShowSettings";
+    private const string MutexName = @"Local\Phrasor.SingleInstance";
+    private const string ShowSettingsEventName = @"Local\Phrasor.ShowSettings";
 
     [STAThread]
     private static int Main(string[] args)
@@ -28,7 +28,7 @@ internal static class Program
             return SelfInstaller.Uninstall();
 
         // A copy run from anywhere else (e.g. the dist folder) offers to install or update itself.
-        // A plain build (PromptForge.dll beside the exe) can't be installed by copying the exe, so it is never offered.
+        // A plain build (Phrasor.dll beside the exe) can't be installed by copying the exe, so it is never offered.
         if (!SelfInstaller.IsRunningFromInstallDir && !args.Contains("--portable")
             && Phrasor.Core.Install.InstallPaths.CanInstallFrom(AppPaths.ExePath) && SelfInstaller.OfferInstall(args.Contains(Phrasor.Core.Install.InstallPaths.FromUpdaterFlag)))
             return 0;

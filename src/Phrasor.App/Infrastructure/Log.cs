@@ -4,7 +4,7 @@ using Phrasor.App.Infrastructure;
 namespace Phrasor.App;
 
 /// <summary>
-/// Plain-text log in %APPDATA%\PromptForge\logs, kept for 7 days.
+/// Plain-text log in %APPDATA%\Phrasor\logs, kept for 7 days.
 /// Records events, timings and error types only: never prompt text, transcripts or API keys.
 /// </summary>
 internal static class Log
@@ -26,12 +26,12 @@ internal static class Log
                 if (!_initialised)
                 {
                     Directory.CreateDirectory(AppPaths.LogDir);
-                    foreach (var old in Directory.GetFiles(AppPaths.LogDir, "promptforge-*.log")
+                    foreach (var old in Directory.GetFiles(AppPaths.LogDir, "phrasor-*.log")
                                  .Where(f => File.GetLastWriteTimeUtc(f) < DateTime.UtcNow.AddDays(-7)))
                         File.Delete(old);
                     _initialised = true;
                 }
-                var file = Path.Combine(AppPaths.LogDir, $"promptforge-{DateTime.Now:yyyyMMdd}.log");
+                var file = Path.Combine(AppPaths.LogDir, $"phrasor-{DateTime.Now:yyyyMMdd}.log");
                 File.AppendAllText(file, $"{DateTime.Now.ToString("HH:mm:ss.fff", CultureInfo.InvariantCulture)} {level} {message}{Environment.NewLine}");
             }
         }

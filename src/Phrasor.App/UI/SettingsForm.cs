@@ -227,7 +227,7 @@ internal sealed class SettingsForm : Form
             Hint("Grades each rewrite. Pick a different provider from the main model, so it isn't grading its own model family, and save that provider's key in the Model tab. Without a key, the main model's fallback grades instead and the report says it isn't independent."),
             quality,
             Heading("What PromptForge stores"),
-            Hint("Settings: %APPDATA%\\PromptForge\\settings.json. API keys: secrets.dat, encrypted for your Windows account."),
+            Hint("Settings: %APPDATA%\\Phrasor\\settings.json. API keys: secrets.dat, encrypted for your Windows account."),
             Hint("Logs: events, timings and error types for 7 days. Never prompt text, transcripts or keys."),
             Hint("No prompt history is kept. Only the last original text is held in memory so you can restore it from the tray menu."),
             Heading("What leaves your PC"),

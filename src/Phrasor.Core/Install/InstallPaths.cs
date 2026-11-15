@@ -3,8 +3,8 @@ namespace Phrasor.Core.Install;
 /// <summary>Where the self-installer puts PromptForge, and the check that guards deleting it.</summary>
 public static class InstallPaths
 {
-    /// <summary>The per-user install folder: <c>%LOCALAPPDATA%\Programs\PromptForge</c>.</summary>
-    public static string InstallDir(string localAppData) => Path.Combine(localAppData, "Programs", "PromptForge");
+    /// <summary>The per-user install folder: <c>%LOCALAPPDATA%\Programs\Phrasor</c>.</summary>
+    public static string InstallDir(string localAppData) => Path.Combine(localAppData, "Programs", "Phrasor");
 
     /// <summary>
     /// True only when <paramref name="candidate"/> is exactly the install folder after the path is normalised.
@@ -27,14 +27,14 @@ public static class InstallPaths
     }
 
     /// <summary>
-    /// False when the exe is the launcher from a plain <c>dotnet build</c>: it needs <c>PromptForge.dll</c> and the
+    /// False when the exe is the launcher from a plain <c>dotnet build</c>: it needs <c>Phrasor.dll</c> and the
     /// other build files beside it, so copying only the exe into the install folder would break the installed copy.
     /// The release exe is a single file with nothing beside it.
     /// </summary>
     public static bool CanInstallFrom(string? exePath)
     {
         var dir = string.IsNullOrWhiteSpace(exePath) ? null : Path.GetDirectoryName(exePath);
-        return dir is null || !File.Exists(Path.Combine(dir, "PromptForge.dll"));
+        return dir is null || !File.Exists(Path.Combine(dir, "Phrasor.dll"));
     }
 
     /// <summary>Passed by the updater when it starts the exe it has already downloaded and checked.</summary>
