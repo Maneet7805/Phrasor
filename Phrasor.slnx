@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Phrasor.App/Phrasor.App.csproj" />
+    <Project Path="src/Phrasor.Core/Phrasor.Core.csproj" />
+  </Folder>
+</Solution>

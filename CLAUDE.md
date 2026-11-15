@@ -11,19 +11,19 @@ Install the .NET 10 SDK, and the GitHub CLI (`gh auth login`) for the slash comm
 ## Commands
 
 ```
-dotnet test tests/PromptForge.Core.Tests          # unit tests; run before every commit
+dotnet test tests/Phrasor.Core.Tests          # unit tests; run before every commit
 dotnet build                                      # whole solution (Windows only: the app is WinForms)
-dotnet publish src/PromptForge.App -c Release -o publish
+dotnet publish src/Phrasor.App -c Release -o publish
 publish\PromptForge.exe --portable                # try a build without touching the installed copy; quit the installed one first
 ```
 
-`PromptForge.Core` is `net10.0` and builds and tests anywhere. `PromptForge.App` is `net10.0-windows`. CI ("Build and test", windows-latest) is required before merge.
+`Phrasor.Core` is `net10.0` and builds and tests anywhere. `Phrasor.App` is `net10.0-windows`. CI ("Build and test", windows-latest) is required before merge.
 
 ## Layout
 
-- `src/PromptForge.Core/`: rewriting rules (`Optimization/SystemPrompt.cs`), pipeline, provider clients (`Llm/`), settings, eval runner, update check. No Windows APIs.
-- `src/PromptForge.App/`: tray, hotkeys, text capture and paste (`TextAccess/`), review and settings windows (`UI/`), voice, Win32.
-- `tests/PromptForge.Core.Tests/`: xUnit. Core logic is tested here; the App is not.
+- `src/Phrasor.Core/`: rewriting rules (`Optimization/SystemPrompt.cs`), pipeline, provider clients (`Llm/`), settings, eval runner, update check. No Windows APIs.
+- `src/Phrasor.App/`: tray, hotkeys, text capture and paste (`TextAccess/`), review and settings windows (`UI/`), voice, Win32.
+- `tests/Phrasor.Core.Tests/`: xUnit. Core logic is tested here; the App is not.
 - `eval/`: quality test set (`cases.json`) and how to run it (`eval/README.md`).
 - `docs/design/`: design docs. `rewrite-intent.md` sets what the rewriter should and shouldn't add.
 

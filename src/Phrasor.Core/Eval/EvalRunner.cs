@@ -1,0 +1,596 @@
+using System.Diagnostics;
+using System.Globalization;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Phrasor.Core.Llm;
+using Phrasor.Core.Optimization;
+using Phrasor.Core.Settings;
+
+namespace Phrasor.Core.Eval;
+
+/// <summary>How deep the ideal rewrite goes, from docs/design/rewrite-intent.md ("How deep a rewrite goes").</summary>
+public enum Expectation
+{
+    /// <summary>Not labelled.</summary>
+    Unspecified,
+    /// <summary>Asks for nothing new (a statement, an answer, content with no instruction): fix the wording only.</summary>
+    Keep,
+    /// <summary>A clear request: make it clear, add nothing.</summary>
+    Clarify,
+    /// <summary>A stated goal the rewrite must turn into the steps or checks it requires.</summary>
+    SpellOut,
+    /// <summary>The draft asks the AI to design something open-ended: propose a structure, labelled as suggestions.</summary>
+    Propose,
+    /// <summary>The draft is a brief for a prompt: write the full prompt (#43).</summary>
+    Write,
+}
+
+public sealed record EvalCase
+{
+    public required string Id { get; init; }
+    public required string Category { get; init; }
+    public required string Draft { get; init; }
+    public OptimizeMode Mode { get; init; } = OptimizeMode.Standard;
+
+    /// <summary>Text that must appear verbatim in the output (beyond the automatic checks).</summary>
+    public IReadOnlyList<string> MustContain { get; init; } = [];
+
+    /// <summary>Upper bound on output length / input length; checks against over-expansion.</summary>
+    public double? MaxLengthRatio { get; init; }
+
+    /// <summary>Lower bound on output length / input length, for drafts whose every point must survive (#90).</summary>
+    public double? MinLengthRatio { get; init; }
+
+    /// <summary>True when the draft is already good and should come back unchanged or lightly edited.</summary>
+    public bool ExpectMinimalChange { get; init; }
+
+    /// <summary>True when the draft leaves important choices open, so the optimiser should ask questions.</summary>
+    public bool ExpectQuestions { get; init; }
+
+    /// <summary>The app the draft was typed in, sent as a hint the way the app does ("the Claude desktop app").</summary>
+    public string? WrittenIn { get; init; }
+
+    /// <summary>Minimum runs for this case. The run's own repeat count applies when it's higher.</summary>
+    public int Repeat { get; init; } = 1;
+
+    /// <summary>How deep the ideal rewrite goes.</summary>
+    public Expectation Expect { get; init; }
+
+    /// <summary>What the ideal rewrite must cover, in plain words, for the judge (#34). Not checked by code.</summary>
+    public IReadOnlyList<string> MustCover { get; init; } = [];
+
+    /// <summary>Kept out of runs unless asked for, so the rules aren't tuned to it; used for the final measurement.</summary>
+    public bool HeldOut { get; init; }
+
+    /// <summary>Where the case comes from, e.g. "#26", "user 2026-10-16", "WildChat pattern".</summary>
+    public string? Source { get; init; }
+}
+
+public sealed record JudgeVerdict(bool AnsweredInsteadOfRewriting, bool InventedDetails, string InventedExamples, bool ClearerThanOriginal, bool AppropriateLength, string Comment,
+    bool DroppedRequirements = false, string DroppedExamples = "", bool ChangedIntent = false,
+    bool WrittenAsReply = false, bool AddedRequests = false, string AddedExamples = "",
+    bool UnderDelivered = false, string UnderDeliveredExamples = "");
+
+/// <summary>How a run of the quality check is set up, for the report header.</summary>
+public sealed record EvalRunInfo(string ModelLabel, string? JudgeLabel = null, bool JudgeIndependent = false, string? InstructionsLabel = null, string? StoppedEarly = null, int HeldOutSkipped = 0,
+    string? RejudgedFrom = null, IReadOnlyList<string>? Skipped = null);
+
+public sealed record EvalCaseResult
+{
+    public required EvalCase Case { get; init; }
+    public int Run { get; init; } = 1;
+    public OptimizeResult? Result { get; init; }
+    public string? Error { get; init; }
+    public List<string> Failures { get; init; } = [];
+    public JudgeVerdict? Judge { get; init; }
+    public bool Passed => Error is null && Failures.Count == 0;
+}
+
+/// <summary>
+/// Runs the optimiser over a fixed set of drafts and grades the results: code-graded checks
+/// (dropped details, leftover markers, placeholders, filler, over-expansion) plus an optional
+/// LLM judge for things code can't see (did it answer instead of rewrite? invent facts?).
+/// </summary>
+public sealed partial class EvalRunner(PromptOptimizer optimizer, ILlmClient client, Func<TimeSpan, CancellationToken, Task>? delay = null)
+{
+    private readonly Func<TimeSpan, CancellationToken, Task> _delay = delay ?? Task.Delay;
+
+    /// <summary>Longest "retry after" the runner waits out. Anything longer means the day's allowance is gone.</summary>
+    public static readonly TimeSpan MaxRateLimitWait = TimeSpan.FromMinutes(20);
+
+    /// <summary>Wait used when a rate-limited provider doesn't say how long to wait.</summary>
+    public static readonly TimeSpan DefaultRateLimitWait = TimeSpan.FromSeconds(60);
+
+    /// <summary>Waits per call before the runner gives up and stops the whole run.</summary>
+    public const int MaxRateLimitRetries = 3;
+
+    /// <summary>Why the last run stopped before finishing every case, or null if it finished.</summary>
+    public string? StoppedEarly { get; private set; }
+
+    /// <summary>Runs per case when the caller doesn't say: enough to tell a real change from run-to-run noise.</summary>
+    public const int DefaultRepeat = 3;
+
+    public static IReadOnlyList<EvalCase> LoadCases(string path)
+    {
+        var cases = JsonSerializer.Deserialize<List<EvalCase>>(File.ReadAllText(path), SettingsStore.JsonOptions)
+            ?? throw new InvalidDataException("No eval cases found.");
+        // Results are grouped by id, so two cases with one id would be reported as one.
+        var duplicate = cases.GroupBy(c => c.Id).FirstOrDefault(g => g.Count() > 1);
+        if (duplicate is not null) throw new InvalidDataException($"Two eval cases have the id \"{duplicate.Key}\".");
+        return cases;
+    }
+
+    public async Task<IReadOnlyList<EvalCaseResult>> RunAsync(
+        IReadOnlyList<EvalCase> cases,
+        IReadOnlyList<LlmEndpoint> endpoints,
+        LlmEndpoint? judge,
+        TimeSpan pause,
+        IProgress<string>? progress,
+        CancellationToken ct,
+        int repeat = DefaultRepeat,
+        OptimizerOptions? options = null)
+    {
+        options ??= new OptimizerOptions();
+        StoppedEarly = null;
+        var results = new List<EvalCaseResult>();
+        try
+        {
+            foreach (var evalCase in cases)
+            {
+                var runs = RunsFor(evalCase, repeat);
+                for (var run = 1; run <= runs; run++)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    var label = $"{evalCase.Id} (run {run} of {runs})";
+                    progress?.Report(label);
+                    results.Add(await RunOnceAsync(evalCase, run, label, endpoints, judge, pause, options, progress, ct));
+                    await _delay(pause, ct);
+                }
+            }
+        }
+        catch (RateLimitStop stop)
+        {
+            // The run that hit the limit isn't recorded: it has no result, and recording it as an
+            // error would only add noise. Everything finished so far is kept.
+            var runsDone = results.GroupBy(r => r.Case.Id).ToDictionary(g => g.Key, g => g.Count());
+            var unfinished = cases.Count(c => runsDone.GetValueOrDefault(c.Id) < RunsFor(c, repeat));
+            StoppedEarly = $"{stop.Message} Stopped after {results.Count} runs; {unfinished} of {cases.Count} cases didn't finish all their runs. Run them again on another day.";
+            progress?.Report("stopped: " + StoppedEarly);
+        }
+        return results;
+    }
+
+    /// <summary>Saved runs the last re-judge left out, with the reason (case gone, draft changed since).</summary>
+    public IReadOnlyList<string> Skipped { get; private set; } = [];
+
+    /// <summary>
+    /// Grades saved rewrites again with today's checks and judge, without calling the optimiser: for calibrating
+    /// the judge, and for grading an old baseline with the same judge as a new run. The optimiser endpoint isn't used.
+    /// </summary>
+    public async Task<IReadOnlyList<EvalCaseResult>> RejudgeAsync(
+        IReadOnlyList<EvalCase> cases,
+        IReadOnlyList<SavedRun> saved,
+        LlmEndpoint judge,
+        TimeSpan pause,
+        IProgress<string>? progress,
+        CancellationToken ct)
+    {
+        StoppedEarly = null;
+        var byId = cases.ToDictionary(c => c.Id);
+        var skipped = new List<string>();
+        var results = new List<EvalCaseResult>();
+        try
+        {
+            foreach (var run in saved)
+            {
+                ct.ThrowIfCancellationRequested();
+                var label = $"{run.Id} (run {run.Run})";
+                if (!byId.TryGetValue(run.Id, out var evalCase))
+                {
+                    skipped.Add($"{label}: not in the cases file");
+                    continue;
+                }
+                if (run.Draft is not null && run.Draft != evalCase.Draft)
+                {
+                    skipped.Add($"{label}: the case's draft changed since this run");
+                    continue;
+                }
+                if (SavedResults.ToResult(run, evalCase.Draft) is not { } result)
+                {
+                    results.Add(new EvalCaseResult { Case = evalCase, Run = run.Run, Error = run.Error ?? "the run has no rewrite" });
+                    continue;
+                }
+                progress?.Report(label);
+                results.Add(await GradeRunAsync(evalCase, run.Run, result, label, judge, pause, progress, ct));
+                await _delay(pause, ct);
+            }
+        }
+        catch (RateLimitStop stop)
+        {
+            StoppedEarly = $"{stop.Message} Stopped after {results.Count} of {saved.Count} saved runs. Re-judge again on another day.";
+            progress?.Report("stopped: " + StoppedEarly);
+        }
+        Skipped = skipped;
+        return results;
+    }
+
+    private async Task<EvalCaseResult> RunOnceAsync(EvalCase evalCase, int run, string label, IReadOnlyList<LlmEndpoint> endpoints,
+        LlmEndpoint? judge, TimeSpan pause, OptimizerOptions options, IProgress<string>? progress, CancellationToken ct)
+    {
+        OptimizeResult result;
+        try
+        {
+            result = await WaitOutRateLimitsAsync(
+                () => optimizer.OptimizeAsync(new OptimizeRequest { Text = evalCase.Draft, Mode = evalCase.Mode, WrittenIn = evalCase.WrittenIn }, endpoints, options, ct),
+                label, "the model", progress, ct);
+        }
+        catch (Exception ex) when (ex is OptimizeException or LlmException)
+        {
+            return new EvalCaseResult { Case = evalCase, Run = run, Error = ex.Message };
+        }
+
+        return await GradeRunAsync(evalCase, run, result, label, judge, pause, progress, ct);
+    }
+
+    /// <summary>Code checks plus, when a judge is given and the draft was changed, the judge's verdict.</summary>
+    private async Task<EvalCaseResult> GradeRunAsync(EvalCase evalCase, int run, OptimizeResult result, string label,
+        LlmEndpoint? judge, TimeSpan pause, IProgress<string>? progress, CancellationToken ct)
+    {
+        var failures = Grade(evalCase, result);
+        if (judge is null || result.IsUnchanged)
+            return new EvalCaseResult { Case = evalCase, Run = run, Result = result, Failures = failures };
+
+        await _delay(pause / 2, ct);
+        JudgeVerdict? verdict;
+        string? judgeError;
+        try
+        {
+            (verdict, judgeError) = await WaitOutRateLimitsAsync(() => JudgeAsync(judge, evalCase, result.Prompt, ct), label, "the judge", progress, ct);
+        }
+        catch (LlmException ex)
+        {
+            (verdict, judgeError) = (null, ex.Message);
+        }
+        // A judged run without a verdict would pass checks it never had: count it as an error, not a pass.
+        if (verdict is null)
+            return new EvalCaseResult { Case = evalCase, Run = run, Result = result, Failures = failures, Error = "judge gave no verdict: " + judgeError };
+        failures.AddRange(JudgeFailures(verdict));
+        return new EvalCaseResult { Case = evalCase, Run = run, Result = result, Failures = failures, Judge = verdict };
+    }
+
+    internal static IEnumerable<string> JudgeFailures(JudgeVerdict verdict)
+    {
+        if (verdict.AnsweredInsteadOfRewriting) yield return "judge: answered the draft instead of rewriting it";
+        if (verdict.InventedDetails) yield return $"judge: invented details ({verdict.InventedExamples})";
+        if (verdict.DroppedRequirements) yield return $"judge: dropped a stated requirement ({verdict.DroppedExamples})";
+        if (verdict.ChangedIntent) yield return "judge: changed what kind of request it is";
+        if (verdict.WrittenAsReply) yield return "judge: written as the AI's reply, not the user's message";
+        if (verdict.AddedRequests) yield return $"judge: added requests the draft didn't make ({verdict.AddedExamples})";
+        if (verdict.UnderDelivered) yield return $"judge: under-delivered ({verdict.UnderDeliveredExamples})";
+    }
+
+    /// <summary>
+    /// Retries a call that hit a rate limit after the provider's "retry after" (or a minute when it
+    /// doesn't say). A wait longer than <see cref="MaxRateLimitWait"/>, or still limited after
+    /// <see cref="MaxRateLimitRetries"/> waits, means the allowance is gone: the whole run stops.
+    /// </summary>
+    private async Task<T> WaitOutRateLimitsAsync<T>(Func<Task<T>> call, string label, string who, IProgress<string>? progress, CancellationToken ct)
+    {
+        for (var waits = 0; ; waits++)
+        {
+            try
+            {
+                return await call();
+            }
+            catch (Exception ex) when (RateLimitOf(ex) is { } limit)
+            {
+                var wait = limit.RetryAfter ?? DefaultRateLimitWait;
+                if (wait > MaxRateLimitWait)
+                    throw new RateLimitStop($"{Capitalise(who)} hit its rate limit and asked to wait {Minutes(wait)}, which means the day's allowance is used up.");
+                if (waits >= MaxRateLimitRetries)
+                    throw new RateLimitStop($"{Capitalise(who)} was still rate-limited after {MaxRateLimitRetries} waits.");
+                progress?.Report($"{label}: {who} hit its rate limit, waiting {Math.Ceiling(wait.TotalSeconds)} s");
+                await _delay(wait + TimeSpan.FromSeconds(1), ct);
+            }
+        }
+    }
+
+    private static LlmException? RateLimitOf(Exception ex) =>
+        (ex as LlmException ?? ex.InnerException as LlmException) is { Kind: LlmErrorKind.RateLimit } limit ? limit : null;
+
+    private static string Capitalise(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
+
+    private static string Minutes(TimeSpan t) => t.TotalMinutes >= 1 ? $"{Math.Ceiling(t.TotalMinutes)} min" : $"{Math.Ceiling(t.TotalSeconds)} s";
+
+    private sealed class RateLimitStop(string message) : Exception(message);
+
+    /// <summary>The cases a run uses: held-out cases only when asked for.</summary>
+    public static IReadOnlyList<EvalCase> SelectCases(IReadOnlyList<EvalCase> cases, bool includeHeldOut) =>
+        includeHeldOut ? cases : cases.Where(c => !c.HeldOut).ToList();
+
+    /// <summary>Runs for one case: the run's repeat count, or the case's own minimum if higher.</summary>
+    public static int RunsFor(EvalCase evalCase, int repeat) => Math.Max(1, Math.Max(evalCase.Repeat, repeat));
+
+    public static List<string> Grade(EvalCase evalCase, OptimizeResult result)
+    {
+        var failures = new List<string>();
+        var output = result.Prompt;
+
+        var missing = PreservationChecker.FindMissing(evalCase.Draft, output);
+        if (missing.Count > 0) failures.Add("dropped details: " + string.Join(", ", missing));
+
+        foreach (var required in evalCase.MustContain)
+            if (!output.Contains(required, StringComparison.Ordinal)) failures.Add($"missing required text: {required}");
+
+        if (output.Contains("[[BLOCK_", StringComparison.Ordinal)) failures.Add("left a [[BLOCK_n]] marker in the output");
+
+        var placeholder = PlaceholderRegex().Matches(output).FirstOrDefault(m => !evalCase.Draft.Contains(m.Value, StringComparison.OrdinalIgnoreCase));
+        if (placeholder is not null) failures.Add("inserted a fill-in placeholder: " + placeholder.Value);
+
+        var filler = FillerRegex().Match(output);
+        if (filler.Success && !evalCase.Draft.Contains(filler.Value, StringComparison.OrdinalIgnoreCase))
+            failures.Add($"added filler: \"{filler.Value}\"");
+
+        var ratio = output.Length / (double)Math.Max(1, evalCase.Draft.Length);
+        if (evalCase.MaxLengthRatio is { } max && ratio > max)
+            failures.Add($"over-expanded: {ratio:0.0}x the draft (limit {max:0.0}x)");
+
+        if (evalCase.MinLengthRatio is { } min && ratio < min)
+            failures.Add($"shrunk: {ratio:0.0}x the draft (floor {min:0.0}x)");
+
+        if (evalCase.ExpectQuestions && result.Questions.Count == 0)
+            failures.Add("vague draft but no questions for the user");
+
+        var addedNumbers = PreservationChecker.FindAddedNumbers(evalCase.Draft, output);
+        if (addedNumbers.Count > 0) failures.Add("added numbers not in the draft: " + string.Join(", ", addedNumbers));
+
+        if (evalCase.ExpectMinimalChange && result.Verdict == Verdict.Rewritten && ratio > 1.4)
+            failures.Add($"rewrote an already-good draft ({ratio:0.0}x length)");
+
+        // A draft that asks for nothing new gets its wording fixed, nothing more (Q1).
+        if (evalCase.Expect == Expectation.Keep && (result.Verdict == Verdict.Rewritten || ratio > 1.6))
+            failures.Add($"should keep the draft as it is, but rewrote it ({ratio:0.0}x length)");
+
+        return failures;
+    }
+
+    /// <summary>
+    /// The judge's rules, from docs/design/rewrite-intent.md: an added line is fine when it serves a goal the draft
+    /// states; a rewrite that only fixes wording when the draft needed more is a failure too (#34).
+    /// </summary>
+    internal const string JudgeInstructions = """
+        You grade a prompt-rewriting tool. It received a user's draft prompt and produced a rewrite meant to be sent to an AI assistant.
+        The tool's rule: write out what the user clearly meant, and never add what they didn't. An added line is good when it serves a goal the draft states and changes the result. The task itself counts as a goal ("do a code review", "fix this issue"), and the user may not know what that task requires, so the rewrite may use the AI's own knowledge of the task: which steps, checks or criteria the goal needs, and what form the answer takes. Choices the user may not know exist are fine when labelled as suggestions the user can keep or remove.
+        You may also get the expected depth and a must-cover list, written by a person who knows what the ideal rewrite covers. Expected depth is one of: Keep (asks for nothing new: fix the wording only), Clarify (a clear request: make it clear, add nothing it doesn't need), SpellOut (stated goals or limits must become the concrete steps or checks they require), Propose (an open-ended request to design something: propose a structure, labelled as suggestions). Use them for under_delivered; they never excuse any other problem.
+        Judge only the rewrite against the draft. Answer with one JSON object:
+        {"answered_instead_of_rewriting": true/false (true if the rewrite performs or answers the task rather than being a prompt that asks for it. When the draft asks for text to be written, edited, translated or reworded ("make this sound more professional: ..."), the rewrite must still be that request with the text inside it; returning the finished text itself is answering),
+         "invented_details": true/false (true if the rewrite states as fact specific details the draft did not state or clearly imply: technologies, numbers, deadlines, audiences, product names or requirements; asking the AI to check something, state assumptions or ask questions is fine),
+         "invented_examples": "the invented details, or empty",
+         "dropped_requirements": true/false (true if the draft states a rule, criterion, condition, preference or item to cover, however casually, and the rewrite leaves it out or weakens it),
+         "dropped_examples": "what was dropped, or empty",
+         "changed_intent": true/false (true if the rewrite changes what kind of message the draft is: a question became an instruction or the reverse; a statement, report or answer became a request or a question; a standing instruction ("whenever", "from now on") became a one-off task; the requested action changed, e.g. "fix" became "explain" or "set up" became "plan"; or pasted context was turned into the task),
+         "written_as_reply": true/false (true if any part of the rewrite is written as the AI's reply to the user instead of the user's own message: offering help, asking the user what they want, or asking the user to supply details),
+         "added_requests": true/false (true only if the rewrite adds something that serves no goal the draft states: a new goal or task; a deliverable, format, count or length the draft's goals don't call for; a role line or generic advice that changes nothing, such as "be thorough" or "follow best practices"; or a fallback such as "if you need more details, ask me first". Turning a stated goal into the steps or checks it requires is not an added request: "make sure nothing breaks" may become plan, wait for approval, work in small batches, verify. Suggestions clearly labelled as optional are not added requests),
+         "added_examples": "what was added, or empty",
+         "under_delivered": true/false (true if the rewrite misses what the user clearly meant: a stated goal or limit is left as vague wording when it needed spelling out as steps or checks; an open-ended request to design something gets no proposed structure; or a must-cover item is missing or only hinted at. Fixing only the wording is right for Keep and Clarify drafts and a failure for SpellOut and Propose drafts),
+         "under_delivered_examples": "what is missing, or empty",
+         "clearer_than_original": true/false,
+         "appropriate_length": true/false (false if a simple request was padded or a complex one was left vague),
+         "comment": "one short sentence"}
+        """;
+
+    /// <summary>What the judge reads: the draft, what the case's labels say the ideal rewrite covers, and the rewrite.</summary>
+    internal static string BuildJudgeMessage(EvalCase evalCase, string rewrite)
+    {
+        var sb = new StringBuilder();
+        sb.Append("<draft>\n").Append(evalCase.Draft).Append("\n</draft>\n\n");
+        if (evalCase.Expect != Expectation.Unspecified)
+            sb.Append("<expected_depth>").Append(evalCase.Expect).Append("</expected_depth>\n\n");
+        if (evalCase.MustCover.Count > 0)
+        {
+            sb.Append("<must_cover>\n");
+            foreach (var item in evalCase.MustCover) sb.Append("- ").Append(item).Append('\n');
+            sb.Append("</must_cover>\n\n");
+        }
+        sb.Append("<rewrite>\n").Append(rewrite).Append("\n</rewrite>");
+        return sb.ToString();
+    }
+
+    private async Task<(JudgeVerdict? Verdict, string? Error)> JudgeAsync(LlmEndpoint judge, EvalCase evalCase, string rewrite, CancellationToken ct)
+    {
+        var messages = new List<ChatMessage>
+        {
+            new("system", JudgeInstructions),
+            new("user", BuildJudgeMessage(evalCase, rewrite)),
+        };
+        try
+        {
+            var response = await client.CompleteAsync(judge, messages, new ChatOptions { MaxTokens = 1500, Temperature = 0 }, ct);
+            var start = response.Content.IndexOf('{');
+            var end = response.Content.LastIndexOf('}');
+            if (start < 0 || end <= start) return (null, "the reply wasn't JSON");
+            return (ParseVerdict(response.Content[start..(end + 1)]), null);
+        }
+        catch (LlmException ex) when (ex.Kind != LlmErrorKind.RateLimit)
+        {
+            return (null, ex.Message);
+        }
+        catch (JsonException ex)
+        {
+            return (null, "the reply wasn't valid JSON: " + ex.Message);
+        }
+    }
+
+    /// <summary>Reads the judge's JSON. A missing field counts as false, so older or terser judges still parse.</summary>
+    internal static JudgeVerdict ParseVerdict(string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+        var r = doc.RootElement;
+        bool B(string n) => r.TryGetProperty(n, out var v) && v.ValueKind == JsonValueKind.True;
+        string S(string n) => r.TryGetProperty(n, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() ?? "" : "";
+        return new JudgeVerdict(B("answered_instead_of_rewriting"), B("invented_details"), S("invented_examples"),
+            B("clearer_than_original"), B("appropriate_length"), S("comment"),
+            B("dropped_requirements"), S("dropped_examples"), B("changed_intent"),
+            B("written_as_reply"), B("added_requests"), S("added_examples"),
+            B("under_delivered"), S("under_delivered_examples"));
+    }
+
+    public static string BuildReport(IReadOnlyList<EvalCaseResult> results, string modelLabel) => BuildReport(results, new EvalRunInfo(modelLabel));
+
+    public static string BuildReport(IReadOnlyList<EvalCaseResult> results, EvalRunInfo info)
+    {
+        var inv = CultureInfo.InvariantCulture;
+        var sb = new StringBuilder();
+        var ok = results.Where(r => r.Result is not null).ToList();
+        var latencies = ok.Select(r => r.Result!.Elapsed.TotalMilliseconds).OrderBy(x => x).ToList();
+        double Pct(double p) => latencies.Count == 0 ? 0 : latencies[Math.Clamp((int)Math.Ceiling(p * latencies.Count) - 1, 0, latencies.Count - 1)];
+
+        sb.AppendLine("# PromptForge optimiser eval");
+        sb.AppendLine();
+        sb.AppendLine(inv, $"Run {DateTime.Now:yyyy-MM-dd HH:mm} · model {info.ModelLabel}");
+        if (info.InstructionsLabel is not null) sb.AppendLine(inv, $"\nSystem prompt: {info.InstructionsLabel}");
+        if (info.RejudgedFrom is not null)
+            sb.AppendLine(inv, $"\nRe-judged: the rewrites saved in {info.RejudgedFrom}, graded again with this build's checks and judge. The optimiser wasn't called.");
+        if (info.StoppedEarly is not null) sb.AppendLine(inv, $"\n**Stopped early.** {info.StoppedEarly}");
+        if (info.Skipped is { Count: > 0 } skipped)
+            sb.AppendLine(inv, $"\nSaved runs left out ({skipped.Count}): {string.Join("; ", skipped)}");
+        if (info.HeldOutSkipped > 0) sb.AppendLine(inv, $"\nHeld-out cases left out: {info.HeldOutSkipped} (run with --include-held-out for the final measurement).");
+        if (info.JudgeLabel is not null)
+            sb.AppendLine(inv, $"\nJudge: {info.JudgeLabel} ({(info.JudgeIndependent ? "independent provider" : "same provider as the optimiser, so not independent; set a judge in Settings → Data")})");
+        sb.AppendLine();
+        var byCase = CaseRates(results);
+        sb.AppendLine("| Metric | Value |");
+        sb.AppendLine("| --- | --- |");
+        sb.AppendLine(inv, $"| Cases / runs | {byCase.Count} / {results.Count} |");
+        var clean = results.Count(r => r.Error is null);
+        sb.AppendLine(inv, $"| Runs that passed all checks (errored runs left out) | {results.Count(r => r.Passed)}/{clean} ({100.0 * results.Count(r => r.Passed) / Math.Max(1, clean):0}%) |");
+        sb.AppendLine(inv, $"| Cases that passed every run | {byCase.Count(c => c.Runs > 0 && c.Passed == c.Runs)} |");
+        sb.AppendLine(inv, $"| Cases that failed every run | {byCase.Count(c => c.Runs > 0 && c.Passed == 0)} |");
+        sb.AppendLine(inv, $"| Cases with mixed results | {byCase.Count(c => c.Passed > 0 && c.Passed < c.Runs)} |");
+        sb.AppendLine(inv, $"| Errors (rate limits, network, no judge verdict) | {results.Count(r => r.Error is not null)} |");
+        var judged = ok.Where(r => r.Judge is not null).ToList();
+        if (judged.Count > 0)
+        {
+            sb.AppendLine(inv, $"| Judge: clearer than original | {judged.Count(r => r.Judge!.ClearerThanOriginal)}/{judged.Count} |");
+            sb.AppendLine(inv, $"| Judge: appropriate length | {judged.Count(r => r.Judge!.AppropriateLength)}/{judged.Count} |");
+            sb.AppendLine(inv, $"| Judge: invented details | {judged.Count(r => r.Judge!.InventedDetails)}/{judged.Count} |");
+            sb.AppendLine(inv, $"| Judge: answered instead of rewriting | {judged.Count(r => r.Judge!.AnsweredInsteadOfRewriting)}/{judged.Count} |");
+            sb.AppendLine(inv, $"| Judge: dropped a stated requirement | {judged.Count(r => r.Judge!.DroppedRequirements)}/{judged.Count} |");
+            sb.AppendLine(inv, $"| Judge: changed the kind of request | {judged.Count(r => r.Judge!.ChangedIntent)}/{judged.Count} |");
+            sb.AppendLine(inv, $"| Judge: written as the AI's reply | {judged.Count(r => r.Judge!.WrittenAsReply)}/{judged.Count} |");
+            sb.AppendLine(inv, $"| Judge: added requests | {judged.Count(r => r.Judge!.AddedRequests)}/{judged.Count} |");
+            sb.AppendLine(inv, $"| Judge: under-delivered | {judged.Count(r => r.Judge!.UnderDelivered)}/{judged.Count} |");
+        }
+        sb.AppendLine(inv, $"| Latency p50 / p95 | {Pct(0.5):0} ms / {Pct(0.95):0} ms |");
+        sb.AppendLine(inv, $"| Tokens (prompt / cached / completion) | {ok.Sum(r => r.Result!.PromptTokens):N0} / {ok.Sum(r => r.Result!.CachedTokens):N0} / {ok.Sum(r => r.Result!.CompletionTokens):N0} |");
+        sb.AppendLine(inv, $"| Mean output/input length | {(ok.Count == 0 ? 0 : ok.Average(r => r.Result!.Prompt.Length / (double)Math.Max(1, r.Case.Draft.Length))):0.0}x |");
+
+        sb.AppendLine();
+        sb.AppendLine("## Pass rate by case");
+        sb.AppendLine();
+        sb.AppendLine("Lowest first. Errored runs are left out of the pass rate. With repeated runs, a change between two versions is real only if it shows in most runs of a case, not one.");
+        sb.AppendLine();
+        sb.AppendLine("| Case | Category | Passed | Most common problem |");
+        sb.AppendLine("| --- | --- | --- | --- |");
+        foreach (var c in byCase.OrderBy(c => c.Rate).ThenBy(c => c.Id, StringComparer.Ordinal))
+            sb.AppendLine(inv, $"| {Escape(c.Id)} | {Escape(c.Category)} | {c.Passed}/{c.Runs}{(c.Errors > 0 ? $" ({c.Errors} errored)" : "")} | {Escape(c.TopProblem ?? "")} |");
+
+        var repeated = ok.GroupBy(r => r.Case.Id).Where(g => g.Count() > 1).ToList();
+        if (repeated.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("## Consistency across repeated runs");
+            sb.AppendLine();
+            sb.AppendLine("| Case | Task types | Verdicts | Output length range |");
+            sb.AppendLine("| --- | --- | --- | --- |");
+            foreach (var g in repeated)
+            {
+                var lengths = g.Select(r => r.Result!.Prompt.Length).ToList();
+                sb.AppendLine(inv, $"| {g.Key} | {string.Join(", ", g.Select(r => r.Result!.TaskType).Distinct())} | {string.Join(", ", g.Select(r => r.Result!.Verdict).Distinct())} | {lengths.Min()}–{lengths.Max()} chars |");
+            }
+        }
+
+        sb.AppendLine();
+        sb.AppendLine("## Cases");
+        sb.AppendLine();
+        sb.AppendLine("| Case | Category | Result | Task | Verdict | Length ratio | ms | Problems |");
+        sb.AppendLine("| --- | --- | --- | --- | --- | --- | --- | --- |");
+        foreach (var r in results)
+        {
+            var res = r.Result;
+            var problems = r.Error ?? string.Join("; ", r.Failures);
+            sb.AppendLine(inv,
+                $"| {Escape(r.Case.Id)}{(r.Run > 1 ? $" #{r.Run}" : "")} | {Escape(r.Case.Category)} | {(r.Passed ? "pass" : "FAIL")} | {res?.TaskType} | {res?.Verdict} | {(res is null ? "" : (res.Prompt.Length / (double)Math.Max(1, r.Case.Draft.Length)).ToString("0.0", inv))} | {res?.Elapsed.TotalMilliseconds:0} | {Escape(problems)} |");
+        }
+
+        sb.AppendLine();
+        sb.AppendLine("## Outputs");
+        foreach (var r in results.Where(r => r.Run == 1))
+        {
+            sb.AppendLine();
+            sb.AppendLine(inv, $"### {r.Case.Id} ({r.Case.Category}, {r.Case.Mode})");
+            sb.AppendLine();
+            sb.AppendLine("**Draft**");
+            sb.AppendLine();
+            sb.AppendLine(Fence(r.Case.Draft));
+            if (r.Result is { } res)
+            {
+                sb.AppendLine();
+                sb.AppendLine(inv, $"**Output** ({res.TaskType}, {res.Verdict}, {res.Elapsed.TotalMilliseconds:0} ms)");
+                sb.AppendLine();
+                sb.AppendLine(Fence(res.Prompt));
+                if (res.Questions.Count > 0) sb.AppendLine("\nQuestions: " + string.Join(" | ", res.Questions));
+                if (res.Changes.Count > 0) sb.AppendLine("\nChanges: " + string.Join(" | ", res.Changes));
+                if (res.Warnings.Count > 0) sb.AppendLine("\nWarnings: " + string.Join(" | ", res.Warnings));
+                if (r.Judge is { } j) sb.AppendLine(inv, $"\nJudge: clearer={j.ClearerThanOriginal}, length ok={j.AppropriateLength}, invented={j.InventedDetails} {j.InventedExamples}, answered={j.AnsweredInsteadOfRewriting}, dropped={j.DroppedRequirements} {j.DroppedExamples}, changed intent={j.ChangedIntent}, reply voice={j.WrittenAsReply}, added={j.AddedRequests} {j.AddedExamples}, under-delivered={j.UnderDelivered} {j.UnderDeliveredExamples}. {j.Comment}");
+            }
+            else
+            {
+                sb.AppendLine("\nError: " + r.Error);
+            }
+            if (r.Failures.Count > 0) sb.AppendLine("\nFailed checks: " + string.Join("; ", r.Failures));
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>Pass rate over the runs that got a result; <see cref="Errors"/> counts the ones that didn't.</summary>
+    public sealed record CaseRate(string Id, string Category, int Passed, int Runs, string? TopProblem, int Errors = 0)
+    {
+        public double Rate => Runs == 0 ? 0 : Passed / (double)Runs;
+    }
+
+    /// <summary>Pass rate per case across its runs, with the failure seen most often.</summary>
+    public static IReadOnlyList<CaseRate> CaseRates(IReadOnlyList<EvalCaseResult> results) =>
+        results.GroupBy(r => r.Case.Id).Select(g => new CaseRate(
+            g.Key,
+            g.First().Case.Category,
+            g.Count(r => r.Passed),
+            g.Count(r => r.Error is null),
+            g.SelectMany(r => r.Error is null ? r.Failures.Select(ProblemKind) : ["error"])
+                .GroupBy(p => p).OrderByDescending(p => p.Count()).ThenBy(p => p.Key, StringComparer.Ordinal).Select(p => p.Key).FirstOrDefault(),
+            g.Count(r => r.Error is not null)))
+            .ToList();
+
+    // "judge: invented details (Python 3.12)" and "judge: invented details (React)" are the same kind of problem.
+    private static string ProblemKind(string failure)
+    {
+        var cut = failure.IndexOfAny(['(', ':'], failure.StartsWith("judge:", StringComparison.Ordinal) ? 6 : 0);
+        return (cut > 0 ? failure[..cut] : failure).Trim();
+    }
+
+    private static string Escape(string s) => s.Replace("|", "\\|").Replace("\n", " ");
+
+    private static string Fence(string s)
+    {
+        var fence = s.Contains("````", StringComparison.Ordinal) ? "`````" : s.Contains("```", StringComparison.Ordinal) ? "````" : "```";
+        return $"{fence}text\n{s}\n{fence}";
+    }
+
+    [GeneratedRegex(@"\[(?:insert|your|add|specify|describe|enter|fill|tbd|name of)[^\]]{0,40}\]|<(?:insert|your|add|specify)[^>]{0,40}>|\{\{\s*\w+\s*\}\}", RegexOptions.IgnoreCase)]
+    private static partial Regex PlaceholderRegex();
+
+    [GeneratedRegex(@"world[- ]class|you are an expert|you are a highly|best practices|step[- ]by[- ]step|\bIMPORTANT\b|\bCRITICAL\b|\bMUST\b", RegexOptions.None)]
+    private static partial Regex FillerRegex();
+
+}
