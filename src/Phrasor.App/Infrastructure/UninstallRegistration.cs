@@ -5,13 +5,13 @@ namespace Phrasor.App.Infrastructure;
 /// <summary>The per-user "Installed apps" entry (Settings → Apps), so PromptForge can be uninstalled like any app. No admin rights.</summary>
 internal static class UninstallRegistration
 {
-    private const string KeyPath = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\PromptForge";
+    private const string KeyPath = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\Phrasor";
     private const string Publisher = "Maneet7805";
 
     public static void Write(string installDir, string exePath, string version)
     {
         using var key = Registry.CurrentUser.CreateSubKey(KeyPath);
-        key.SetValue("DisplayName", "PromptForge");
+        key.SetValue("DisplayName", "Phrasor");
         key.SetValue("DisplayVersion", version);
         key.SetValue("Publisher", Publisher);
         key.SetValue("InstallLocation", installDir);

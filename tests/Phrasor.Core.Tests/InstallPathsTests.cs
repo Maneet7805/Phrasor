@@ -10,7 +10,7 @@ public class InstallPathsTests
     [Fact]
     public void The_install_folder_is_under_programs()
     {
-        Assert.Equal(Path.Combine(Local, "Programs", "PromptForge"), Install);
+        Assert.Equal(Path.Combine(Local, "Programs", "Phrasor"), Install);
     }
 
     [Theory]
@@ -47,8 +47,8 @@ public class InstallPathsTests
         Assert.False(InstallPaths.IsSafeToDelete(Path.Combine(Local, "Programs"), Local));
         Assert.False(InstallPaths.IsSafeToDelete(Local, Local));
         Assert.False(InstallPaths.IsSafeToDelete(Path.GetPathRoot(Local), Local));
-        Assert.False(InstallPaths.IsSafeToDelete(Path.Combine(Local, "Programs", "PromptForge2"), Local));
-        Assert.False(InstallPaths.IsSafeToDelete(Path.Combine(Local, "Programs", "PromptForge-old"), Local));
+        Assert.False(InstallPaths.IsSafeToDelete(Path.Combine(Local, "Programs", "Phrasor2"), Local));
+        Assert.False(InstallPaths.IsSafeToDelete(Path.Combine(Local, "Programs", "Phrasor-old"), Local));
         Assert.False(InstallPaths.IsSafeToDelete(Path.Combine(Install, "logs"), Local));
     }
 
@@ -71,8 +71,8 @@ public class InstallPathsTests
         var dir = Directory.CreateTempSubdirectory("pf-build-").FullName;
         try
         {
-            File.WriteAllText(Path.Combine(dir, "PromptForge.dll"), "x");
-            Assert.False(InstallPaths.CanInstallFrom(Path.Combine(dir, "PromptForge.exe")));
+            File.WriteAllText(Path.Combine(dir, "Phrasor.dll"), "x");
+            Assert.False(InstallPaths.CanInstallFrom(Path.Combine(dir, "Phrasor.exe")));
         }
         finally { Directory.Delete(dir, recursive: true); }
     }
@@ -83,7 +83,7 @@ public class InstallPathsTests
         var dir = Directory.CreateTempSubdirectory("pf-release-").FullName;
         try
         {
-            Assert.True(InstallPaths.CanInstallFrom(Path.Combine(dir, "PromptForge.exe")));
+            Assert.True(InstallPaths.CanInstallFrom(Path.Combine(dir, "Phrasor.exe")));
         }
         finally { Directory.Delete(dir, recursive: true); }
     }

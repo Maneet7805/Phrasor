@@ -33,6 +33,6 @@ jobs:
       - name: Upload build
         uses: actions/upload-artifact@v7
         with:
-          name: PromptForge-${{ github.sha }}-win-x64
-          path: publish/PromptForge.exe
+          name: Phrasor-${{ github.sha }}-win-x64
+          path: publish/Phrasor.exe
           retention-days: 14

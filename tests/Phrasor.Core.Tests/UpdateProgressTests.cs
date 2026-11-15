@@ -6,7 +6,7 @@ namespace Phrasor.Core.Tests;
 
 public class UpdateProgressTests
 {
-    private const string ExeUrl = "https://github.com/Maneet7805/PromptForge/releases/download/v1.1.0/PromptForge.exe";
+    private const string ExeUrl = "https://github.com/Maneet7805/PromptForge/releases/download/v1.1.0/Phrasor.exe";
     private const string SumsUrl = "https://github.com/Maneet7805/PromptForge/releases/download/v1.1.0/SHA256SUMS.txt";
     private static readonly ReleaseInfo Release = new(new Version(1, 1, 0), "v1.1.0", ExeUrl, SumsUrl, "");
 
@@ -54,7 +54,7 @@ public class UpdateProgressTests
 
     private static HttpClient Client(byte[] bytes, string hash, Func<HttpContent>? content = null) => new(new FakeHandler(r =>
         r.RequestUri!.ToString() == SumsUrl
-            ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent($"{hash}  PromptForge.exe\n") }
+            ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent($"{hash}  Phrasor.exe\n") }
             : new HttpResponseMessage(HttpStatusCode.OK) { Content = content?.Invoke() ?? new ByteArrayContent(bytes) }));
 
     private static string NewDir() => Path.Combine(Path.GetTempPath(), "pf-progress-test-" + Guid.NewGuid().ToString("N"));
@@ -150,7 +150,7 @@ public class UpdateProgressTests
 
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => checker.DownloadVerifiedAsync(Release, dir, "1.0.0", cts.Token));
 
-            Assert.False(File.Exists(Path.Combine(dir, "PromptForge.exe")));
+            Assert.False(File.Exists(Path.Combine(dir, "Phrasor.exe")));
         }
         finally
         {
@@ -171,7 +171,7 @@ public class UpdateProgressTests
             var ex = await Assert.ThrowsAsync<UpdateException>(() => checker.DownloadVerifiedAsync(Release, dir, "1.0.0"));
 
             Assert.Contains("too long", ex.Message);
-            Assert.False(File.Exists(Path.Combine(dir, "PromptForge.exe")));
+            Assert.False(File.Exists(Path.Combine(dir, "Phrasor.exe")));
         }
         finally
         {

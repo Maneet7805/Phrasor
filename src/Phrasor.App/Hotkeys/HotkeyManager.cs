@@ -16,7 +16,7 @@ internal sealed class HotkeyManager : NativeWindow, IDisposable
 {
     private readonly Dictionary<HotkeyAction, HotkeyChord> _registered = [];
 
-    public HotkeyManager() => CreateHandle(new CreateParams { Caption = "PromptForge.Hotkeys" });
+    public HotkeyManager() => CreateHandle(new CreateParams { Caption = "Phrasor.Hotkeys" });
 
     public event Action<HotkeyAction>? Pressed;
 

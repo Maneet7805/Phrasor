@@ -23,7 +23,7 @@ internal sealed partial class DelayedClipboard : NativeWindow, IDisposable
     private bool _armed;
     private TaskCompletionSource? _consumed;
 
-    public DelayedClipboard() => CreateHandle(new CreateParams { Caption = "PromptForge.Clipboard" });
+    public DelayedClipboard() => CreateHandle(new CreateParams { Caption = "Phrasor.Clipboard" });
 
     /// <summary>Offers text on the clipboard without rendering it yet. Returns false if the clipboard is locked.</summary>
     public bool Offer(string text)

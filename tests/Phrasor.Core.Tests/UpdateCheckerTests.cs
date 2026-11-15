@@ -7,16 +7,16 @@ namespace Phrasor.Core.Tests;
 
 public class UpdateCheckerTests
 {
-    private const string ExeUrl = "https://github.com/Maneet7805/PromptForge/releases/download/v1.1.0/PromptForge.exe";
+    private const string ExeUrl = "https://github.com/Maneet7805/PromptForge/releases/download/v1.1.0/Phrasor.exe";
     private const string SumsUrl = "https://github.com/Maneet7805/PromptForge/releases/download/v1.1.0/SHA256SUMS.txt";
 
     private static string ReleaseJson(string tag = "v1.1.0", bool prerelease = false, bool withExe = true)
     {
-        var exeAsset = withExe ? "{\"name\":\"PromptForge.exe\",\"browser_download_url\":\"" + ExeUrl + "\"}," : "";
+        var exeAsset = withExe ? "{\"name\":\"Phrasor.exe\",\"browser_download_url\":\"" + ExeUrl + "\"}," : "";
         return "{\"tag_name\":\"" + tag + "\",\"html_url\":\"https://github.com/Maneet7805/PromptForge/releases/tag/" + tag + "\"," +
                "\"draft\":false,\"prerelease\":" + (prerelease ? "true" : "false") + "," +
                "\"assets\":[" + exeAsset +
-               "{\"name\":\"PromptForge-1.1.0-win-x64.zip\",\"browser_download_url\":\"https://github.com/x.zip\"}," +
+               "{\"name\":\"Phrasor-1.1.0-win-x64.zip\",\"browser_download_url\":\"https://github.com/x.zip\"}," +
                "{\"name\":\"SHA256SUMS.txt\",\"browser_download_url\":\"" + SumsUrl + "\"}]}";
     }
 
@@ -64,8 +64,8 @@ public class UpdateCheckerTests
     public void Finds_a_checksum_line()
     {
         var hash = new string('a', 64);
-        var sums = $"{new string('b', 64)}  PromptForge-1.1.0-win-x64.zip\r\n{hash}  PromptForge.exe\r\n";
-        Assert.Equal(hash, UpdateChecker.FindChecksum(sums, "PromptForge.exe"));
+        var sums = $"{new string('b', 64)}  Phrasor-1.1.0-win-x64.zip\r\n{hash}  Phrasor.exe\r\n";
+        Assert.Equal(hash, UpdateChecker.FindChecksum(sums, "Phrasor.exe"));
         Assert.Null(UpdateChecker.FindChecksum(sums, "other.exe"));
     }
 
@@ -84,7 +84,7 @@ public class UpdateCheckerTests
         var checker = new UpdateChecker(new HttpClient(new FakeHandler(r => { seen = r; return new HttpResponseMessage(HttpStatusCode.NotFound); })));
         Assert.Null(await checker.CheckAsync("1.0.0"));
         Assert.Equal("https://api.github.com/repos/Maneet7805/PromptForge/releases/latest", seen!.RequestUri!.ToString());
-        Assert.Contains("PromptForge", seen.Headers.UserAgent.ToString());
+        Assert.Contains("Phrasor", seen.Headers.UserAgent.ToString());
     }
 
     private sealed class FixedClock(DateTimeOffset now) : TimeProvider
@@ -180,7 +180,7 @@ public class UpdateCheckerTests
         try
         {
             var checker = new UpdateChecker(new HttpClient(new FakeHandler(r =>
-                r.RequestUri!.ToString() == SumsUrl ? Text($"{hash}  PromptForge.exe\n") : new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(bytes) })));
+                r.RequestUri!.ToString() == SumsUrl ? Text($"{hash}  Phrasor.exe\n") : new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(bytes) })));
             var release = UpdateChecker.ParseLatestRelease(ReleaseJson())!;
 
             var path = await checker.DownloadVerifiedAsync(release, dir, "1.0.0");
@@ -200,13 +200,13 @@ public class UpdateCheckerTests
         try
         {
             var checker = new UpdateChecker(new HttpClient(new FakeHandler(r =>
-                r.RequestUri!.ToString() == SumsUrl ? Text($"{new string('0', 64)}  PromptForge.exe\n") : new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent([1, 2, 3]) })));
+                r.RequestUri!.ToString() == SumsUrl ? Text($"{new string('0', 64)}  Phrasor.exe\n") : new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent([1, 2, 3]) })));
             var release = UpdateChecker.ParseLatestRelease(ReleaseJson())!;
 
             var ex = await Assert.ThrowsAsync<UpdateException>(() => checker.DownloadVerifiedAsync(release, dir, "1.0.0"));
 
             Assert.Contains("checksum", ex.Message);
-            Assert.False(File.Exists(Path.Combine(dir, "PromptForge.exe")));
+            Assert.False(File.Exists(Path.Combine(dir, "Phrasor.exe")));
         }
         finally
         {

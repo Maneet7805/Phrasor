@@ -11,7 +11,7 @@ namespace Phrasor.App.Infrastructure;
 /// </summary>
 internal sealed class DpapiSecretStore(string path) : ISecretStore
 {
-    private static readonly byte[] Entropy = "PromptForge.v1.api-keys"u8.ToArray();
+    private static readonly byte[] Entropy = "Phrasor.v1.api-keys"u8.ToArray();
     private readonly object _gate = new();
 
     public string? Get(string providerId)

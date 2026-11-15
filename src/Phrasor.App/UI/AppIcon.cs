@@ -7,7 +7,7 @@ internal static class AppIcon
     public static Icon Get()
     {
         if (_icon is not null) return _icon;
-        using var stream = typeof(AppIcon).Assembly.GetManifestResourceStream("Phrasor.App.Assets.PromptForge.ico");
+        using var stream = typeof(AppIcon).Assembly.GetManifestResourceStream("Phrasor.App.Assets.Phrasor.ico");
         _icon = stream is null ? SystemIcons.Application : new Icon(stream);
         return _icon;
     }

@@ -17,7 +17,7 @@ public sealed class UpdateException(string message, Exception? inner = null) : E
 public sealed class UpdateChecker(HttpClient http, string repository = UpdateChecker.DefaultRepository, TimeProvider? time = null, TimeSpan? downloadTimeout = null)
 {
     public const string DefaultRepository = "Maneet7805/PromptForge";
-    public const string ExeAssetName = "PromptForge.exe";
+    public const string ExeAssetName = "Phrasor.exe";
     public const string ChecksumsAssetName = "SHA256SUMS.txt";
 
     private readonly TimeProvider _time = time ?? TimeProvider.System;
@@ -243,7 +243,7 @@ public sealed class UpdateChecker(HttpClient http, string repository = UpdateChe
 
     // GitHub rejects API requests without a User-Agent.
     private static void AddHeaders(HttpRequestMessage request, string currentVersion) =>
-        request.Headers.UserAgent.Add(new ProductInfoHeaderValue("PromptForge", TryParseVersion(currentVersion, out var v) ? v.ToString() : "0.0.0"));
+        request.Headers.UserAgent.Add(new ProductInfoHeaderValue("Phrasor", TryParseVersion(currentVersion, out var v) ? v.ToString() : "0.0.0"));
 
     // Version("1.1") has Build = -1, which compares lower than 1.1.0; treat missing parts as 0.
     private static Version Normalize(Version v) => new(v.Major, v.Minor, Math.Max(v.Build, 0));
