@@ -28,6 +28,7 @@ internal sealed class TrayContext : ApplicationContext
     private readonly Dictionary<OptimizeMode, ToolStripMenuItem> _modeItems = [];
     private SettingsForm? _settingsForm;
     private MainForm? _mainForm;
+    private bool _recordingShortcut; // the main window's recorder has the global shortcuts released
 
     public TrayContext(bool startedInBackground)
     {
@@ -101,8 +102,7 @@ internal sealed class TrayContext : ApplicationContext
 
         _pause.CheckedChanged += (_, _) =>
         {
-            if (_pause.Checked) _hotkeys.UnregisterAll();
-            else RegisterHotkeys(reportProblems: true);
+            SyncHotkeys(reportProblems: true);
             _tray.Text = _pause.Checked ? "Phrasor (paused)" : "Phrasor";
         };
         menu.Items.Add(_pause);
@@ -170,6 +170,23 @@ internal sealed class TrayContext : ApplicationContext
         foreach (var (m, item) in _modeItems) item.Checked = m == mode;
     }
 
+    /// <summary>Shortcuts are live only when not paused and not being recorded in the main window.</summary>
+    private void SyncHotkeys(bool reportProblems)
+    {
+        _hotkeys.UnregisterAll();
+        if (!_pause.Checked && !_recordingShortcut) RegisterHotkeys(reportProblems);
+    }
+
+    private void SetShortcutRecording(bool recording)
+    {
+        if (_recordingShortcut == recording) return;
+        _recordingShortcut = recording;
+        SyncHotkeys(reportProblems: false);
+    }
+
+    private string? ShortcutWarning(string chord) =>
+        HotkeyChord.TryParse(chord, out var parsed) ? HotkeyManager.AltGrConflict(parsed) : null;
+
     private void RegisterHotkeys(bool reportProblems)
     {
         var hk = _services.Settings.Hotkeys;
@@ -227,8 +244,16 @@ internal sealed class TrayContext : ApplicationContext
                 HotkeyAction.OptimizeSelection => HomeStatus.SelectionId,
                 _ => HomeStatus.VoiceId,
             }).ToHashSet(),
-            (text, mode, task, ct) => _optimize.OptimizeAsync(text, mode, task, null, null, ct)), () => OpenSettings());
-        _mainForm.FormClosed += (_, _) => _mainForm = null;
+            (text, mode, task, ct) => _optimize.OptimizeAsync(text, mode, task, null, null, ct),
+            SetShortcutRecording,
+            chord => _hotkeys.Probe(chord),
+            ShortcutWarning,
+            () => SyncHotkeys(reportProblems: true)), () => OpenSettings());
+        _mainForm.FormClosed += (_, _) =>
+        {
+            _mainForm = null;
+            SetShortcutRecording(false); // never leave the shortcuts released
+        };
         _mainForm.Show();
         _ = Foreground.BringToFrontAsync(_mainForm.Handle);
     }
@@ -253,7 +278,7 @@ internal sealed class TrayContext : ApplicationContext
                 Log.Info("settings saved");
             }
             _settingsForm = null;
-            if (!_pause.Checked) RegisterHotkeys(reportProblems: true);
+            SyncHotkeys(reportProblems: true);
         };
         _settingsForm.Show();
         _ = Foreground.BringToFrontAsync(_settingsForm.Handle);

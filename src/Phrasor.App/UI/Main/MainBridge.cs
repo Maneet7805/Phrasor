@@ -26,6 +26,7 @@ internal sealed class MainBridge : IMainWindowApi
     private int _runNumber;
     private CancellationTokenSource? _test; // set while Test connection is going: only one at a time
     private int _testNumber;
+    private bool _recording; // the page is recording a chord, so the global shortcuts are released
     private string? _lastRewrite; // the one string clipboard.copy can copy; kept in memory only, dropped with the window
 
     public MainBridge(MainForm form, AppServices services, MainHooks hooks)
@@ -34,7 +35,9 @@ internal sealed class MainBridge : IMainWindowApi
         _services = services;
         _hooks = hooks;
         _dispatcher = new BridgeDispatcher(this, Log.Info);
-        form.FormClosed += (_, _) => { _run?.Cancel(); _test?.Cancel(); };
+        form.FormClosed += (_, _) => { _run?.Cancel(); _test?.Cancel(); if (_recording) SetShortcutRecording(false); };
+        // Leaving the window while recording (Alt+Tab, a click elsewhere) must not leave the shortcuts released.
+        form.Deactivate += (_, _) => { if (_recording) SetShortcutRecording(false); };
     }
 
     public void Attach(CoreWebView2 core)
@@ -120,8 +123,12 @@ internal sealed class MainBridge : IMainWindowApi
 
     public SettingsView GetSettings() => SettingsPage.BuildView(_services.Settings, _services.Secrets, StartupRegistration.IsEnabled());
 
-    public SettingsView SaveSettings(SettingsDraft draft)
+    public SaveOutcome SaveSettings(SettingsDraft draft)
     {
+        // Shortcut problems come first and stop the save: nothing is written, so the page can fix the chord and try again.
+        var problems = SettingsPage.CheckShortcuts(draft.Shortcuts, draft.Voice.Enabled, _hooks.ProbeShortcut);
+        if (problems.Count > 0) return new SaveOutcome(false, GetSettings(), problems, []);
+
         // Check and apply on a copy; the live settings change only after keys and file are written.
         // A throw here reaches the page as the bridge's plain "failed" reply (no text), and the live settings stay as they were.
         var next = SettingsStore.Clone(_services.Settings);
@@ -136,8 +143,30 @@ internal sealed class MainBridge : IMainWindowApi
             Log.Warn($"startup registration failed type={ex.GetType().Name}");
         }
         Theme.Apply(next.Ui.Theme);
+        // Recording ends with the save: the shortcuts come back, now with the new chords.
+        _recording = false;
+        _hooks.ApplyShortcuts();
         Log.Info($"settings saved from main window keysSet={draft.NewKeys.Count} keysRemoved={draft.RemoveKeys.Count}");
-        return GetSettings();
+        return new SaveOutcome(true, GetSettings(), [], ShortcutWarnings(next));
+    }
+
+    private IReadOnlyList<ShortcutNote> ShortcutWarnings(AppSettings s)
+    {
+        var notes = new List<ShortcutNote>();
+        void Check(string id, string chord, bool on)
+        {
+            if (on && !string.IsNullOrWhiteSpace(chord) && _hooks.ShortcutWarning(chord) is { } warning) notes.Add(new ShortcutNote(id, warning));
+        }
+        Check(HomeStatus.OptimizeId, s.Hotkeys.Optimize, true);
+        Check(HomeStatus.SelectionId, s.Hotkeys.OptimizeSelection, true);
+        Check(HomeStatus.VoiceId, s.Hotkeys.Voice, s.Voice.Enabled);
+        return notes;
+    }
+
+    public void SetShortcutRecording(bool recording)
+    {
+        _recording = recording;
+        _hooks.SetRecording(recording);
     }
 
     public int? StartConnectionTest(SettingsDraft draft)

@@ -31,6 +31,30 @@
           "groq": "FAKE-KEY-FOR-TESTS"
         },
         "remove": []
+      },
+      "shortcuts": {
+        "optimize": "Ctrl+Alt+P",
+        "optimizeSelection": "Ctrl+Alt+Shift+P",
+        "voice": "Ctrl+Alt+D"
+      },
+      "voice": {
+        "enabled": true,
+        "provider": "groq",
+        "model": "whisper-large-v3-turbo",
+        "language": "",
+        "autoOptimize": false,
+        "maxSeconds": 120
+      },
+      "requirements": {
+        "All": "",
+        "Coding": "Find the root cause. No workarounds.",
+        "Debugging": "",
+        "Research": "",
+        "Study": "",
+        "Writing": "",
+        "Planning": "",
+        "General": "",
+        "Image": ""
       }
     }
   },

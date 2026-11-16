@@ -43,8 +43,17 @@ public interface IMainWindowApi
     /// <summary>What the Settings page may show. Keys appear only as set or not set.</summary>
     SettingsView GetSettings();
 
-    /// <summary>Stores the page's choices and typed keys, then returns the settings as saved. Throws if nothing could be saved.</summary>
-    SettingsView SaveSettings(SettingsDraft draft);
+    /// <summary>
+    /// Checks the shortcuts, then stores the page's choices and typed keys and re-registers the shortcuts. A shortcut problem means
+    /// nothing was saved (<see cref="SaveOutcome.Problems"/>). Throws if the settings could not be written.
+    /// </summary>
+    SaveOutcome SaveSettings(SettingsDraft draft);
+
+    /// <summary>
+    /// True while the page records a chord: the app's global shortcuts are released so a pressed chord reaches the page instead of
+    /// running. False puts them back (unless paused). Always safe to call again; the window closing also puts them back.
+    /// </summary>
+    void SetShortcutRecording(bool recording);
 
     /// <summary>
     /// Tests the main model with the draft (typed keys included) without saving anything. Returns a run number, or null when a

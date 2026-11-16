@@ -22,8 +22,8 @@ public sealed class BridgeDispatcher
     public const int MaxTryItChars = 20_000;
     private const string TryItCommand = "tryit.run";
 
-    /// <summary>Settings carry the About-me text and typed keys: 4,000 characters can take 6 bytes each once escaped.</summary>
-    public const int MaxSettingsBytes = 32 * 1024;
+    /// <summary>Settings carry the About-me text, typed keys and nine requirement texts of 2,000 characters: 6 bytes each once escaped, about 135 KB at worst.</summary>
+    public const int MaxSettingsBytes = 192 * 1024;
     private const string SaveCommand = "settings.save";
     private const string TestCommand = "settings.testConnection";
     public const int MaxIdLength = 64;
@@ -36,7 +36,7 @@ public sealed class BridgeDispatcher
     {
         "state.get", "theme.set", "window.minimize", "window.maximize", "window.close", "link.open",
         "home.get", "pause.set", TryItCommand, "tryit.cancel", "clipboard.copy",
-        "settings.get", SaveCommand, TestCommand,
+        "settings.get", SaveCommand, TestCommand, "shortcut.recordStart", "shortcut.recordStop",
     };
 
     private static readonly JsonSerializerOptions Json = new()
@@ -183,7 +183,11 @@ public sealed class BridgeDispatcher
             case "tryit.cancel": NoPayload(payload); _api.CancelTryIt(); return new { };
             case "clipboard.copy": NoPayload(payload); return new { copied = _api.CopyRewrite() };
             case "settings.get": NoPayload(payload); return _api.GetSettings();
-            case SaveCommand: return _api.SaveSettings(SettingsArgs(payload));
+            case SaveCommand:
+                var saved = _api.SaveSettings(SettingsArgs(payload));
+                return new { saved = saved.Saved, settings = saved.Settings, problems = saved.Problems, warnings = saved.Warnings };
+            case "shortcut.recordStart": NoPayload(payload); _api.SetShortcutRecording(true); return new { };
+            case "shortcut.recordStop": NoPayload(payload); _api.SetShortcutRecording(false); return new { };
             case TestCommand:
                 var test = _api.StartConnectionTest(SettingsArgs(payload)) ?? throw new BusyException();
                 return new { run = test };

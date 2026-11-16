@@ -165,7 +165,43 @@
         </div>
       </section>
 
-      <p class="sm mute">Shortcuts, voice, requirements and data are still in the classic Settings window (tray menu).</p>
+      <section class="sec" aria-labelledby="set-shortcuts">
+        <h2 id="set-shortcuts">Shortcuts</h2>
+        <p class="sm mute">Click a shortcut, then press the keys you want. Include Ctrl or Alt. Esc cancels, Backspace clears. Your shortcuts work again once you save, discard or leave.</p>
+        <div class="grp" id="shortcuts"></div>
+      </section>
+
+      <section class="sec" aria-labelledby="set-voice">
+        <h2 id="set-voice">Voice</h2>
+        <div class="grp">
+          <label class="sr"><span class="st">Enable voice dictation<small>Dictated audio goes to the voice provider you choose below.</small></span><input class="chk" type="checkbox" id="v-on"></label>
+          <div class="sr col">
+            <div class="fields" role="group" aria-label="Voice provider">
+              <label>Provider<select id="v-provider"></select></label>
+              <label>Model<input class="txt" type="text" id="v-model" maxlength="100" spellcheck="false" autocomplete="off"></label>
+              <label>Language<input class="txt" type="text" id="v-lang" maxlength="12" spellcheck="false" autocomplete="off" placeholder="auto"></label>
+              <label>Stop after (seconds)<input class="txt" type="number" id="v-max" min="10" max="600" step="1"></label>
+            </div>
+            <small class="mute" id="v-notes"></small>
+          </div>
+          <label class="sr"><span class="st">Optimise what I dictate<small>Send the text to the optimiser and show the review window, instead of typing it in.</small></span><input class="chk" type="checkbox" id="v-auto"></label>
+        </div>
+        <p class="sm mute">Windows also has free built-in voice typing (Win+H) if you would rather not send audio to a cloud service.</p>
+      </section>
+
+      <section class="sec" aria-labelledby="set-req">
+        <h2 id="set-req">Requirements</h2>
+        <p class="sm mute">Text you write once and Phrasor adds, word for word, to the end of each rewrite of that kind. "All tasks" is added to every rewrite. It is never sent to the model, and a rewrite that comes back unchanged gets nothing added.</p>
+        <div class="grp">
+          <div class="sr col">
+            <div class="fields"><label>Kind of task<select id="r-task"></select></label></div>
+            <textarea class="area" id="r-text" rows="7" spellcheck="false" aria-label="Requirements text" placeholder="For example, for Coding: find the root cause, follow existing conventions, no workarounds."></textarea>
+            <small class="mute" id="r-count" role="status"></small>
+          </div>
+        </div>
+      </section>
+
+      <p class="sm mute">Data and quality check settings are still in the classic Settings window (tray menu).</p>
 
       <div class="bar" role="group" aria-label="Save settings">
         <span class="sm mute grow" id="set-state" role="status">No changes.</span>

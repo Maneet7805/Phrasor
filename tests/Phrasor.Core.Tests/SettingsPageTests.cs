@@ -23,7 +23,10 @@ public class SettingsPageTests
           "repairDroppedDetails":false,"checkForUpdates":false,"personalContext":"  Year 3 CS student.  "},
          "model":{"primary":{"provider":"custom","model":" my-model ","baseUrl":"https://example.test/v1"},
                   "fallback":{"enabled":false,"provider":"groq","model":"","baseUrl":"https://ignored.test"}},
-         "keys":{"set":{"custom":"  FAKE-KEY-MARKER-123  "},"remove":["gemini"]}}
+         "keys":{"set":{"custom":"  FAKE-KEY-MARKER-123  "},"remove":["gemini"]},
+         "shortcuts":{"optimize":"ctrl+alt+O","optimizeSelection":"Ctrl+Alt+Shift+O","voice":""},
+         "voice":{"enabled":true,"provider":"custom","model":" whisper-x ","language":"ms","autoOptimize":true,"maxSeconds":60},
+         "requirements":{"All":"  Be brief.\r\n","Coding":"Find the root cause.","Debugging":"","Research":"","Study":"","Writing":"","Planning":"","General":"","Image":""}}
         """)!.AsObject();
 
     private string? Send(string type, JsonNode? payload, string id = "s1") =>
@@ -89,6 +92,24 @@ public class SettingsPageTests
         Case("key both set and removed", d => d["keys"]!["remove"] = new JsonArray("custom"));
         Case("remove is not a list", d => d["keys"]!["remove"] = "groq");
         Case("remove names an unknown id", d => d["keys"]!["remove"] = new JsonArray("ollama"));
+        Case("missing shortcuts", d => d.Remove("shortcuts"));
+        Case("unknown shortcut field", d => d["shortcuts"]!["extra"] = "x");
+        Case("shortcut is a number", d => d["shortcuts"]!["voice"] = 5);
+        Case("shortcut too long", d => d["shortcuts"]!["voice"] = new string('a', 41));
+        Case("shortcut has control character", d => d["shortcuts"]!["voice"] = "Ctrl+\u0007");
+        Case("voice provider not listed", d => d["voice"]!["provider"] = "gemini");
+        Case("voice on with no model", d => { d["voice"]!["enabled"] = true; d["voice"]!["model"] = " "; });
+        Case("voice model too long", d => d["voice"]!["model"] = new string('m', 101));
+        Case("language is not a code", d => d["voice"]!["language"] = "english please");
+        Case("max seconds too small", d => d["voice"]!["maxSeconds"] = 9);
+        Case("max seconds too big", d => d["voice"]!["maxSeconds"] = 601);
+        Case("max seconds is a fraction", d => d["voice"]!["maxSeconds"] = 60.5);
+        Case("max seconds is a string", d => d["voice"]!["maxSeconds"] = "60");
+        Case("voice flag is a string", d => d["voice"]!["autoOptimize"] = "yes");
+        Case("requirements missing a task", d => d["requirements"]!.AsObject().Remove("Image"));
+        Case("requirements for Auto", d => d["requirements"]!["Auto"] = "x");
+        Case("requirement is a number", d => d["requirements"]!["Coding"] = 1);
+        Case("requirement has control character", d => d["requirements"]!["Coding"] = "a\u0000b");
         return cases;
     }
 
@@ -179,7 +200,7 @@ public class SettingsPageTests
     public void Apply_writes_the_choices_and_leaves_other_settings_alone()
     {
         Send("settings.save", Draft());
-        var s = new AppSettings { TimeoutSeconds = 99, Hotkeys = new HotkeySettings { Optimize = "Ctrl+Alt+X" } };
+        var s = new AppSettings { TimeoutSeconds = 99 };
         s.Judge.Model = "judge-model";
         SettingsPage.Apply(s, _api.Saved!);
         Assert.Equal(ThemeMode.Light, s.Ui.Theme);
@@ -188,7 +209,7 @@ public class SettingsPageTests
         Assert.False(s.Fallback.Enabled);
         Assert.True(s.FirstRunComplete);
         Assert.Equal(99, s.TimeoutSeconds);
-        Assert.Equal("Ctrl+Alt+X", s.Hotkeys.Optimize);
+        Assert.Equal("Ctrl+Alt+O", s.Hotkeys.Optimize); // shortcuts are now part of the draft
         Assert.Equal("judge-model", s.Judge.Model);
     }
 

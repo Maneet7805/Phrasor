@@ -1,0 +1,11 @@
+{
+  "request": {
+    "id": "c25",
+    "type": "shortcut.recordStop"
+  },
+  "reply": {
+    "id": "c25",
+    "ok": true,
+    "payload": {}
+  }
+}

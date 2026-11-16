@@ -57,6 +57,8 @@
     settingsGet: function () { return send("settings.get"); },
     settingsSave: function (draft) { return send("settings.save", draft); },
     settingsTest: function (draft) { return send("settings.testConnection", draft); },
-    onSettingsTest: function (handler) { settingsTestHandler = handler; }
+    onSettingsTest: function (handler) { settingsTestHandler = handler; },
+    shortcutRecordStart: function () { return send("shortcut.recordStart"); },
+    shortcutRecordStop: function () { return send("shortcut.recordStop"); }
   });
 })();
