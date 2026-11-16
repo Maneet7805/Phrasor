@@ -17,17 +17,23 @@ internal sealed class WebHost : Panel
     private const int DeleteAttempts = 10, DeleteRetryMs = 500;
 
     private readonly WebView2 _view = new() { Dock = DockStyle.Fill, Visible = false };
-    private readonly Label _message = new() { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, Padding = new Padding(40), Visible = false };
+    private readonly EngineMissingPanel _problem = new() { Dock = DockStyle.Fill, Visible = false };
     private readonly Stopwatch _clock = new();
     private string? _userDataFolder;
 
     /// <summary>Raised once the browser is locked down and before the first page loads; the bridge attaches here.</summary>
     public event Action<CoreWebView2>? CoreReady;
 
+    /// <summary>Buttons on the "web view missing" message.</summary>
+    public event Action? ClassicSettingsRequested, NotNowRequested;
+
     public WebHost()
     {
-        Controls.Add(_message);
+        Controls.Add(_problem);
         Controls.Add(_view);
+        _problem.ClassicSettingsRequested += () => ClassicSettingsRequested?.Invoke();
+        _problem.NotNowRequested += () => NotNowRequested?.Invoke();
+        _problem.Recovered += () => { _problem.Visible = false; _ = StartAsync(); };
         ApplyTheme();
     }
 
@@ -48,6 +54,12 @@ internal sealed class WebHost : Panel
     public async Task StartAsync()
     {
         _clock.Restart();
+        if (EngineCheck.Version() is null)
+        {
+            Log.Warn("webview2 runtime not found");
+            ShowProblem(EngineProblem.Missing);
+            return;
+        }
         try
         {
             CleanLeftovers();
@@ -73,31 +85,31 @@ internal sealed class WebHost : Panel
         catch (WebView2RuntimeNotFoundException)
         {
             Log.Warn("webview2 runtime not found");
-            Show("The Microsoft Edge WebView2 runtime is not installed, so this window cannot show its pages.\n\nThe rest of Phrasor (shortcuts, the review window, dictation) keeps working.");
+            ShowProblem(EngineProblem.Missing);
         }
         catch (Exception ex)
         {
             Log.Error($"webview2 start failed: {ex.GetType().Name}");
-            Show("This window could not start its web view.\n\nThe rest of Phrasor (shortcuts, the review window, dictation) keeps working.");
+            ShowProblem(EngineProblem.CouldNotStart);
         }
     }
 
     public void ApplyTheme()
     {
-        BackColor = _message.BackColor = _view.DefaultBackgroundColor = Theme.Color("window");
-        _message.ForeColor = Theme.Color("text");
+        BackColor = _view.DefaultBackgroundColor = Theme.Color("window");
+        _problem.ApplyTheme();
         if (_view.CoreWebView2 is { } core)
             core.Profile.PreferredColorScheme = Theme.IsDark ? CoreWebView2PreferredColorScheme.Dark : CoreWebView2PreferredColorScheme.Light;
     }
 
-    // The one place that names an engine folder. Null means the shared Evergreen runtime; M3d adds a switch here.
-    private static string? BrowserExecutableFolder() => null;
+    // The one place that names an engine folder. Null means the shared Evergreen runtime.
+    private static string? BrowserExecutableFolder() => EngineCheck.Source.BrowserFolder;
 
-    private void Show(string text)
+    private void ShowProblem(EngineProblem problem)
     {
         _view.Visible = false;
-        _message.Text = text;
-        _message.Visible = true;
+        _problem.Describe(problem);
+        _problem.Visible = true;
     }
 
     private void Lock(CoreWebView2 core)

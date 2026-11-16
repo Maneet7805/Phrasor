@@ -5,6 +5,7 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 ## [Unreleased]
 
 ### Added
+- If the Microsoft Edge WebView2 runtime is missing (a small number of Windows 10 PCs), the main window now says so plainly, with **Install now**, **Open Microsoft's page**, **Use classic settings** and **Not now**. **Install now** is the only thing that downloads anything: after your click it fetches Microsoft's small installer from Microsoft, checks that it is signed by Microsoft (and deletes it, unrun, if not), runs it without admin rights, and opens the window. Cancel, offline and refusal each get a plain message. Shortcuts, the review window and dictation never depend on it (#187).
 - The main window now holds a locked-down web view (the shared Microsoft Edge WebView2 runtime) showing a placeholder "hello" page. It loads only files inside Phrasor and blocks every other network request; if the runtime is missing, the window says so. The exe grows by about 0.4 MB (83.17 to 83.58 MB measured) (#183).
 - The tray menu has "Open Phrasor", which opens an empty main window with its own title bar (a first step; the pages come later). Starting Phrasor a second time now brings that window to the front instead of opening Settings (#181).
 - Eval: the "fix my login bug" case now checks that the rewrite stays under 5x the draft, and expects a spelled-out rewrite instead of questions (#165).

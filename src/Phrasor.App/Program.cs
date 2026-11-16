@@ -48,6 +48,9 @@ internal static class Program
             if (!TryAcquire(mutex, TimeSpan.FromSeconds(3))) return 0;
         }
 
+        if (args.Contains("--simulate-no-webview2")) UI.Main.EngineCheck.Simulate(); // Debug builds only; ignored in Release
+        _ = Task.Run(UI.Main.EngineCheck.LogStartup);
+
         Application.ThreadException += (_, e) => Log.Error("unhandled UI exception", e.Exception);
         AppDomain.CurrentDomain.UnhandledException += (_, e) => Log.Error("unhandled exception", e.ExceptionObject as Exception);
 
