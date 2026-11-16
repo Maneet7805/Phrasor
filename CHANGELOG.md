@@ -5,6 +5,7 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 ## [Unreleased]
 
 ### Added
+- The main window now holds a locked-down web view (the shared Microsoft Edge WebView2 runtime) showing a placeholder "hello" page. It loads only files inside Phrasor and blocks every other network request; if the runtime is missing, the window says so. The exe grows by about 0.4 MB (83.17 to 83.58 MB measured) (#183).
 - The tray menu has "Open Phrasor", which opens an empty main window with its own title bar (a first step; the pages come later). Starting Phrasor a second time now brings that window to the front instead of opening Settings (#181).
 - Eval: the "fix my login bug" case now checks that the rewrite stays under 5x the draft, and expects a spelled-out rewrite instead of questions (#165).
 - The review window has a "Report bad rewrite" button that opens the GitHub Bad rewrite form in your browser. Your draft and the rewrite are filled in only if you choose Yes, and not at all if they look like they hold a key; you submit the form yourself (#69).
