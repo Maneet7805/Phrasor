@@ -73,6 +73,7 @@ internal sealed class ReviewForm : Form
     private readonly TableLayoutPanel _notesRow;
     private OptimizeMode _runMode;
     private readonly ToolTip _tooltip = new();
+    private Action? _redrawNotes; // notes carry their colours inside the text, so a theme change redraws them
 
     public ReviewForm(ReviewContext ctx)
     {
@@ -142,6 +143,8 @@ internal sealed class ReviewForm : Form
         _originalBox.Text = ctx.Original.Replace("\r\n", "\n").Replace("\n", "\r\n");
         SetWorking(false);
         _accept.Enabled = _copy.Enabled = false;
+        ApplyColors();
+        Theme.Changed += OnThemeChanged;
     }
 
     public Task<ReviewDecision> Completion => _decision.Task;
@@ -173,6 +176,37 @@ internal sealed class ReviewForm : Form
         else if (e.Control && e.Shift && e.KeyCode == Keys.C && _copy.Enabled && _copy.Visible) { Decide(ReviewAction.Copy); e.Handled = e.SuppressKeyPress = true; }
         else if (e.Control && e.KeyCode == Keys.R) { StartRun(); e.Handled = e.SuppressKeyPress = true; }
         else if (e.Control && e.KeyCode is Keys.D1 or Keys.D2 or Keys.D3) { _tabs.SelectedIndex = e.KeyCode - Keys.D1; e.Handled = e.SuppressKeyPress = true; }
+    }
+
+    private void RenderChanges()
+    {
+        if (_result is not null)
+            _changes.Rtf = BuildDiffRtf(TextDiff.Compute(_result.Original, _result.Prompt), _changes.Font, _changes.ForeColor);
+    }
+
+    private void ApplyColors()
+    {
+        BackColor = Theme.Color("window");
+        ForeColor = Theme.Color("text");
+        SettingsForm.ApplyTheme(this);
+        _accept.BackColor = Theme.Color("button");
+        _accept.ForeColor = Theme.Color("button-text");
+        RenderChanges();
+        _redrawNotes?.Invoke();
+    }
+
+    // Theme.Changed can arrive on another thread.
+    private void OnThemeChanged()
+    {
+        if (IsDisposed) return;
+        if (InvokeRequired && IsHandleCreated) BeginInvoke(ApplyColors);
+        else if (!InvokeRequired) ApplyColors();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) Theme.Changed -= OnThemeChanged;
+        base.Dispose(disposing);
     }
 
     protected override void OnFormClosing(FormClosingEventArgs e)
@@ -255,7 +289,7 @@ internal sealed class ReviewForm : Form
             : $"{result.TaskType} · {Describe(result.Verdict)} · {seconds} s";
         _tooltip.SetToolTip(_status, $"{result.Model} · {result.PromptTokens + result.CompletionTokens:N0} tokens · {result.Attempts} call(s)");
 
-        _changes.Rtf = BuildDiffRtf(TextDiff.Compute(result.Original, result.Prompt), _changes.Font, _changes.ForeColor);
+        RenderChanges();
         RenderNotes(result, note);
         _tabs.SelectedIndex = 0;
         _improved.Focus();
@@ -265,8 +299,9 @@ internal sealed class ReviewForm : Form
     private void ShowError(string message)
     {
         _status.Text = "Couldn't optimise";
+        _redrawNotes = () => ShowError(message);
         _notes.Clear();
-        AppendNote(message, Color.FromArgb(200, 60, 60), bold: true);
+        AppendNote(message, Theme.Color("bad"), bold: true);
         AppendNote("\nYour original text hasn't been touched. Press Ctrl+R to retry, or Esc to close.", null, bold: false);
         _notesRow.Visible = true;
         _accept.Enabled = false;
@@ -316,9 +351,10 @@ internal sealed class ReviewForm : Form
 
     private void RenderNotes(OptimizeResult result, string? note)
     {
+        _redrawNotes = () => RenderNotes(result, note);
         _notes.Clear();
         if (note is not null) AppendNote(note + "\n", null, bold: true);
-        foreach (var warning in result.Warnings) AppendNote("⚠ " + warning + "\n", Color.FromArgb(196, 120, 0), bold: false);
+        foreach (var warning in result.Warnings) AppendNote("⚠ " + warning + "\n", Theme.Color("warn"), bold: false);
         if (result.Questions.Count > 0)
         {
             AppendNote("To get a better answer, consider adding:\n", null, bold: true);
@@ -388,11 +424,13 @@ internal sealed class ReviewForm : Form
     /// <summary>RTF for the Changes tab: insertions green and underlined, deletions red and struck through.</summary>
     internal static string BuildDiffRtf(IReadOnlyList<DiffSegment> segments, Font font, Color text)
     {
+        var (ok, bad) = (Theme.Color("ok"), Theme.Color("bad"));
         var sb = new StringBuilder();
         sb.Append(@"{\rtf1\ansi\deff0{\fonttbl{\f0 ").Append(font.FontFamily.Name).Append(";}}");
         sb.Append(@"{\colortbl;")
           .Append(CultureInfo.InvariantCulture, $@"\red{text.R}\green{text.G}\blue{text.B};")
-          .Append(@"\red38\green150\blue80;\red210\green65\blue65;}");
+          .Append(CultureInfo.InvariantCulture, $@"\red{ok.R}\green{ok.G}\blue{ok.B};\red{bad.R}\green{bad.G}\blue{bad.B};")
+          .Append('}');
         sb.Append(CultureInfo.InvariantCulture, $@"\f0\fs{(int)Math.Round(font.SizeInPoints * 2)}\cf1 ");
         foreach (var segment in segments)
         {

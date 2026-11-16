@@ -16,14 +16,14 @@ internal sealed class UpdateForm : Form
 
     private sealed record Button(string Text, Action? Click, bool Primary, Rectangle Bounds = default);
 
-    private static readonly Color Surface = Color.FromArgb(24, 24, 31);
-    private static readonly Color Edge = Color.FromArgb(52, 52, 66);
-    private static readonly Color Track = Color.FromArgb(46, 46, 58);
-    private static readonly Color TextMain = Color.FromArgb(245, 245, 250);
-    private static readonly Color TextSubtle = Color.FromArgb(158, 158, 176);
-    private static readonly Color AccentFrom = Color.FromArgb(124, 92, 255);
-    private static readonly Color AccentTo = Color.FromArgb(34, 211, 238);
-    private static readonly Color ErrorColor = Color.FromArgb(255, 107, 107);
+    private static Color Surface => Theme.Color("card");
+    private static Color Edge => Theme.Color("border");
+    private static Color Track => Theme.Color("window");
+    private static Color TextMain => Theme.Color("text");
+    private static Color TextSubtle => Theme.Color("muted");
+    private static Color AccentFrom => Theme.Color("button");
+    private static Color AccentTo => Theme.Color("focus");
+    private static Color ErrorColor => Theme.Color("bad");
 
     private const int CardWidth = 360, Pad = 20, Radius = 14, BarHeight = 6, ButtonHeight = 32, TickMs = 16;
     private const double FadeStep = 0.12, EaseFactor = 0.22;
@@ -53,6 +53,7 @@ internal sealed class UpdateForm : Form
         Opacity = 0;
         AccessibleRole = AccessibleRole.Alert;
         _tick.Tick += (_, _) => Animate();
+        Theme.Changed += OnThemeChanged;
     }
 
     /// <summary>The user chose to update, or to try again after a failure.</summary>
@@ -240,7 +241,7 @@ internal sealed class UpdateForm : Form
         TextRenderer.DrawText(g, _title, _titleFont, _titleRect, _isError ? ErrorColor : TextMain, flags | TextFormatFlags.EndEllipsis);
         TextRenderer.DrawText(g, _detail, _bodyFont, _detailRect, TextSubtle, flags);
         if (_percentText.Length > 0)
-            TextRenderer.DrawText(g, _percentText, _titleFont, _titleRect, AccentTo, TextFormatFlags.NoPadding | TextFormatFlags.Right);
+            TextRenderer.DrawText(g, _percentText, _titleFont, _titleRect, Theme.Color("accent"), TextFormatFlags.NoPadding | TextFormatFlags.Right);
 
         if (_barVisible) PaintBar(g);
         for (var i = 0; i < _buttons.Count; i++) PaintButton(g, _buttons[i], i == _hover);
@@ -286,12 +287,12 @@ internal sealed class UpdateForm : Form
         }
         else
         {
-            using var fill = new SolidBrush(hover ? Color.FromArgb(44, 44, 56) : Color.FromArgb(34, 34, 44));
+            using var fill = new SolidBrush(hover ? Edge : Track);
             using var pen = new Pen(Edge);
             g.FillPath(fill, path);
             g.DrawPath(pen, path);
         }
-        TextRenderer.DrawText(g, b.Text, _buttonFont, b.Bounds, b.Primary ? Color.White : TextMain,
+        TextRenderer.DrawText(g, b.Text, _buttonFont, b.Bounds, b.Primary ? Theme.Color("button-text") : TextMain,
             TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
     }
 
@@ -332,12 +333,28 @@ internal sealed class UpdateForm : Form
     {
         if (disposing)
         {
+            Theme.Changed -= OnThemeChanged;
             _tick.Dispose();
             _titleFont.Dispose();
             _bodyFont.Dispose();
             _buttonFont.Dispose();
         }
         base.Dispose(disposing);
+    }
+
+    private void ApplyColors()
+    {
+        BackColor = Surface;
+        ForeColor = TextMain;
+        Invalidate();
+    }
+
+    // Theme.Changed can arrive on another thread.
+    private void OnThemeChanged()
+    {
+        if (IsDisposed) return;
+        if (InvokeRequired && IsHandleCreated) BeginInvoke(ApplyColors);
+        else if (!InvokeRequired) ApplyColors();
     }
 
     private static Color Lighten(Color c) => Color.FromArgb(Math.Min(255, c.R + 24), Math.Min(255, c.G + 24), Math.Min(255, c.B + 24));

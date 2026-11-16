@@ -10,7 +10,7 @@ namespace Phrasor.App.UI;
 internal sealed class StatusPill : Form
 {
     private string _message = "";
-    private Color _dot = Color.FromArgb(220, 50, 50);
+    private Color _dot = Theme.Color("bad");
 
     public StatusPill()
     {
@@ -18,8 +18,8 @@ internal sealed class StatusPill : Form
         ShowInTaskbar = false;
         TopMost = true;
         StartPosition = FormStartPosition.Manual;
-        BackColor = Color.FromArgb(32, 32, 36);
-        ForeColor = Color.White;
+        ApplyColors();
+        Theme.Changed += OnThemeChanged;
         Font = new Font("Segoe UI", 10f);
         Size = new Size(320, 40);
         DoubleBuffered = true;
@@ -68,6 +68,27 @@ internal sealed class StatusPill : Form
         using var dot = new SolidBrush(_dot);
         e.Graphics.FillEllipse(dot, 16, Height / 2 - 6, 12, 12);
         TextRenderer.DrawText(e.Graphics, _message, Font, new Point(38, (Height - Font.Height) / 2), ForeColor);
+    }
+
+    private void ApplyColors()
+    {
+        BackColor = Theme.Color("card");
+        ForeColor = Theme.Color("text");
+        Invalidate();
+    }
+
+    // Theme.Changed can arrive on another thread.
+    private void OnThemeChanged()
+    {
+        if (IsDisposed) return;
+        if (InvokeRequired && IsHandleCreated) BeginInvoke(ApplyColors);
+        else if (!InvokeRequired) ApplyColors();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) Theme.Changed -= OnThemeChanged;
+        base.Dispose(disposing);
     }
 
     private static Region RoundedRegion(Size size, int radius)
