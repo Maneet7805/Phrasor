@@ -1,0 +1,11 @@
+{
+  "run": 8,
+  "error": "offline",
+  "event": {
+    "event": "tryit",
+    "run": 8,
+    "ok": false,
+    "error": "offline",
+    "message": "Couldn't reach the provider. Check your internet connection."
+  }
+}

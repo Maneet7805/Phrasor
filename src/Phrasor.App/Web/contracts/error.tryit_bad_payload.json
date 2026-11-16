@@ -1,0 +1,15 @@
+{
+  "request": {
+    "id": "c14",
+    "type": "tryit.run",
+    "payload": {
+      "text": "fix my login bug",
+      "task": "Auto"
+    }
+  },
+  "reply": {
+    "id": "c14",
+    "ok": false,
+    "error": "bad_request"
+  }
+}

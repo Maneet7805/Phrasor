@@ -33,7 +33,7 @@ public class BridgeContractTests
         Assert.True(JsonNode.DeepEquals(fixture["reply"], JsonNode.Parse(reply!)), $"{file}: got {reply}");
     }
 
-    private static string ContractsDir()
+    internal static string ContractsDir()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null && !Directory.Exists(Path.Combine(dir.FullName, "src", "Phrasor.App", "Web", "contracts"))) dir = dir.Parent;

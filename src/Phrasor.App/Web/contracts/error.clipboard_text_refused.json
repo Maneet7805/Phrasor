@@ -1,0 +1,14 @@
+{
+  "request": {
+    "id": "c17",
+    "type": "clipboard.copy",
+    "payload": {
+      "text": "anything the page wants copied"
+    }
+  },
+  "reply": {
+    "id": "c17",
+    "ok": false,
+    "error": "bad_request"
+  }
+}

@@ -9,11 +9,12 @@ public static class BridgeError
     public const string UnknownCommand = "unknown_command";
     public const string BadRequest = "bad_request";
     public const string Failed = "failed";
+    public const string Busy = "busy";
     public const string Dropped = "dropped";
 
     public static readonly IReadOnlySet<string> All = new HashSet<string>
     {
-        BadJson, TooLarge, RateLimited, UnknownCommand, BadRequest, Failed, Dropped,
+        BadJson, TooLarge, RateLimited, UnknownCommand, BadRequest, Failed, Dropped, Busy,
     };
 }
 
@@ -31,4 +32,14 @@ public static class BridgeLog
         var result = outcome == Ok || BridgeError.All.Contains(outcome) ? outcome : "?";
         return $"bridge cmd={name} bytes={bytes} ms={milliseconds} outcome={result}";
     }
+}
+
+public static class TryItLog
+{
+    /// <summary>"small", "medium" or "large": the only thing the log says about a draft's size.</summary>
+    public static string SizeClass(int chars) => chars < 500 ? "small" : chars < 5_000 ? "medium" : "large";
+
+    /// <summary>One line per finished run: an outcome that is "ok" or a known error kind, a size class and a time. No text.</summary>
+    public static string Describe(string outcome, int chars, long milliseconds) =>
+        $"tryit outcome={(outcome == BridgeLog.Ok || TryItErrors.Kinds.Contains(outcome) ? outcome : "?")} size={SizeClass(chars)} ms={milliseconds}";
 }

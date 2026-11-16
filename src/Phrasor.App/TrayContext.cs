@@ -5,6 +5,7 @@ using Phrasor.App.Infrastructure;
 using Phrasor.App.TextAccess;
 using Phrasor.App.UI;
 using Phrasor.App.UI.Main;
+using Phrasor.Core.Home;
 using Phrasor.Core.Llm;
 using Phrasor.Core.Optimization;
 using Phrasor.Core.Settings;
@@ -217,7 +218,16 @@ internal sealed class TrayContext : ApplicationContext
             _ = Foreground.BringToFrontAsync(_mainForm.Handle);
             return;
         }
-        _mainForm = new MainForm(_services, () => OpenSettings());
+        _mainForm = new MainForm(_services, new MainHooks(
+            () => _pause.Checked,
+            paused => _pause.Checked = paused, // the tray item's own handler does the (un)registering
+            () => _hotkeys.Registered.Keys.Select(a => a switch
+            {
+                HotkeyAction.Optimize => HomeStatus.OptimizeId,
+                HotkeyAction.OptimizeSelection => HomeStatus.SelectionId,
+                _ => HomeStatus.VoiceId,
+            }).ToHashSet(),
+            (text, mode, task, ct) => _optimize.OptimizeAsync(text, mode, task, null, null, ct)), () => OpenSettings());
         _mainForm.FormClosed += (_, _) => _mainForm = null;
         _mainForm.Show();
         _ = Foreground.BringToFrontAsync(_mainForm.Handle);

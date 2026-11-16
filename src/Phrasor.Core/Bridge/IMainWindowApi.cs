@@ -1,3 +1,4 @@
+using Phrasor.Core.Home;
 using Phrasor.Core.Theme;
 
 namespace Phrasor.Core.Bridge;
@@ -22,4 +23,20 @@ public interface IMainWindowApi
 
     /// <summary>Opens an allow-listed link (see <see cref="LinkAllowList"/>) in the user's default browser.</summary>
     void OpenLink(Uri url);
+
+    HomeStatus GetHome();
+
+    /// <summary>Turns the shortcuts' pause on or off, as the tray item does. Returns the state after the change.</summary>
+    bool SetPaused(bool paused);
+
+    /// <summary>
+    /// Starts one rewrite with the same pipeline as the hotkey and returns its run number, or null when a run is going.
+    /// The result is pushed later (<see cref="BridgeEvents"/>). It is shown on the page only: never pasted, saved or sent on.
+    /// </summary>
+    int? StartTryIt(TryItRequest request);
+
+    void CancelTryIt();
+
+    /// <summary>Copies the last rewrite the app produced. The page cannot supply the text. False when there is none.</summary>
+    bool CopyRewrite();
 }

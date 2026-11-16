@@ -157,7 +157,8 @@ internal sealed class OptimizeController(AppServices services)
         }
     }
 
-    private async Task<OptimizeResult> OptimizeAsync(string text, OptimizeMode mode, TaskType task, ReviewAnswers? answers, string? appLabel, CancellationToken ct)
+    /// <summary>The one optimiser call, shared by the review window and the main window's Try-it. It shows nothing and writes nowhere.</summary>
+    internal async Task<OptimizeResult> OptimizeAsync(string text, OptimizeMode mode, TaskType task, ReviewAnswers? answers, string? appLabel, CancellationToken ct)
     {
         var settings = services.Settings;
         var endpoints = EndpointResolver.Resolve(settings, services.Secrets);

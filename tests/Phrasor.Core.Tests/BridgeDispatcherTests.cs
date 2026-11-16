@@ -1,5 +1,7 @@
 using System.Text.Json;
 using Phrasor.Core.Bridge;
+using Phrasor.Core.Home;
+using Phrasor.Core.Optimization;
 using Phrasor.Core.Theme;
 using Phrasor.Core.Web;
 
@@ -19,6 +21,19 @@ public class BridgeDispatcherTests
         public void SetTheme(ThemeMode mode) => Theme = mode;
         public void Window(WindowAction action) => Windows.Add(action);
         public void OpenLink(Uri url) => Links.Add(url);
+
+        public HomeStatus Home = new(HomeState.Ready, false, "Groq (free tier)", "openai/gpt-oss-120b", true, true, OptimizeMode.Standard,
+            [new ShortcutStatus("optimize", "Rewrite", "Ctrl+Alt+P", true)]);
+        public int? NextRun = 7; // null means a run is already going
+        public List<TryItRequest> Runs = [];
+        public int Cancels;
+        public bool CanCopy = true;
+        public bool Paused;
+        public HomeStatus GetHome() => Home;
+        public bool SetPaused(bool paused) => Paused = paused;
+        public int? StartTryIt(TryItRequest request) { if (NextRun is not null) Runs.Add(request); return NextRun; }
+        public void CancelTryIt() => Cancels++;
+        public bool CopyRewrite() => CanCopy;
     }
 
     private readonly FakeApi _api = new();

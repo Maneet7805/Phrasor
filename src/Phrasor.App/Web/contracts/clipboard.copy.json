@@ -1,0 +1,13 @@
+{
+  "request": {
+    "id": "c16",
+    "type": "clipboard.copy"
+  },
+  "reply": {
+    "id": "c16",
+    "ok": true,
+    "payload": {
+      "copied": true
+    }
+  }
+}
