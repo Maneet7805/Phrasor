@@ -4,6 +4,7 @@ using Microsoft.Web.WebView2.Core;
 using Phrasor.App.Infrastructure;
 using Phrasor.App.TextAccess;
 using Phrasor.Core.Bridge;
+using Phrasor.Core.History;
 using Phrasor.Core.Home;
 using Phrasor.Core.Settings;
 using Phrasor.Core.Theme;
@@ -28,6 +29,8 @@ internal sealed class MainBridge : IMainWindowApi
     private int _testNumber;
     private bool _recording; // the page is recording a chord, so the global shortcuts are released
     private string? _lastRewrite; // the one string clipboard.copy can copy; kept in memory only, dropped with the window
+    private string? _lastOriginal; // with _lastRewrite, the only text history.save can store: the page never supplies any
+    private bool _lastSaved;
 
     public MainBridge(MainForm form, AppServices services, MainHooks hooks)
     {
@@ -78,7 +81,8 @@ internal sealed class MainBridge : IMainWindowApi
     public int? StartTryIt(TryItRequest request)
     {
         if (_run is not null) return null;
-        _lastRewrite = null;
+        _lastRewrite = _lastOriginal = null;
+        _lastSaved = false;
         _run = new CancellationTokenSource();
         var number = ++_runNumber;
         _ = RunTryItAsync(number, request, _run);
@@ -107,6 +111,7 @@ internal sealed class MainBridge : IMainWindowApi
         {
             var r = await _hooks.Optimize(request.Text, request.Mode, request.Task, cts.Token);
             _lastRewrite = r.Prompt;
+            _lastOriginal = request.Text;
             outcome = BridgeLog.Ok;
             json = BridgeEvents.TryItDone(number, new TryItOutput(r.Prompt, r.Verdict.ToString(), r.TaskType.ToString(), r.Changes, r.Warnings));
         }
@@ -119,6 +124,57 @@ internal sealed class MainBridge : IMainWindowApi
         _run = null;
         Log.Info(TryItLog.Describe(outcome, request.Text.Length, clock.ElapsedMilliseconds));
         Post(json);
+    }
+
+    public HistoryListView ListHistory(string query, int limit) => Guarded(() =>
+    {
+        _services.PruneHistory();
+        var store = _services.History;
+        return HistoryView.Build(store.List(), store.LoadOutcome, _services.RetentionDays, query, limit, DateTime.UtcNow, TimeZoneInfo.Local);
+    });
+
+    public HistoryEntryView? GetHistory(string id) => Guarded(() => _services.History.Get(id) is { } e ? new HistoryEntryView(e.Id, e.Original, e.Rewrite) : null);
+
+    public HistorySaveResult SaveHistory()
+    {
+        if (string.IsNullOrWhiteSpace(_lastRewrite) || _lastOriginal is null) return HistorySaveResult.NothingToSave;
+        if (_lastSaved) return HistorySaveResult.AlreadySaved;
+        Guarded(() => { _services.SaveToHistory(_lastOriginal, _lastRewrite); return true; });
+        _lastSaved = true;
+        return HistorySaveResult.Saved;
+    }
+
+    public bool CopyHistory(string id, bool original)
+    {
+        if (Guarded(() => _services.History.Get(id)) is not { } entry) return false;
+        try { ClipboardText.Write(original ? entry.Original : entry.Rewrite); return true; }
+        catch (Exception ex) when (ex is System.Runtime.InteropServices.ExternalException or InvalidOperationException)
+        {
+            Log.Warn($"history copy failed type={ex.GetType().Name}");
+            return false;
+        }
+    }
+
+    public bool DeleteHistory(string id) => Guarded(() => _services.History.Delete(id));
+
+    public void DeleteAllHistory() => Guarded(() => { _services.History.Clear(); return true; });
+
+    public void SetHistoryRetention(int days)
+    {
+        _services.Settings.History.RetentionDays = HistoryRetention.Normalise(days);
+        _services.SaveSettings();
+        Guarded(() => { _services.PruneHistory(); return true; });
+    }
+
+    // Any failure of the History file becomes one plain error for the page; only the exception type is logged.
+    private T Guarded<T>(Func<T> action)
+    {
+        try { return action(); }
+        catch (Exception ex) when (AppServices.IsHistoryFailure(ex))
+        {
+            Log.Warn($"history failed type={ex.GetType().Name}");
+            throw new HistoryUnavailableException();
+        }
     }
 
     public SettingsView GetSettings() => SettingsPage.BuildView(_services.Settings, _services.Secrets, StartupRegistration.IsEnabled());

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Phrasor.Core.History;
 using System.Text.Json.Serialization;
 using Phrasor.Core.Llm;
 using Phrasor.Core.Optimization;
@@ -65,6 +66,12 @@ public sealed class UiSettings
     public ThemeMode Theme { get; set; } = ThemeMode.System;
 }
 
+public sealed class HistorySettings
+{
+    /// <summary>Saved items older than this many days are removed. 0 keeps them until deleted. Only 0, 30 and 90 are accepted.</summary>
+    public int RetentionDays { get; set; }
+}
+
 public sealed class AppSettings
 {
     public int Version { get; set; } = 1;
@@ -104,6 +111,7 @@ public sealed class AppSettings
     public HotkeySettings Hotkeys { get; set; } = new();
     public VoiceSettings Voice { get; set; } = new();
     public UiSettings Ui { get; set; } = new();
+    public HistorySettings History { get; set; } = new();
     public bool FirstRunComplete { get; set; }
 }
 
@@ -128,6 +136,8 @@ public static class SettingsStore
             settings.Hotkeys ??= new HotkeySettings();
             settings.Voice ??= new VoiceSettings();
             settings.Ui ??= new UiSettings();
+            settings.History ??= new HistorySettings();
+            settings.History.RetentionDays = HistoryRetention.Normalise(settings.History.RetentionDays);
             settings.Judge ??= new AppSettings().Judge;
             settings.StandingRequirements ??= [];
             return settings;

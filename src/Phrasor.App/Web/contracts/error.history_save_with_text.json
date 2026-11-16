@@ -1,0 +1,14 @@
+{
+  "request": {
+    "id": "c49",
+    "type": "history.save",
+    "payload": {
+      "text": "hi"
+    }
+  },
+  "reply": {
+    "id": "c49",
+    "ok": false,
+    "error": "bad_request"
+  }
+}

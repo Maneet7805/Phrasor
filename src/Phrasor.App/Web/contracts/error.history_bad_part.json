@@ -1,0 +1,15 @@
+{
+  "request": {
+    "id": "c48",
+    "type": "history.copy",
+    "payload": {
+      "id": "0123456789abcdef0123456789abcdef",
+      "part": "text"
+    }
+  },
+  "reply": {
+    "id": "c48",
+    "ok": false,
+    "error": "bad_request"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "request": {
+    "id": "c46",
+    "type": "history.setRetention",
+    "payload": {
+      "days": 30
+    }
+  },
+  "reply": {
+    "id": "c46",
+    "ok": true,
+    "payload": {
+      "days": 30
+    }
+  }
+}

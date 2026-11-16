@@ -1,0 +1,13 @@
+{
+  "request": {
+    "id": "c42",
+    "type": "history.save"
+  },
+  "reply": {
+    "id": "c42",
+    "ok": true,
+    "payload": {
+      "already": false
+    }
+  }
+}

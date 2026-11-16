@@ -75,6 +75,20 @@ public sealed class HistoryStore
         }
     }
 
+    /// <summary>Removes entries saved before <paramref name="cutoffUtc"/> and returns how many. Writes nothing when none is that old.</summary>
+    public int Prune(DateTime cutoffUtc)
+    {
+        lock (_gate)
+        {
+            var keep = _entries.Where(e => e.SavedUtc >= cutoffUtc).ToList();
+            var removed = _entries.Count - keep.Count;
+            if (removed == 0) return 0;
+            EnsureWritable();
+            Commit(keep);
+            return removed;
+        }
+    }
+
     /// <summary>Removes every entry and deletes the file.</summary>
     public void Clear()
     {

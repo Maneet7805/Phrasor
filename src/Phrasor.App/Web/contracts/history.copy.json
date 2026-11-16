@@ -1,0 +1,17 @@
+{
+  "request": {
+    "id": "c43",
+    "type": "history.copy",
+    "payload": {
+      "id": "0123456789abcdef0123456789abcdef",
+      "part": "rewrite"
+    }
+  },
+  "reply": {
+    "id": "c43",
+    "ok": true,
+    "payload": {
+      "copied": true
+    }
+  }
+}

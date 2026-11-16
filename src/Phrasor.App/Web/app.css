@@ -161,6 +161,20 @@ label.sr { cursor: pointer; }
 #d-state[data-tone="ok"] { color: var(--ok); }
 #d-state[data-tone="bad"] { color: var(--bad); }
 
+/* History page */
+.hsearch { max-width: 420px; }
+#h-retention { min-width: 200px; }
+.hday { font: 600 13px/18px var(--font); color: var(--muted); }
+.hhead { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; padding: 0; border: 0; background: none; text-align: left; color: var(--text); font: inherit; cursor: pointer; }
+.hhead small { color: var(--muted); font-size: 13px; line-height: 18px; }
+.hprev { overflow-wrap: anywhere; }
+.hfull { display: flex; flex-direction: column; gap: 12px; }
+.hpart { display: flex; flex-direction: column; gap: 4px; }
+.hpart h4 { font: 600 13px/18px var(--font); color: var(--muted); }
+.hbare { padding: 0; min-height: 0; }
+#h-confirm { display: flex; flex-direction: column; gap: 12px; }
+#h-confirm[hidden], #h-delete-all[hidden] { display: none; }
+
 /* narrow window: icon-only rail */
 @container (max-width: 800px) {
   .rail { width: 64px; align-items: center; padding-inline: 8px; }

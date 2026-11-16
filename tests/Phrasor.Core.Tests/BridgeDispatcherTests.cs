@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Phrasor.Core.Bridge;
+using Phrasor.Core.History;
 using Phrasor.Core.Home;
 using Phrasor.Core.Optimization;
 using Phrasor.Core.Settings;
@@ -50,6 +51,23 @@ public class BridgeDispatcherTests
         public bool WipeWorks = true;
         public void OpenDataFolder(DataFolder folder) => Opened.Add(folder);
         public bool DeleteAllData() { Wipes++; return WipeWorks; }
+
+        public const string SomeId = "0123456789abcdef0123456789abcdef";
+        public List<string> HistoryCalls = [];
+        public HistorySaveResult SaveResult = HistorySaveResult.Saved;
+        public bool HistoryBroken;
+        private void Check() { if (HistoryBroken) throw new HistoryUnavailableException(); }
+        public HistoryListView ListHistory(string query, int limit)
+        {
+            Check(); HistoryCalls.Add($"list:{query}:{limit}");
+            return new(null, 1, 1, 0, [new("Today", [new(SomeId, "09:30", "A clear rewrite", 12, 15)])]);
+        }
+        public HistoryEntryView? GetHistory(string id) { Check(); HistoryCalls.Add("get:" + id); return id == SomeId ? new(SomeId, "my draft", "my rewrite") : null; }
+        public HistorySaveResult SaveHistory() { Check(); HistoryCalls.Add("save"); return SaveResult; }
+        public bool CopyHistory(string id, bool original) { Check(); HistoryCalls.Add($"copy:{id}:{(original ? "original" : "rewrite")}"); return id == SomeId; }
+        public bool DeleteHistory(string id) { Check(); HistoryCalls.Add("delete:" + id); return id == SomeId; }
+        public void DeleteAllHistory() { Check(); HistoryCalls.Add("deleteAll"); }
+        public void SetHistoryRetention(int days) { Check(); HistoryCalls.Add("retention:" + days); }
     }
 
     private readonly FakeApi _api = new();
@@ -212,7 +230,7 @@ public class BridgeDispatcherTests
     [Fact]
     public void Unknown_command_gets_an_error_reply_with_its_id()
     {
-        var reply = Make().Handle(Origin, true, Msg("history.list"));
+        var reply = Make().Handle(Origin, true, Msg("quality.run"));
         Assert.Equal((false, BridgeError.UnknownCommand, "a1"), Parse(reply));
     }
 
