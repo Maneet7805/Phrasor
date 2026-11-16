@@ -7,6 +7,12 @@ public static class InstallPaths
     public static string InstallDir(string localAppData) => Path.Combine(localAppData, "Programs", "Phrasor");
 
     /// <summary>
+    /// Where History lives: Local app data, not Roaming, so the encrypted file never follows the user to another PC.
+    /// <c>--portable</c> has no data folder of its own (it shares the settings folder), so it uses this one too.
+    /// </summary>
+    public static string HistoryDir(string localAppData) => Path.Combine(localAppData, "Phrasor", "History");
+
+    /// <summary>
     /// True only when <paramref name="candidate"/> is exactly the install folder after the path is normalised.
     /// Uninstall deletes a folder recursively, so a root, a parent, a sibling with a similar name or a
     /// <c>..</c> path must never pass.
