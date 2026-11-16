@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to PromptForge are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
+All notable changes to Phrasor are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
@@ -16,7 +16,7 @@ All notable changes to PromptForge are listed here. The format follows [Keep a C
 ### Changed
 - The app has a new name: Phrasor. The program, install folder, Start menu entry and tray name changed. Earlier installed copies don't offer this update: install once by hand and enter your API keys again (#171).
 - Rewrites now keep the parts of a draft that report what happened (what worked, what failed), not only the final request (#164).
-- Setup shows a small "Installing PromptForge" window with a moving bar while it copies files and restarts the app (#146).
+- Setup shows a small "Installing Phrasor" window with a moving bar while it copies files and restarts the app (#146).
 - After "Update now" in the update card, setup no longer asks a second time (#141). This takes effect from the update after 1.6.0, because 1.6.0's updater doesn't pass the new flag.
 
 ## [1.6.0] - 2026-11-10
@@ -40,7 +40,7 @@ All notable changes to PromptForge are listed here. The format follows [Keep a C
 ## [1.4.1] - 2026-11-05
 
 ### Fixed
-- A copy of `PromptForge.exe` built with `dotnet build` (it has `PromptForge.dll` beside it) no longer offers to install itself. Before, choosing Yes copied only the launcher into the install folder and broke the installed app. Release downloads are unchanged (#113).
+- A copy of `Phrasor.exe` built with `dotnet build` (it has `Phrasor.dll` beside it) no longer offers to install itself. Before, choosing Yes copied only the launcher into the install folder and broke the installed app. Release downloads are unchanged (#113).
 
 ## [1.4.0] - 2026-11-05
 
@@ -54,19 +54,19 @@ All notable changes to PromptForge are listed here. The format follows [Keep a C
 
 ### Fixed
 - The review window now says when the backup model answered ("Answered by the backup model (...) because ... couldn't answer. Press Ctrl+R after a minute to try the main model again."). In instant mode this also opens the review window instead of replacing your text straight away, so you see the notice (#101).
-- Running a second long draft within a minute no longer silently switches to the backup model when the main model only needs a short wait: PromptForge now waits up to 25 seconds (Groq asked for 19 in testing) and retries the main model once before falling back. Before, it waited only for the last model in the list, and only up to 6 seconds (#101).
+- Running a second long draft within a minute no longer silently switches to the backup model when the main model only needs a short wait: Phrasor now waits up to 25 seconds (Groq asked for 19 in testing) and retries the main model once before falling back. Before, it waited only for the last model in the list, and only up to 6 seconds (#101).
 - Long drafts: when the rewrite drops exact details, the repair step now sends only the rewrite and a short excerpt of the draft for each missing detail, not the whole draft again, and tries the backup model if the main one is rate-limited. Before, on a 14,700-character draft the repair request alone was 7,863 tokens against the 8,000-per-minute free-tier limit, so it always failed and the details stayed missing. A repair that shortens the rewrite is ignored (#76).
 
 ## [1.3.0] - 2026-11-02
 
 ### Added
-- The running version now shows in the tray menu ("PromptForge 1.2.0") and at the bottom of the Settings window (#84).
+- The running version now shows in the tray menu ("Phrasor 1.2.0") and at the bottom of the Settings window (#84).
 - Quality check: three long synthetic drafts (about 1,600, 3,800 and 7,400 characters, 11 to 13 points each), each in Standard and Detailed, so dropped points and shrinking on long input can be measured (#76).
 - Quality check: a per-case `minLengthRatio` (set to 0.5 on the long cases) fails a rewrite that shrinks below it. The README now says the judge can't be trusted to see dropped points on long drafts (#90).
-- PromptForge now appears in Settings → Apps → Installed apps with an Uninstall button. Uninstall removes the app, its Start menu shortcut and its start-with-Windows entry, and asks before deleting your settings and API keys (default: keep). The entry is added when you install or update (#86).
+- Phrasor now appears in Settings → Apps → Installed apps with an Uninstall button. Uninstall removes the app, its Start menu shortcut and its start-with-Windows entry, and asks before deleting your settings and API keys (default: keep). The entry is added when you install or update (#86).
 
 ### Fixed
-- When the model's reply isn't valid JSON (Groq: "Failed to validate JSON", seen on long drafts in Detailed mode), PromptForge now retries once and then tries the fallback model, instead of stopping with an error (#88).
+- When the model's reply isn't valid JSON (Groq: "Failed to validate JSON", seen on long drafts in Detailed mode), Phrasor now retries once and then tries the fallback model, instead of stopping with an error (#88).
 - "Check for updates" now says when GitHub is limiting requests from your network and when to try again, instead of only "GitHub answered 403" (#95).
 
 ## [1.2.0] - 2026-10-30
@@ -103,7 +103,7 @@ All notable changes to PromptForge are listed here. The format follows [Keep a C
 ### Fixed
 - Voice now records from Windows' default recording device (and follows it if you change it). Before, it always used the first microphone in the device list, which on PCs with a headset, webcam or several mics could be the wrong one.
 - The shortcut box in Settings recorded Ctrl+Alt+key as Ctrl+key on AltGr keyboard layouts, because Windows left Alt out of the keypress. It now reads the physical modifier keys too.
-- Shortcuts that clash with your keyboard layout are now explained. On layouts where Ctrl+Alt acts as AltGr (German, Polish, French, English (India) and many more), Ctrl+Alt+key types a character: PromptForge now names the character at startup and before saving in Settings, instead of silently blocking it or failing.
+- Shortcuts that clash with your keyboard layout are now explained. On layouts where Ctrl+Alt acts as AltGr (German, Polish, French, English (India) and many more), Ctrl+Alt+key types a character: Phrasor now names the character at startup and before saving in Settings, instead of silently blocking it or failing.
 
 ### Changed
 - Updated to NAudio 3's renamed recording API (`WaveIn`), removing the build warnings.
@@ -111,7 +111,7 @@ All notable changes to PromptForge are listed here. The format follows [Keep a C
 ## [1.1.0] - 2026-10-15
 
 ### Added
-- **Update check.** Once a day (and from **Check for updates** in the tray menu), PromptForge asks GitHub for the latest release. If it's newer, a notification offers to update: the exe is downloaded, verified against `SHA256SUMS.txt`, and installed through the usual **Yes** prompt. It can be turned off in Settings → General and sends no prompt text, settings or keys.
+- **Update check.** Once a day (and from **Check for updates** in the tray menu), Phrasor asks GitHub for the latest release. If it's newer, a notification offers to update: the exe is downloaded, verified against `SHA256SUMS.txt`, and installed through the usual **Yes** prompt. It can be turned off in Settings → General and sends no prompt text, settings or keys.
 - **Image** task type: image-generation prompts (comma-separated descriptors, `--ar` style parameters) keep their form and only get typo fixes, instead of being rewritten into sentences.
 - The user's own template slots, like `[Brand]`, `{{first_name}}` and `${Role:default}`, are now protected details and are checked after every rewrite.
 - System prompt examples now include drafts that should come back unchanged.
@@ -170,15 +170,15 @@ First public release. It contains everything from the 0.x builds plus the fixes 
 ### Added
 - Initial personal build: core optimiser, tray app, review window, settings, voice and eval runner.
 
-[1.5.0]: https://github.com/Maneet7805/PromptForge/releases/tag/v1.5.0
-[1.4.1]: https://github.com/Maneet7805/PromptForge/releases/tag/v1.4.1
-[1.4.0]: https://github.com/Maneet7805/PromptForge/releases/tag/v1.4.0
-[1.3.0]: https://github.com/Maneet7805/PromptForge/releases/tag/v1.3.0
-[1.2.0]: https://github.com/Maneet7805/PromptForge/releases/tag/v1.2.0
-[1.1.1]: https://github.com/Maneet7805/PromptForge/releases/tag/v1.1.1
-[1.1.0]: https://github.com/Maneet7805/PromptForge/releases/tag/v1.1.0
-[1.0.0]: https://github.com/Maneet7805/PromptForge/releases/tag/v1.0.0
-[0.3.1]: https://github.com/Maneet7805/PromptForge/commits/main
-[0.3.0]: https://github.com/Maneet7805/PromptForge/commits/main
-[0.2.0]: https://github.com/Maneet7805/PromptForge/commits/main
-[0.1.0]: https://github.com/Maneet7805/PromptForge/commits/main
+[1.5.0]: https://github.com/Maneet7805/Phrasor/releases/tag/v1.5.0
+[1.4.1]: https://github.com/Maneet7805/Phrasor/releases/tag/v1.4.1
+[1.4.0]: https://github.com/Maneet7805/Phrasor/releases/tag/v1.4.0
+[1.3.0]: https://github.com/Maneet7805/Phrasor/releases/tag/v1.3.0
+[1.2.0]: https://github.com/Maneet7805/Phrasor/releases/tag/v1.2.0
+[1.1.1]: https://github.com/Maneet7805/Phrasor/releases/tag/v1.1.1
+[1.1.0]: https://github.com/Maneet7805/Phrasor/releases/tag/v1.1.0
+[1.0.0]: https://github.com/Maneet7805/Phrasor/releases/tag/v1.0.0
+[0.3.1]: https://github.com/Maneet7805/Phrasor/commits/main
+[0.3.0]: https://github.com/Maneet7805/Phrasor/commits/main
+[0.2.0]: https://github.com/Maneet7805/Phrasor/commits/main
+[0.1.0]: https://github.com/Maneet7805/Phrasor/commits/main

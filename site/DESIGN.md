@@ -1,4 +1,4 @@
-# Design: PromptForge project page
+# Design: Phrasor project page
 
 If the page and this file disagree, fix whichever is wrong in the same change. Tokens live at the top of `index.html` (`:root` and `.light`). The page is one file with inline CSS and JS, plus `assets/fonts/` and `media/`.
 

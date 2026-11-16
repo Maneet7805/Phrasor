@@ -444,7 +444,7 @@ public class EvalCasesFileTests
         while (dir is not null && !File.Exists(Path.Combine(dir, "eval", "prompts", "v1.0.0.txt"))) dir = Path.GetDirectoryName(dir);
         Assert.NotNull(dir);
         var text = File.ReadAllText(Path.Combine(dir!, "eval", "prompts", "v1.0.0.txt"));
-        Assert.StartsWith("You are PromptForge", text);
+        Assert.StartsWith("You are Phrasor", text);
         Assert.Contains("Respond with only one JSON object", text);
         Assert.NotEqual(SystemPrompt.Text, text.TrimEnd('\n'));
     }

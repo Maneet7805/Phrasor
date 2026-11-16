@@ -21,7 +21,7 @@
     <Product>Phrasor</Product>
     <Authors>Maneet Arvind Mehta</Authors>
     <Copyright>Copyright (c) 2026 Maneet Arvind Mehta. MIT License.</Copyright>
-    <RepositoryUrl>https://github.com/Maneet7805/PromptForge</RepositoryUrl>
+    <RepositoryUrl>https://github.com/Maneet7805/Phrasor</RepositoryUrl>
     <Description>Rewrites rough prompts into clear ones on a hotkey.</Description>
 
     <!-- Single self-contained exe: no .NET runtime needed on the target PC. -->

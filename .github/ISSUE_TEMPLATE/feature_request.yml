@@ -6,7 +6,7 @@ body:
     id: problem
     attributes:
       label: What problem would this solve?
-      placeholder: When I use PromptForge in ..., I have to ...
+      placeholder: When I use Phrasor in ..., I have to ...
     validations:
       required: true
   - type: textarea

@@ -1,27 +1,27 @@
-# Contributing to PromptForge
+# Contributing to Phrasor
 
-Thanks for helping. PromptForge is a small project, so the process is light.
+Thanks for helping. Phrasor is a small project, so the process is light.
 
 ## Reporting a bug
 
-[Open a bug report](https://github.com/Maneet7805/PromptForge/issues/new?template=bug_report.yml) and include:
+[Open a bug report](https://github.com/Maneet7805/Phrasor/issues/new?template=bug_report.yml) and include:
 - your Windows version and the app you were typing in
 - what you pressed, and what happened instead
-- the relevant lines from the latest log: tray icon → *Open logs folder* → `promptforge-*.log`
+- the relevant lines from the latest log: tray icon → *Open logs folder* → `phrasor-*.log`
 
 Logs never contain prompt text or keys, but please check them before pasting anyway. **Never paste your API key** into an issue.
 
 ## Suggesting a feature
 
-[Open a feature request](https://github.com/Maneet7805/PromptForge/issues/new?template=feature_request.yml). Describe the problem first, then the solution you have in mind.
+[Open a feature request](https://github.com/Maneet7805/Phrasor/issues/new?template=feature_request.yml). Describe the problem first, then the solution you have in mind.
 
 ## Development setup
 
 You need the [.NET 10 SDK](https://dotnet.microsoft.com/download). Any editor works: Visual Studio 2026, Rider or VS Code with C# Dev Kit.
 
 ```bash
-git clone https://github.com/Maneet7805/PromptForge.git
-cd PromptForge
+git clone https://github.com/Maneet7805/Phrasor.git
+cd Phrasor
 dotnet build
 dotnet test tests/Phrasor.Core.Tests
 ```
@@ -30,10 +30,10 @@ To try a local build without touching your installed copy:
 
 ```bash
 dotnet publish src/Phrasor.App -c Release -o publish
-publish\PromptForge.exe --portable
+publish\Phrasor.exe --portable
 ```
 
-Quit the installed PromptForge first, because only one copy can run at a time.
+Quit the installed Phrasor first, because only one copy can run at a time.
 
 ### Where things live
 
@@ -76,14 +76,14 @@ These steps apply to everyone, whether you work in a branch of this repo or in a
 - Follow `.editorconfig`: file-scoped namespaces, 4-space indent, nullable enabled.
 - Prefer clear names over comments. Comment *why*, not *what*.
 - Never log prompt text, transcripts or keys.
-- PromptForge must never auto-submit, and must never send keystrokes to terminals.
+- Phrasor must never auto-submit, and must never send keystrokes to terminals.
 
 ## Releasing (maintainers)
 
 1. Update `<Version>` in `src/Phrasor.App/Phrasor.App.csproj` and move the `Unreleased` notes in `CHANGELOG.md` under the new version and date. Merge that change to `main` through a pull request.
 2. Wait for "Build and test" to pass on `main`.
 3. Only the owner can create tags. Tag the merged commit and push the tag: `git checkout main && git pull && git tag v1.2.3 && git push origin v1.2.3`. Don't create the tag by publishing a release on the GitHub website: the Release workflow creates the release itself and would fail on an existing one. Don't name a branch like a tag.
-4. The [Release workflow](.github/workflows/release.yml) builds the exe, creates the GitHub release, and uses the changelog section as release notes. Check that the release has `PromptForge.exe`, the zip and `SHA256SUMS.txt`.
+4. The [Release workflow](.github/workflows/release.yml) builds the exe, creates the GitHub release, and uses the changelog section as release notes. Check that the release has `Phrasor.exe`, the zip and `SHA256SUMS.txt`.
 
 ## Code of conduct
 

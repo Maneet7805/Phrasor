@@ -1,8 +1,8 @@
-# PromptForge
+# Phrasor
 
 @AGENTS.md
 
-Windows tray app. The user selects text in any app, presses a hotkey, and PromptForge rewrites the draft as a clearer prompt for an AI assistant, shown in a review window before anything is pasted. It also has voice dictation and a built-in quality check (eval). Public repo: nothing private goes in commits, issues or PRs.
+Windows tray app. The user selects text in any app, presses a hotkey, and Phrasor rewrites the draft as a clearer prompt for an AI assistant, shown in a review window before anything is pasted. It also has voice dictation and a built-in quality check (eval). Public repo: nothing private goes in commits, issues or PRs.
 
 ## Setup (new machine or collaborator)
 
@@ -14,7 +14,7 @@ Install the .NET 10 SDK, and the GitHub CLI (`gh auth login`) for the slash comm
 dotnet test tests/Phrasor.Core.Tests          # unit tests; run before every commit
 dotnet build                                      # whole solution (Windows only: the app is WinForms)
 dotnet publish src/Phrasor.App -c Release -o publish
-publish\PromptForge.exe --portable                # try a build without touching the installed copy; quit the installed one first
+publish\Phrasor.exe --portable                # try a build without touching the installed copy; quit the installed one first
 ```
 
 `Phrasor.Core` is `net10.0` and builds and tests anywhere. `Phrasor.App` is `net10.0-windows`. CI ("Build and test", windows-latest) is required before merge.

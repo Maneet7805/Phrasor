@@ -6,8 +6,8 @@ namespace Phrasor.Core.Tests;
 
 public class UpdateProgressTests
 {
-    private const string ExeUrl = "https://github.com/Maneet7805/PromptForge/releases/download/v1.1.0/Phrasor.exe";
-    private const string SumsUrl = "https://github.com/Maneet7805/PromptForge/releases/download/v1.1.0/SHA256SUMS.txt";
+    private const string ExeUrl = "https://github.com/Maneet7805/Phrasor/releases/download/v1.1.0/Phrasor.exe";
+    private const string SumsUrl = "https://github.com/Maneet7805/Phrasor/releases/download/v1.1.0/SHA256SUMS.txt";
     private static readonly ReleaseInfo Release = new(new Version(1, 1, 0), "v1.1.0", ExeUrl, SumsUrl, "");
 
     private sealed class Collect : IProgress<UpdateProgress>

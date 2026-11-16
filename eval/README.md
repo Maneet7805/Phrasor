@@ -6,10 +6,10 @@
 
 From the tray: **Developer → Run quality check** (or **Settings → Data → Run quality check**), pick `eval\cases.json`, and say yes to the judge. The report and `results.json` go to `eval\results\<date-time>\`.
 
-From PowerShell, in the repo folder, with PromptForge running or not:
+From PowerShell, in the repo folder, with Phrasor running or not:
 
 ```
-& "$env:LOCALAPPDATA\Programs\PromptForge\PromptForge.exe" --eval eval\cases.json eval\results\main --judge
+& "$env:LOCALAPPDATA\Programs\Phrasor\Phrasor.exe" --eval eval\cases.json eval\results\main --judge
 ```
 
 | Option | What it does |
@@ -38,12 +38,13 @@ This is how a change to the system prompt gets accepted or rejected.
 
 1. Run the baseline with the old rules, for example v1.0.0's:
    ```
-   & "$env:LOCALAPPDATA\Programs\PromptForge\PromptForge.exe" --eval eval\cases.json eval\results\v1.0.0 --judge --system-prompt eval\prompts\v1.0.0.txt
+   & "$env:LOCALAPPDATA\Programs\Phrasor\Phrasor.exe" --eval eval\cases.json eval\results\v1.0.0 --judge --system-prompt eval\prompts\v1.0.0.txt
    ```
+   The archived prompts in `eval/prompts/` had the app's old name replaced by its new one (#171). Nothing else in them changed.
 2. Run the version you're testing. For the built-in rules, leave out `--system-prompt`. For a candidate, save its rules to a file and pass that.
 3. Compare:
    ```
-   & "$env:LOCALAPPDATA\Programs\PromptForge\PromptForge.exe" --eval-compare eval\results\v1.0.0\results.json eval\results\main\results.json eval\results\compare.md
+   & "$env:LOCALAPPDATA\Programs\Phrasor\Phrasor.exe" --eval-compare eval\results\v1.0.0\results.json eval\results\main\results.json eval\results\compare.md
    ```
 
 `compare.md` lists each case whose pass rate changed. Errored runs are left out; a case with no clean runs on one side, or fewer than two because of errors, is **not comparable** and needs re-running. A case is **better** or **worse** only when its pass rate moved by at least half (with 3 runs: 0–1 passes to 2–3, or the reverse); smaller moves, and any change in a case that ran only once, are **noise**. Keep a rule that makes cases better without making any worse, and look at any "worse" case before merging.
@@ -57,7 +58,7 @@ Both sides must be graded by the same judge. When the judge's instructions chang
 `--rejudge` grades the rewrites saved in a run's `results.json` again, with this build's checks and judge. It doesn't call the optimiser, so it costs only judge calls (about one per run) and no Groq allowance.
 
 ```
-& "$env:LOCALAPPDATA\Programs\PromptForge\PromptForge.exe" --rejudge eval\results\before\results.json eval\cases.json eval\results\before-rejudged | Out-Null
+& "$env:LOCALAPPDATA\Programs\Phrasor\Phrasor.exe" --rejudge eval\results\before\results.json eval\cases.json eval\results\before-rejudged | Out-Null
 ```
 
 It writes `report.md` and `results.json` to the new folder, which must differ from the run's own folder. Runs whose case is no longer in `cases.json`, or whose draft has changed since, are left out and listed in the report. Runs saved before the draft was recorded in `results.json` are graded against today's drafts.
@@ -75,7 +76,7 @@ drive-organise,2,no,yes,
 Each answer is `yes` or `no`; leave it blank if you didn't grade that question. `added`: the rewrite added something you didn't mean (the judge's "added requests" or "invented details"). `left_out`: it dropped or under-delivered something you meant ("dropped a stated requirement" or "under-delivered"). `changed_kind`: it changed the kind of message ("changed the kind of request", "written as the AI's reply" or "answered instead of rewriting"). Then:
 
 ```
-& "$env:LOCALAPPDATA\Programs\PromptForge\PromptForge.exe" --rejudge eval\results\before\results.json eval\cases.json eval\results\calibration-1 --grades D:\grades.csv | Out-Null
+& "$env:LOCALAPPDATA\Programs\Phrasor\Phrasor.exe" --rejudge eval\results\before\results.json eval\cases.json eval\results\calibration-1 --grades D:\grades.csv | Out-Null
 ```
 
 `calibration.md` shows, for each question, how often the judge agreed with you and which runs it got wrong. Change the judge's instructions (`JudgeInstructions` in `src/Phrasor.Core/Eval/EvalRunner.cs`) and re-judge until it mostly agrees; only then trust its numbers.

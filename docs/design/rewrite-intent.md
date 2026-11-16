@@ -19,7 +19,7 @@ Added knowledge must also **change the result**. The receiving AI already knows 
 
 ## Why questions, not categories
 
-PromptForge doesn't sort drafts into kinds of message with a rule for each kind. Categories never cover everything, and a draft that fits none of them gets the wrong rule. Instead, every draft is checked against the same questions below. A new kind of message is just a new combination of answers.
+Phrasor doesn't sort drafts into kinds of message with a rule for each kind. Categories never cover everything, and a draft that fits none of them gets the wrong rule. Instead, every draft is checked against the same questions below. A new kind of message is just a new combination of answers.
 
 The task types (coding, writing, …) stay, but only as a label for the review window and for #36's standing requirements. They no longer decide what gets added.
 
@@ -32,7 +32,7 @@ Each question says what to look for, what it changes in the rewrite, and what it
 A statement ("i have turned on the memory"), an answer ("1. i did 2. you can do that"), a reaction or a report asks for nothing new.
 
 - **Changes:** if it asks for nothing, fix the wording and stop. Questions 3–6 don't apply.
-- **Content with no instruction** (a scene from an ongoing story, a quiz item with its options, a line of roleplay) is kept as content. The receiver knows what to do with it; PromptForge doesn't add an instruction guessing what that is. If it's truly unclear, the review window asks.
+- **Content with no instruction** (a scene from an ongoing story, a quiz item with its options, a line of roleplay) is kept as content. The receiver knows what to do with it; Phrasor doesn't add an instruction guessing what that is. If it's truly unclear, the review window asks.
 - **Never:** turn it into a question, add an offer ("let me know what you'd like…"), or write it as the AI's reply.
 - Covers #26 and #28.
 
@@ -70,7 +70,7 @@ Choices the draft leaves open that would change the answer a lot: which drive, w
 
 "This issue", "the screenshot", "what we discussed", "from yesterday".
 
-- **Changes:** keep the reference as written, and refer to an attachment when the draft says "this". PromptForge can't see the conversation, but the receiving AI usually can (the same chat, the attached screenshot, the open repo). So the reference stays, and the rewrite adds nothing about it.
+- **Changes:** keep the reference as written, and refer to an attachment when the draft says "this". Phrasor can't see the conversation, but the receiving AI usually can (the same chat, the attached screenshot, the open repo). So the reference stays, and the rewrite adds nothing about it.
 - **Never:** add "if you don't have it, ask me" to the prompt, insert a placeholder like "(describe the issue)", or name a product the draft doesn't name. If the reference is truly ambiguous, the review window can ask; the prompt stays clean.
 - Covers #25 and #27.
 
@@ -99,7 +99,7 @@ Requirements the user wrote once in Settings (#36), such as their coding standar
 Whatever the answers:
 
 - **Keep the draft's language**, including mixed-language drafts (a Russian instruction with English code stays that way). Never translate the instruction or the material.
-- **The user's own words stay**, including role lines, emphasis, odd demands and template slots they wrote (`{keywords}`, `[Brand]`). "Never add" is about PromptForge's additions; it's not a licence to remove the user's.
+- **The user's own words stay**, including role lines, emphasis, odd demands and template slots they wrote (`{keywords}`, `[Brand]`). "Never add" is about Phrasor's additions; it's not a licence to remove the user's.
 - **Every exact detail stays exactly as written:** names, numbers, paths, code, errors, quotes. The checker enforces numbers, paths, code and quotes, and (#130) capitalised words such as names, months and places; it cannot see a name typed in lowercase.
 
 ## How deep a rewrite goes
@@ -151,7 +151,7 @@ Expected rewrite: the user's goals and topic list, written out clearly, followed
 > - When describing how Netflix or Amazon built something, separate what's publicly documented from what you're inferring.
 > - Chats don't remember past lessons, so end each lesson with a short progress note I can paste into the next one.
 
-The proposals are where PromptForge earns its keep: these choices change the teaching far more than any wording does. Labelling them keeps them the user's choices. Unlabelled, a wrong choice ("start with Kubernetes") would read as if the user had asked for it.
+The proposals are where Phrasor earns its keep: these choices change the teaching far more than any wording does. Labelling them keeps them the user's choices. Unlabelled, a wrong choice ("start with Kubernetes") would read as if the user had asked for it.
 
 ### "fix this issue"
 
@@ -194,7 +194,7 @@ Review-window questions: which PR or code; anything the user is especially worri
 - "1. i did 2. you can do that 3. you can do that as well" → "1. Done. 2. Go ahead. 3. Go ahead with that as well." (#28)
 - "from previous chat continue what we were working now pull the context and list things to do" → "Continue from our previous chat: pull up the context and list what's left to do." Nothing added about what to do if the context is missing. (#25)
 
-## What PromptForge won't do
+## What Phrasor won't do
 
 - "If you need more details, ask me first" lines, or any other fallback the user didn't write.
 - Role lines ("Act as an expert…").
@@ -214,7 +214,7 @@ These are for #35, listed here so the review covers them:
 
 ## Decisions
 
-D1–D4 and D6 were decided on 2026-10-16, each as recommended, and D8 on 2026-10-21; D5 is answered by #32. D7 (how write mode is chosen) is decided in #43: the user chooses a Write mode; PromptForge never guesses.
+D1–D4 and D6 were decided on 2026-10-16, each as recommended, and D8 on 2026-10-21; D5 is answered by #32. D7 (how write mode is chosen) is decided in #43: the user chooses a Write mode; Phrasor never guesses.
 
 **D1. Should every added line say where it came from?** The JSON gets an `added` list: each added line with the draft phrase naming the goal it serves. The app checks that the phrase is really in the draft, the judge grades whether the trace holds, and the review window can show "why this line".
 *Decided: yes.* It turns "never add what they didn't mean" from a hope into something the eval can check. Cost: [Guessing] about 10–20% more output tokens per rewrite.
@@ -223,7 +223,7 @@ D1–D4 and D6 were decided on 2026-10-16, each as recommended, and D8 on 2026-1
 *Decided: (a) now, (b) later in #37.* (a) needs no UI work and is measurable in #35.
 
 **D3. When the draft asks an agent to do something destructive but states no safety goal** ("delete my old emails"), should the rewrite add "show me the list before deleting"?
-*Decided: no; ask in the review window instead.* Adding it breaks the principle, and once one safety line gets added "because it's obviously wanted", the padding comes back. The risk: if you skip the question, the agent deletes without asking, as it would have without PromptForge.
+*Decided: no; ask in the review window instead.* Adding it breaks the principle, and once one safety line gets added "because it's obviously wanted", the padding comes back. The risk: if you skip the question, the agent deletes without asking, as it would have without Phrasor.
 
 **D4. What do the modes mean?**
 *Decided:* **Light** fixes wording only (Q1–Q2, Q5, Q7). **Standard** answers all eight questions. **Detailed** answers the same questions but with fuller structure, not more content. Today Detailed adds sections that invite padding.

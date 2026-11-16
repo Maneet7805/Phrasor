@@ -7,13 +7,13 @@ namespace Phrasor.Core.Tests;
 
 public class UpdateCheckerTests
 {
-    private const string ExeUrl = "https://github.com/Maneet7805/PromptForge/releases/download/v1.1.0/Phrasor.exe";
-    private const string SumsUrl = "https://github.com/Maneet7805/PromptForge/releases/download/v1.1.0/SHA256SUMS.txt";
+    private const string ExeUrl = "https://github.com/Maneet7805/Phrasor/releases/download/v1.1.0/Phrasor.exe";
+    private const string SumsUrl = "https://github.com/Maneet7805/Phrasor/releases/download/v1.1.0/SHA256SUMS.txt";
 
     private static string ReleaseJson(string tag = "v1.1.0", bool prerelease = false, bool withExe = true)
     {
         var exeAsset = withExe ? "{\"name\":\"Phrasor.exe\",\"browser_download_url\":\"" + ExeUrl + "\"}," : "";
-        return "{\"tag_name\":\"" + tag + "\",\"html_url\":\"https://github.com/Maneet7805/PromptForge/releases/tag/" + tag + "\"," +
+        return "{\"tag_name\":\"" + tag + "\",\"html_url\":\"https://github.com/Maneet7805/Phrasor/releases/tag/" + tag + "\"," +
                "\"draft\":false,\"prerelease\":" + (prerelease ? "true" : "false") + "," +
                "\"assets\":[" + exeAsset +
                "{\"name\":\"Phrasor-1.1.0-win-x64.zip\",\"browser_download_url\":\"https://github.com/x.zip\"}," +
@@ -83,7 +83,7 @@ public class UpdateCheckerTests
         HttpRequestMessage? seen = null;
         var checker = new UpdateChecker(new HttpClient(new FakeHandler(r => { seen = r; return new HttpResponseMessage(HttpStatusCode.NotFound); })));
         Assert.Null(await checker.CheckAsync("1.0.0"));
-        Assert.Equal("https://api.github.com/repos/Maneet7805/PromptForge/releases/latest", seen!.RequestUri!.ToString());
+        Assert.Equal("https://api.github.com/repos/Maneet7805/Phrasor/releases/latest", seen!.RequestUri!.ToString());
         Assert.Contains("Phrasor", seen.Headers.UserAgent.ToString());
     }
 

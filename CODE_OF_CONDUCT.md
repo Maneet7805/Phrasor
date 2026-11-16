@@ -1,6 +1,6 @@
 # Code of Conduct
 
-PromptForge adopts the [Contributor Covenant, version 2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct/) as its code of conduct.
+Phrasor adopts the [Contributor Covenant, version 2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct/) as its code of conduct.
 
 In short:
 
@@ -11,6 +11,6 @@ In short:
 
 ## Enforcement
 
-To report unacceptable behaviour, contact the maintainer privately through the [GitHub profile](https://github.com/Maneet7805) or by opening a private [security advisory](https://github.com/Maneet7805/PromptForge/security/advisories/new) marked "Conduct". Reports are reviewed promptly and kept confidential.
+To report unacceptable behaviour, contact the maintainer privately through the [GitHub profile](https://github.com/Maneet7805) or by opening a private [security advisory](https://github.com/Maneet7805/Phrasor/security/advisories/new) marked "Conduct". Reports are reviewed promptly and kept confidential.
 
 The maintainer may remove, edit or reject comments, commits, issues and other contributions that don't follow this code. They may also temporarily or permanently ban contributors for behaviour they judge inappropriate, threatening or harmful, following the enforcement guidelines of the Contributor Covenant.

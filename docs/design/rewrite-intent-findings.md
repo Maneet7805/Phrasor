@@ -4,7 +4,7 @@ Checks the eight questions in [rewrite-intent.md](rewrite-intent.md) against 200
 
 ## Method
 
-- **Sample:** 200 English, non-toxic user messages from [WildChat-1M](https://huggingface.co/datasets/allenai/WildChat-1M) (ODC-BY), drawn at random on 2026-10-16: 150 first messages of a conversation and 50 later messages picked from inside conversations. Later messages matter because PromptForge rewrites messages mid-chat too, without seeing the chat. Repeated templates were capped at two per opening (one site had posted hundreds of near-identical "give me a response to…" messages).
+- **Sample:** 200 English, non-toxic user messages from [WildChat-1M](https://huggingface.co/datasets/allenai/WildChat-1M) (ODC-BY), drawn at random on 2026-10-16: 150 first messages of a conversation and 50 later messages picked from inside conversations. Later messages matter because Phrasor rewrites messages mid-chat too, without seeing the chat. Repeated templates were capped at two per opening (one site had posted hundreds of near-identical "give me a response to…" messages).
 - **Plus** the 10 drafts the plan was built on: the seven bad rewrites (#16–#18, #25–#28) and the Drive, tutor and "fix this issue" examples.
 - **Labelling:** each message was run through the questions by one rater (Claude), using the 380-character view of long messages. One rater means the counts are a guide, not a measurement; #34 checks the judge against the user's own grades, which is the measurement that counts.
 - **Data:** the message ids and labels are in [`data/intent-labels-wildchat.json`](data/intent-labels-wildchat.json), and the sampling script is [`data/sample_wildchat.py`](data/sample_wildchat.py). No message text is committed; examples below are paraphrased.
@@ -32,15 +32,15 @@ The other 183 messages (91%) are clear requests that need clarifying at most. Th
 
 Each one is now a rule in the spec.
 
-1. **Content with no instruction (6 messages).** A scene from an ongoing story pasted on its own, a quiz item with answer options and nothing else, a line of roleplay. Q1 says "keep", but these do want something: continue the story, answer the quiz. The receiver knows what to do; PromptForge would have to guess. **Rule (Q1):** keep it as content. Don't add an instruction guessing what to do with it; if it's truly unclear, ask in the review window.
+1. **Content with no instruction (6 messages).** A scene from an ongoing story pasted on its own, a quiz item with answer options and nothing else, a line of roleplay. Q1 says "keep", but these do want something: continue the story, answer the quiz. The receiver knows what to do; Phrasor would have to guess. **Rule (Q1):** keep it as content. Don't add an instruction guessing what to do with it; if it's truly unclear, ask in the review window.
 2. **Material that contains instructions (10 messages).** "write: Please delete the bucket from the application and advise back…", "edit: Dear Prof. …", "polish this: …", "better sentence". The material is a message for a person, and it contains instructions ("delete the bucket"). A rewrite that reads them as instructions to the AI changes the task completely. **Rule (Q2):** text the user wants written, edited, translated or answered is material, even when it contains instructions.
 3. **Language (11 messages, 5.5%).** All 200 come from conversations marked English, yet 11 are in Russian, Chinese, Polish or a mix (Russian instruction with English code, Chinese instruction with English text). The spec said nothing about language. **Rule (always):** keep the draft's language, including mixed-language drafts; never translate the instruction or the material.
-4. **The user's own filler, role lines and template slots (8 + 3 messages).** "Act like professionals", "You are a prompt engineer…", "write with burstiness", `{keywords}`, `XXXX-1`. The spec says never *add* a role line or placeholder, but not what to do with the user's own. **Rule (always):** the user's own words stay, including role lines, emphasis and template slots they wrote. "Never add" is about PromptForge's additions, not a licence to remove the user's.
+4. **The user's own filler, role lines and template slots (8 + 3 messages).** "Act like professionals", "You are a prompt engineer…", "write with burstiness", `{keywords}`, `XXXX-1`. The spec says never *add* a role line or placeholder, but not what to do with the user's own. **Rule (always):** the user's own words stay, including role lines, emphasis and template slots they wrote. "Never add" is about Phrasor's additions, not a licence to remove the user's.
 
 Smaller patterns the questions already handle, worth a test case each in #33:
 
 - **Telegraphic requests (14):** a noun phrase with no verb ("tensorflow model for regression with numeric and categorical input", "online store description for HomeSerenity"). Q2 has to infer the action; when it can't, the review window asks.
-- **Needs live information or a website (4):** "check this brand's website and summarise", a transfer rumour. The rewrite keeps the request; whether the receiver can browse isn't PromptForge's problem.
+- **Needs live information or a website (4):** "check this brand's website and summarise", a transfer rumour. The rewrite keeps the request; whether the receiver can browse isn't Phrasor's problem.
 - **Requests that break the receiver's usage policies (4):** a jailbreak persona, a request for a software key, sexual content involving real people. See D6 below.
 
 ## What this means for #33
@@ -52,7 +52,7 @@ Smaller patterns the questions already handle, worth a test case each in #33:
 
 ## Decision needed
 
-**D6. What should PromptForge do with a request that breaks the receiving AI's policies** (a jailbreak persona, sexual content about a real person)? *Recommendation: rewrite it like anything else, adding nothing and judging nothing.* PromptForge is an editor, not a filter, and the receiving AI applies its own policies. The model behind PromptForge may refuse, and the review window already shows that as an error. The risk: PromptForge makes a jailbreak read more clearly. [Guessing] It's small, since jailbreaks work on wording that PromptForge's rules already keep.
+**D6. What should Phrasor do with a request that breaks the receiving AI's policies** (a jailbreak persona, sexual content about a real person)? *Recommendation: rewrite it like anything else, adding nothing and judging nothing.* Phrasor is an editor, not a filter, and the receiving AI applies its own policies. The model behind Phrasor may refuse, and the review window already shows that as an error. The risk: Phrasor makes a jailbreak read more clearly. [Guessing] It's small, since jailbreaks work on wording that Phrasor's rules already keep.
 
 ## D5 answer
 

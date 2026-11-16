@@ -16,7 +16,7 @@ public sealed class UpdateException(string message, Exception? inner = null) : E
 /// </summary>
 public sealed class UpdateChecker(HttpClient http, string repository = UpdateChecker.DefaultRepository, TimeProvider? time = null, TimeSpan? downloadTimeout = null)
 {
-    public const string DefaultRepository = "Maneet7805/PromptForge";
+    public const string DefaultRepository = "Maneet7805/Phrasor";
     public const string ExeAssetName = "Phrasor.exe";
     public const string ChecksumsAssetName = "SHA256SUMS.txt";
 
