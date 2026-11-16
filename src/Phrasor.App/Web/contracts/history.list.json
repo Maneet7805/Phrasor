@@ -1,0 +1,33 @@
+{
+  "request": {
+    "id": "c40",
+    "type": "history.list",
+    "payload": {
+      "query": "clear",
+      "limit": 0
+    }
+  },
+  "reply": {
+    "id": "c40",
+    "ok": true,
+    "payload": {
+      "total": 1,
+      "matches": 1,
+      "retentionDays": 0,
+      "groups": [
+        {
+          "label": "Today",
+          "items": [
+            {
+              "id": "0123456789abcdef0123456789abcdef",
+              "time": "09:30",
+              "preview": "A clear rewrite",
+              "originalChars": 12,
+              "rewriteChars": 15
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

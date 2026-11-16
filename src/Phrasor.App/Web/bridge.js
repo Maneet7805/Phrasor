@@ -59,6 +59,15 @@
     settingsTest: function (draft) { return send("settings.testConnection", draft); },
     onSettingsTest: function (handler) { settingsTestHandler = handler; },
     shortcutRecordStart: function () { return send("shortcut.recordStart"); },
-    shortcutRecordStop: function () { return send("shortcut.recordStop"); }
+    shortcutRecordStop: function () { return send("shortcut.recordStop"); },
+    historyList: function (query, limit) { return send("history.list", { query: query, limit: limit }); },
+    historyGet: function (id) { return send("history.get", { id: id }); },
+    historySave: function () { return send("history.save"); },
+    historyCopy: function (id, part) { return send("history.copy", { id: id, part: part }); },
+    historyDelete: function (id) { return send("history.delete", { id: id }); },
+    historyDeleteAll: function () { return send("history.deleteAll", { confirm: true }); },
+    historySetRetention: function (days) { return send("history.setRetention", { days: days }); },
+    openFolder: function (which) { return send("data.openFolder", { which: which }); },
+    deleteAllData: function () { return send("data.deleteAll", { confirm: true }); }
   });
 })();

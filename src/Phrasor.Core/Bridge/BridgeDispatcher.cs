@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Phrasor.Core.History;
 using Phrasor.Core.Home;
 using Phrasor.Core.Optimization;
 using Phrasor.Core.Theme;
@@ -37,6 +38,8 @@ public sealed class BridgeDispatcher
         "state.get", "theme.set", "window.minimize", "window.maximize", "window.close", "link.open",
         "home.get", "pause.set", TryItCommand, "tryit.cancel", "clipboard.copy",
         "settings.get", SaveCommand, TestCommand, "shortcut.recordStart", "shortcut.recordStop",
+        "data.openFolder", "data.deleteAll",
+        "history.list", "history.get", "history.save", "history.copy", "history.delete", "history.deleteAll", "history.setRetention",
     };
 
     private static readonly JsonSerializerOptions Json = new()
@@ -135,6 +138,8 @@ public sealed class BridgeDispatcher
             catch (BadPayloadException) { return Fail(id, BridgeError.BadRequest); }
             catch (TooLargeException) { return Fail(id, BridgeError.TooLarge); }
             catch (BusyException) { return Fail(id, BridgeError.Busy); }
+            catch (HistoryUnavailableException) { return Fail(id, BridgeError.HistoryUnavailable); }
+            catch (NothingToSaveException) { return Fail(id, BridgeError.NothingToSave); }
             _log(BridgeLog.Describe(type, bytes, _nowMs() - start, BridgeLog.Ok));
             return JsonSerializer.Serialize(new Reply(id, true, result, null), Json);
         }
@@ -188,11 +193,62 @@ public sealed class BridgeDispatcher
                 return new { saved = saved.Saved, settings = saved.Settings, problems = saved.Problems, warnings = saved.Warnings };
             case "shortcut.recordStart": NoPayload(payload); _api.SetShortcutRecording(true); return new { };
             case "shortcut.recordStop": NoPayload(payload); _api.SetShortcutRecording(false); return new { };
+            case "data.openFolder":
+                _api.OpenDataFolder(OneString(payload, "which") switch
+                {
+                    "data" => DataFolder.Data,
+                    "logs" => DataFolder.Logs,
+                    _ => throw new BadPayloadException(),
+                });
+                return new { };
+            case "data.deleteAll":
+                if (!OneBool(payload, "confirm")) throw new BadPayloadException(); // the page asks the user first, then sends true
+                return new { deleted = _api.DeleteAllData() };
+            case "history.list":
+                var list = Exact(payload, "query", "limit");
+                if (list[0].ValueKind != JsonValueKind.String || list[1].ValueKind != JsonValueKind.Number) throw new BadPayloadException();
+                var query = list[0].GetString()!.Trim();
+                if (query.Length > HistoryView.MaxQueryChars || !list[1].TryGetInt32(out var limit) || limit is < 0 or > HistoryStore.MaxEntries) throw new BadPayloadException();
+                return _api.ListHistory(query, limit);
+            case "history.get": return (object?)_api.GetHistory(HistoryId(payload)) ?? throw new BadPayloadException();
+            case "history.save":
+                NoPayload(payload);
+                var result = _api.SaveHistory();
+                return result == HistorySaveResult.NothingToSave ? throw new NothingToSaveException() : new { already = result == HistorySaveResult.AlreadySaved };
+            case "history.copy":
+                var copy = Exact(payload, "id", "part");
+                if (copy[0].ValueKind != JsonValueKind.String || copy[1].ValueKind != JsonValueKind.String) throw new BadPayloadException();
+                var part = copy[1].GetString();
+                if (part is not ("original" or "rewrite")) throw new BadPayloadException();
+                return new { copied = _api.CopyHistory(IdOrThrow(copy[0].GetString()), part == "original") };
+            case "history.delete": return new { deleted = _api.DeleteHistory(HistoryId(payload)) };
+            case "history.deleteAll":
+                if (!OneBool(payload, "confirm")) throw new BadPayloadException();
+                _api.DeleteAllHistory();
+                return new { };
+            case "history.setRetention":
+                var days = Exact(payload, "days")[0];
+                if (days.ValueKind != JsonValueKind.Number || !days.TryGetInt32(out var d) || !HistoryRetention.Allowed.Contains(d)) throw new BadPayloadException();
+                _api.SetHistoryRetention(d);
+                return new { days = d };
             case TestCommand:
                 var test = _api.StartConnectionTest(SettingsArgs(payload)) ?? throw new BusyException();
                 return new { run = test };
             default: throw new BadPayloadException();
         }
+    }
+
+    private static string HistoryId(JsonElement? p) => OneString(p, "id");
+
+    // A saved item's id is 32 lowercase hex characters; anything else cannot match, so it is refused here.
+    private static string IdOrThrow(string? id) =>
+        id is { Length: 32 } && id.All(c => c is >= '0' and <= '9' or >= 'a' and <= 'f') ? id : throw new BadPayloadException();
+
+    // The payload must be exactly an object with these properties (any order); returns their values in the order of the names.
+    private static JsonElement[] Exact(JsonElement? p, params string[] names)
+    {
+        if (p is not { ValueKind: JsonValueKind.Object } e || e.EnumerateObject().Count() != names.Length) throw new BadPayloadException();
+        return names.Select(n => e.TryGetProperty(n, out var v) ? v : throw new BadPayloadException()).ToArray();
     }
 
     private static SettingsDraft SettingsArgs(JsonElement? payload) => SettingsPayload.TryParse(payload, out var draft) switch
@@ -285,4 +341,5 @@ public sealed class BridgeDispatcher
     private sealed class BadPayloadException : Exception;
     private sealed class TooLargeException : Exception;
     private sealed class BusyException : Exception;
+    private sealed class NothingToSaveException : Exception;
 }

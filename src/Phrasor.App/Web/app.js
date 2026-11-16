@@ -26,6 +26,7 @@
       heading.focus();
     }
     document.getElementById("main").scrollTop = 0;
+    window.dispatchEvent(new CustomEvent("phrasor:page", { detail: name }));
   }
 
   navButtons.forEach(function (button) {
@@ -128,9 +129,10 @@
   window.addEventListener("phrasor:settings-saved", refreshHome);
   window.addEventListener("focus", refreshHome); // the tray's Pause may have changed while the window was behind
 
-  // ---- Try-it: the rewrite is shown here only. Nothing is pasted, saved or sent to another app. ----
+  // ---- Try-it: the rewrite is shown here only. Nothing is pasted or sent to another app; it is saved only when Save is pressed. ----
   var draft = $("draft"), runBtn = $("run"), cancelBtn = $("cancel"), copyBtn = $("copy");
-  var running = false, currentRun = null, copyTimer = 0;
+  var running = false, currentRun = null, copyTimer = 0, saveTimer = 0;
+  var saveBtn = $("save");
   var IDLE_NOTE = $("trystate").textContent;
   var ERROR_TEXT = {
     bad_request: "That draft can't be sent. Check it and try again.",
@@ -162,6 +164,8 @@
     $("out").textContent = "";
     $("notes").replaceChildren();
     copyBtn.textContent = "Copy";
+    saveBtn.textContent = "Save to History";
+    saveBtn.disabled = false;
   }
 
   function addNote(text) {
@@ -211,6 +215,25 @@
     }, function () { copyBtn.textContent = "Couldn't copy"; });
     clearTimeout(copyTimer);
     copyTimer = setTimeout(function () { copyBtn.textContent = "Copy"; }, 2500);
+  });
+
+  // Saving is only ever this click. The app saves the draft and rewrite it holds; the page sends no text.
+  var SAVE_ERROR = {
+    history_unavailable: "History is unavailable",
+    nothing_to_save: "Nothing to save",
+    rate_limited: "Try again in a moment"
+  };
+
+  saveBtn.addEventListener("click", function () {
+    saveBtn.disabled = true;
+    window.phrasor.historySave().then(function (reply) {
+      saveBtn.textContent = reply.already ? "Already saved" : "Saved";
+      window.dispatchEvent(new Event("phrasor:history-changed"));
+    }, function (error) {
+      saveBtn.textContent = SAVE_ERROR[error.message] || "Couldn't save";
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(function () { saveBtn.textContent = "Save to History"; saveBtn.disabled = false; }, 2500);
+    });
   });
 
   show("home");

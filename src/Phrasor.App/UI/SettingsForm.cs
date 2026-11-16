@@ -207,7 +207,7 @@ internal sealed class SettingsForm : Form
         var wipe = new Button { Text = "Delete all Phrasor data…", AutoSize = true };
         wipe.Click += (_, _) =>
         {
-            if (MessageBox.Show(this, "Delete your settings, saved API keys and logs? Phrasor will close.", "Phrasor",
+            if (MessageBox.Show(this, "Delete your settings, saved API keys, logs and saved History? Phrasor will close.", "Phrasor",
                     MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) != DialogResult.OK) return;
             _secrets.Clear();
             StartupRegistration.Set(false);
@@ -232,7 +232,7 @@ internal sealed class SettingsForm : Form
             Heading("What Phrasor stores"),
             Hint("Settings: %APPDATA%\\Phrasor\\settings.json. API keys: secrets.dat, encrypted for your Windows account."),
             Hint("Logs: events, timings and error types for 7 days. Never prompt text, transcripts or keys."),
-            Hint("No prompt history is kept. Only the last original text is held in memory so you can restore it from the tray menu."),
+            Hint("History: only what you press Save on, in %LOCALAPPDATA%\\Phrasor\\History\\history.dat, encrypted for your Windows account. Nothing is saved automatically. The last original text is also held in memory so you can restore it from the tray menu."),
             Heading("What leaves your PC"),
             Hint("Only when you press a shortcut: the text you chose to optimise goes to the model provider you configured, and dictated audio goes to the voice provider. Free tiers may use data to improve their services (Google says so for Gemini's free tier)."),
             Row(openData, openLogs, wipe));

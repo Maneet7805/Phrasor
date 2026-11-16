@@ -26,6 +26,9 @@ internal sealed record ReviewContext
     public required string Original { get; init; }
     public required CaptureMode Mode { get; init; }
     public string? TargetLabel { get; init; }
+
+    /// <summary>Saves a draft and its rewrite to History; false when it could not. Null hides the Save button. History is saved only through this, on a click.</summary>
+    public Func<string, string, bool>? Save { get; init; }
     public OptimizeMode InitialMode { get; init; } = OptimizeMode.Standard;
     public TaskType InitialTask { get; init; } = TaskType.Auto;
 
@@ -67,6 +70,8 @@ internal sealed class ReviewForm : Form
     private readonly TextBox _details = new() { Dock = DockStyle.Fill, PlaceholderText = "Optional: answer the questions or add details, then Re-run (Ctrl+R)" };
     private readonly Button _accept = new() { AutoSize = true, Padding = new Padding(8, 2, 8, 2) };
     private readonly Button _copy = new() { Text = "Copy", AutoSize = true };
+    private readonly Button _save = new() { Text = SaveText, AutoSize = true };
+    private const string SaveText = "Save to History";
     private readonly Button _undoEdits = new() { Text = "Undo my edits", AutoSize = true, Enabled = false };
     private readonly Button _reject = new() { Text = "Keep original (Esc)", AutoSize = true };
     private readonly Button _report = new() { Text = "Report bad rewrite", AutoSize = true, Enabled = false };
@@ -125,7 +130,7 @@ internal sealed class ReviewForm : Form
         _notesRow.Controls.Add(_details, 0, 1);
 
         var buttons = new FlowLayoutPanel { Dock = DockStyle.Bottom, AutoSize = true, FlowDirection = FlowDirection.RightToLeft, Padding = new Padding(8, 6, 8, 8) };
-        buttons.Controls.AddRange([_accept, _copy, _reject, _undoEdits, _report]);
+        buttons.Controls.AddRange([_accept, _copy, _save, _reject, _undoEdits, _report]);
 
         Controls.Add(tabsHost);
         Controls.Add(_notesRow);
@@ -135,6 +140,8 @@ internal sealed class ReviewForm : Form
         AcceptButton = null; // Enter must stay a newline in the editor; Ctrl+Enter accepts.
         _accept.Click += (_, _) => Decide(ReviewAction.Accept);
         _copy.Click += (_, _) => Decide(ReviewAction.Copy);
+        _save.Visible = ctx.Save is not null;
+        _save.Click += (_, _) => SaveToHistory();
         _reject.Click += (_, _) => Decide(ReviewAction.Reject);
         _rerun.Click += (_, _) => StartRun();
         _report.Click += (_, _) => ReportBadRewrite();
@@ -142,7 +149,7 @@ internal sealed class ReviewForm : Form
         _improved.TextChanged += (_, _) => _undoEdits.Enabled = HasUserEdits();
         _originalBox.Text = ctx.Original.Replace("\r\n", "\n").Replace("\n", "\r\n");
         SetWorking(false);
-        _accept.Enabled = _copy.Enabled = false;
+        _accept.Enabled = _copy.Enabled = _save.Enabled = false;
         ApplyColors();
         Theme.Changed += OnThemeChanged;
     }
@@ -268,7 +275,7 @@ internal sealed class ReviewForm : Form
         if (working)
         {
             _status.Text = "Optimising… (Esc to cancel)";
-            _accept.Enabled = _copy.Enabled = _report.Enabled = false;
+            _accept.Enabled = _copy.Enabled = _save.Enabled = _report.Enabled = false;
         }
     }
 
@@ -279,7 +286,8 @@ internal sealed class ReviewForm : Form
             if (!_askedQuestions.Contains(question)) _askedQuestions.Add(question);
         _improved.Text = EditCheck.ToWindowsNewlines(result.Prompt);
         _undoEdits.Enabled = false;
-        _accept.Enabled = _copy.Enabled = _report.Enabled = true;
+        _accept.Enabled = _copy.Enabled = _save.Enabled = _report.Enabled = true;
+        _save.Text = SaveText;
         if (result.IsUnchanged && _ctx.Mode != CaptureMode.Clipboard && _ctx.Mode != CaptureMode.InsertAtCursor)
             _accept.Text = "Keep as is (Ctrl+Enter)";
 
@@ -377,6 +385,15 @@ internal sealed class ReviewForm : Form
         _notes.SelectionColor = color ?? _notes.ForeColor;
         _notes.SelectionFont = new Font(_notes.Font, bold ? FontStyle.Bold : FontStyle.Regular);
         _notes.AppendText(text);
+    }
+
+    // Saves what is in the Improved box now (edits included) with the original. The window stays open.
+    private void SaveToHistory()
+    {
+        if (_ctx.Save is null || _result is null) return;
+        var saved = _ctx.Save(_ctx.Original, FromWindowsNewlines(_improved.Text, _ctx.Original));
+        _save.Text = saved ? "Saved" : "Couldn't save";
+        _save.Enabled = !saved;
     }
 
     private void Decide(ReviewAction action)

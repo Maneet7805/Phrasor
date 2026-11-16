@@ -1,0 +1,14 @@
+{
+  "request": {
+    "id": "c30",
+    "type": "data.openFolder",
+    "payload": {
+      "which": "logs"
+    }
+  },
+  "reply": {
+    "id": "c30",
+    "ok": true,
+    "payload": {}
+  }
+}

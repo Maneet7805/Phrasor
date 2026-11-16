@@ -1,9 +1,18 @@
+using Phrasor.Core.History;
 using Phrasor.Core.Home;
 using Phrasor.Core.Theme;
 
 namespace Phrasor.Core.Bridge;
 
 public enum WindowAction { Minimize, ToggleMaximize, Close }
+
+/// <summary>The two folders the Data group may open. The page never names a path.</summary>
+public enum DataFolder { Data, Logs }
+
+public enum HistorySaveResult { Saved, AlreadySaved, NothingToSave }
+
+/// <summary>History could not be read or written (the file is locked, damaged or from a newer Phrasor). Carries no text.</summary>
+public sealed class HistoryUnavailableException : Exception;
 
 /// <summary>What the page sees of the app. Never holds keys or text.</summary>
 public sealed record MainWindowState(ThemeMode Theme, bool Dark, bool Maximised);
@@ -60,4 +69,36 @@ public interface IMainWindowApi
     /// test is going. The result is pushed later (<see cref="BridgeEvents"/>).
     /// </summary>
     int? StartConnectionTest(SettingsDraft draft);
+
+    /// <summary>Saved items for the History page (limit 0 = all) or Home's Recent list. Removes items past the retention first.</summary>
+    HistoryListView ListHistory(string query, int limit);
+
+    /// <summary>One saved item in full, or null when the id is not there.</summary>
+    HistoryEntryView? GetHistory(string id);
+
+    /// <summary>
+    /// Saves the last Try-it draft and rewrite the app holds. The page never supplies the text. Saving is only ever on this request.
+    /// Throws <see cref="HistoryUnavailableException"/> when the file cannot be written.
+    /// </summary>
+    HistorySaveResult SaveHistory();
+
+    /// <summary>Copies the draft or the rewrite of a saved item, in the app. False when the id is not there.</summary>
+    bool CopyHistory(string id, bool original);
+
+    bool DeleteHistory(string id);
+
+    /// <summary>Deletes every saved item. The page asks the user to confirm first.</summary>
+    void DeleteAllHistory();
+
+    /// <summary>Sets how long saved items are kept (0, 30 or 90 days; anything else is refused by the bridge) and applies it now.</summary>
+    void SetHistoryRetention(int days);
+
+    /// <summary>Opens the settings folder or the logs folder in Explorer.</summary>
+    void OpenDataFolder(DataFolder folder);
+
+    /// <summary>
+    /// Deletes the settings, saved API keys, logs and saved History, turns off Start with Windows, then closes Phrasor.
+    /// Returns false (and keeps running) when something could not be deleted. The page asks the user to confirm first.
+    /// </summary>
+    bool DeleteAllData();
 }

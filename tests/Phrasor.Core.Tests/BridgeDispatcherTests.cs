@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Phrasor.Core.Bridge;
+using Phrasor.Core.History;
 using Phrasor.Core.Home;
 using Phrasor.Core.Optimization;
 using Phrasor.Core.Settings;
@@ -44,6 +45,29 @@ public class BridgeDispatcherTests
         public List<bool> Recording = [];
         public void SetShortcutRecording(bool recording) => Recording.Add(recording);
         public int? StartConnectionTest(SettingsDraft draft) { if (NextTest is not null) Tested = draft; return NextTest; }
+
+        public List<DataFolder> Opened = [];
+        public int Wipes;
+        public bool WipeWorks = true;
+        public void OpenDataFolder(DataFolder folder) => Opened.Add(folder);
+        public bool DeleteAllData() { Wipes++; return WipeWorks; }
+
+        public const string SomeId = "0123456789abcdef0123456789abcdef";
+        public List<string> HistoryCalls = [];
+        public HistorySaveResult SaveResult = HistorySaveResult.Saved;
+        public bool HistoryBroken;
+        private void Check() { if (HistoryBroken) throw new HistoryUnavailableException(); }
+        public HistoryListView ListHistory(string query, int limit)
+        {
+            Check(); HistoryCalls.Add($"list:{query}:{limit}");
+            return new(null, 1, 1, 0, [new("Today", [new(SomeId, "09:30", "A clear rewrite", 12, 15)])]);
+        }
+        public HistoryEntryView? GetHistory(string id) { Check(); HistoryCalls.Add("get:" + id); return id == SomeId ? new(SomeId, "my draft", "my rewrite") : null; }
+        public HistorySaveResult SaveHistory() { Check(); HistoryCalls.Add("save"); return SaveResult; }
+        public bool CopyHistory(string id, bool original) { Check(); HistoryCalls.Add($"copy:{id}:{(original ? "original" : "rewrite")}"); return id == SomeId; }
+        public bool DeleteHistory(string id) { Check(); HistoryCalls.Add("delete:" + id); return id == SomeId; }
+        public void DeleteAllHistory() { Check(); HistoryCalls.Add("deleteAll"); }
+        public void SetHistoryRetention(int days) { Check(); HistoryCalls.Add("retention:" + days); }
     }
 
     private readonly FakeApi _api = new();
@@ -62,6 +86,50 @@ public class BridgeDispatcherTests
         return (r.GetProperty("ok").GetBoolean(),
             r.TryGetProperty("error", out var e) ? e.GetString() : null,
             r.TryGetProperty("id", out var i) ? i.GetString() : null);
+    }
+
+    [Theory]
+    [InlineData("data", DataFolder.Data)]
+    [InlineData("logs", DataFolder.Logs)]
+    public void Data_openFolder_opens_only_the_two_known_folders(string name, DataFolder expected)
+    {
+        Assert.True(Parse(Make().Handle(Origin, true, Msg("data.openFolder", $$"""{"which":"{{name}}"}"""))).Ok);
+        Assert.Equal([expected], _api.Opened);
+    }
+
+    [Theory]
+    [InlineData("""{"which":"C:\\Windows"}""")]
+    [InlineData("""{"which":"history"}""")]
+    [InlineData("""{"which":"data","path":"C:\\x"}""")]
+    [InlineData("""{"path":"C:\\x"}""")]
+    public void Data_openFolder_refuses_anything_else(string payload)
+    {
+        Assert.Equal(BridgeError.BadRequest, Parse(Make().Handle(Origin, true, Msg("data.openFolder", payload))).Error);
+        Assert.Empty(_api.Opened);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("""{}""")]
+    [InlineData("""{"confirm":false}""")]
+    [InlineData("""{"confirm":"true"}""")]
+    [InlineData("""{"confirm":true,"extra":1}""")]
+    public void Data_deleteAll_needs_an_explicit_confirm_true(string? payload)
+    {
+        Assert.Equal(BridgeError.BadRequest, Parse(Make().Handle(Origin, true, Msg("data.deleteAll", payload))).Error);
+        Assert.Equal(0, _api.Wipes);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Data_deleteAll_reports_whether_everything_was_deleted(bool works)
+    {
+        _api.WipeWorks = works;
+        var reply = Make().Handle(Origin, true, Msg("data.deleteAll", """{"confirm":true}"""));
+        using var doc = JsonDocument.Parse(reply!);
+        Assert.Equal(works, doc.RootElement.GetProperty("payload").GetProperty("deleted").GetBoolean());
+        Assert.Equal(1, _api.Wipes);
     }
 
     [Fact]
@@ -162,7 +230,7 @@ public class BridgeDispatcherTests
     [Fact]
     public void Unknown_command_gets_an_error_reply_with_its_id()
     {
-        var reply = Make().Handle(Origin, true, Msg("history.list"));
+        var reply = Make().Handle(Origin, true, Msg("quality.run"));
         Assert.Equal((false, BridgeError.UnknownCommand, "a1"), Parse(reply));
     }
 

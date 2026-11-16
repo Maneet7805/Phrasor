@@ -1,7 +1,7 @@
 {
   "request": {
     "id": "c7",
-    "type": "history.list"
+    "type": "quality.run"
   },
   "reply": {
     "id": "c7",

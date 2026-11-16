@@ -1,0 +1,14 @@
+{
+  "request": {
+    "id": "c32",
+    "type": "data.deleteAll",
+    "payload": {
+      "confirm": false
+    }
+  },
+  "reply": {
+    "id": "c32",
+    "ok": false,
+    "error": "bad_request"
+  }
+}

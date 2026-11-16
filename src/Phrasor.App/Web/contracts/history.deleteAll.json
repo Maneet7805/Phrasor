@@ -1,0 +1,14 @@
+{
+  "request": {
+    "id": "c45",
+    "type": "history.deleteAll",
+    "payload": {
+      "confirm": true
+    }
+  },
+  "reply": {
+    "id": "c45",
+    "ok": true,
+    "payload": {}
+  }
+}

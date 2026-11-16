@@ -1,0 +1,16 @@
+{
+  "request": {
+    "id": "c31",
+    "type": "data.deleteAll",
+    "payload": {
+      "confirm": true
+    }
+  },
+  "reply": {
+    "id": "c31",
+    "ok": true,
+    "payload": {
+      "deleted": true
+    }
+  }
+}

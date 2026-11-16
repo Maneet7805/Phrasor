@@ -1,0 +1,16 @@
+{
+  "request": {
+    "id": "c44",
+    "type": "history.delete",
+    "payload": {
+      "id": "0123456789abcdef0123456789abcdef"
+    }
+  },
+  "reply": {
+    "id": "c44",
+    "ok": true,
+    "payload": {
+      "deleted": true
+    }
+  }
+}

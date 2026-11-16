@@ -11,6 +11,10 @@ internal static class Log
 {
     private static readonly object Gate = new();
     private static bool _initialised;
+    private static volatile bool _stopped;
+
+    /// <summary>After "Delete all data": nothing more is written, so the logs folder is not recreated on the way out.</summary>
+    public static void Stop() => _stopped = true;
 
     public static void Info(string message) => Write("INFO", message);
     public static void Warn(string message) => Write("WARN", message);
@@ -19,6 +23,7 @@ internal static class Log
 
     private static void Write(string level, string message)
     {
+        if (_stopped) return;
         try
         {
             lock (Gate)

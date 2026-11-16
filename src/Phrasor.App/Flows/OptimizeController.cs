@@ -113,6 +113,7 @@ internal sealed class OptimizeController(AppServices services)
             Original = text,
             Mode = mode,
             TargetLabel = appLabel,
+            Save = services.TrySaveToHistory,
             InitialMode = settings.DefaultMode,
             Run = (optimizeMode, task, answers, ct) => OptimizeAsync(text, optimizeMode, task, answers, appLabel, ct),
             Preloaded = IsOwnOutput(text) ? Unchanged(text) : null,

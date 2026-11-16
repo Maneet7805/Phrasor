@@ -1,0 +1,18 @@
+{
+  "request": {
+    "id": "c41",
+    "type": "history.get",
+    "payload": {
+      "id": "0123456789abcdef0123456789abcdef"
+    }
+  },
+  "reply": {
+    "id": "c41",
+    "ok": true,
+    "payload": {
+      "id": "0123456789abcdef0123456789abcdef",
+      "original": "my draft",
+      "rewrite": "my rewrite"
+    }
+  }
+}
