@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Phrasor.Core.Llm;
 using Phrasor.Core.Optimization;
+using Phrasor.Core.Theme;
 
 namespace Phrasor.Core.Settings;
 
@@ -44,6 +45,26 @@ public sealed class VoiceSettings
     public int MaxSeconds { get; set; } = 120;
 }
 
+/// <summary>Reads a theme name; anything unknown or of the wrong type becomes System instead of failing the whole file.</summary>
+public sealed class LenientThemeModeConverter : JsonConverter<ThemeMode>
+{
+    public override ThemeMode Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        var value = reader.TokenType == JsonTokenType.String ? reader.GetString() : null;
+        reader.Skip();
+        return Enum.TryParse(value, ignoreCase: true, out ThemeMode mode) && Enum.IsDefined(mode) ? mode : ThemeMode.System;
+    }
+
+    public override void Write(Utf8JsonWriter writer, ThemeMode value, JsonSerializerOptions options) =>
+        writer.WriteStringValue(value.ToString());
+}
+
+public sealed class UiSettings
+{
+    [JsonConverter(typeof(LenientThemeModeConverter))]
+    public ThemeMode Theme { get; set; } = ThemeMode.System;
+}
+
 public sealed class AppSettings
 {
     public int Version { get; set; } = 1;
@@ -82,6 +103,7 @@ public sealed class AppSettings
     public int TimeoutSeconds { get; set; } = 45;
     public HotkeySettings Hotkeys { get; set; } = new();
     public VoiceSettings Voice { get; set; } = new();
+    public UiSettings Ui { get; set; } = new();
     public bool FirstRunComplete { get; set; }
 }
 
@@ -105,6 +127,7 @@ public static class SettingsStore
             settings.Fallback ??= new EndpointSettings { Enabled = false };
             settings.Hotkeys ??= new HotkeySettings();
             settings.Voice ??= new VoiceSettings();
+            settings.Ui ??= new UiSettings();
             settings.Judge ??= new AppSettings().Judge;
             settings.StandingRequirements ??= [];
             return settings;
