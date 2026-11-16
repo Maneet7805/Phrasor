@@ -9,9 +9,9 @@ namespace Phrasor.App.Infrastructure;
 /// API keys encrypted with Windows DPAPI (CurrentUser scope): only your Windows account on this PC
 /// can decrypt them. Stored separately from settings.json so the settings file holds no secrets.
 /// </summary>
-internal sealed class DpapiSecretStore(string path) : ISecretStore
+internal sealed class DpapiSecretStore(string path, string entropy = "Phrasor.v1.api-keys") : ISecretStore
 {
-    private static readonly byte[] Entropy = "Phrasor.v1.api-keys"u8.ToArray();
+    private readonly byte[] _entropy = Encoding.UTF8.GetBytes(entropy);
     private readonly object _gate = new();
 
     public string? Get(string providerId)
@@ -22,7 +22,7 @@ internal sealed class DpapiSecretStore(string path) : ISecretStore
             if (!all.TryGetValue(providerId, out var protectedBase64)) return null;
             try
             {
-                var bytes = ProtectedData.Unprotect(Convert.FromBase64String(protectedBase64), Entropy, DataProtectionScope.CurrentUser);
+                var bytes = ProtectedData.Unprotect(Convert.FromBase64String(protectedBase64), _entropy, DataProtectionScope.CurrentUser);
                 return Encoding.UTF8.GetString(bytes);
             }
             catch (Exception ex) when (ex is CryptographicException or FormatException)
@@ -44,7 +44,7 @@ internal sealed class DpapiSecretStore(string path) : ISecretStore
             }
             else
             {
-                var bytes = ProtectedData.Protect(Encoding.UTF8.GetBytes(value.Trim()), Entropy, DataProtectionScope.CurrentUser);
+                var bytes = ProtectedData.Protect(Encoding.UTF8.GetBytes(value.Trim()), _entropy, DataProtectionScope.CurrentUser);
                 all[providerId] = Convert.ToBase64String(bytes);
             }
             Write(all);
