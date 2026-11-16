@@ -1,0 +1,15 @@
+{
+  "request": {
+    "id": "c32",
+    "type": "firstrun.save",
+    "payload": {
+      "provider": "custom",
+      "key": "example"
+    }
+  },
+  "reply": {
+    "id": "c32",
+    "ok": false,
+    "error": "bad_request"
+  }
+}

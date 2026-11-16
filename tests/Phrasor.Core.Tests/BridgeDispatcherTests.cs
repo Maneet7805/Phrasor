@@ -53,6 +53,10 @@ public class BridgeDispatcherTests
         public bool DeleteAllData() { Wipes++; return WipeWorks; }
 
         public const string SomeId = "0123456789abcdef0123456789abcdef";
+        public List<FirstRunKey> FirstRunTested = [], FirstRunSaved = [];
+        public int? StartFirstRunTest(FirstRunKey key) { if (NextTest is not null) FirstRunTested.Add(key); return NextTest; }
+        public void SaveFirstRunKey(FirstRunKey key) { if (Throw is not null) throw Throw; FirstRunSaved.Add(key); }
+
         public List<string> HistoryCalls = [];
         public HistorySaveResult SaveResult = HistorySaveResult.Saved;
         public bool HistoryBroken;

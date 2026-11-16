@@ -38,7 +38,7 @@ public sealed class BridgeDispatcher
         "state.get", "theme.set", "window.minimize", "window.maximize", "window.close", "link.open",
         "home.get", "pause.set", TryItCommand, "tryit.cancel", "clipboard.copy",
         "settings.get", SaveCommand, TestCommand, "shortcut.recordStart", "shortcut.recordStop",
-        "data.openFolder", "data.deleteAll",
+        "data.openFolder", "data.deleteAll", "firstrun.test", "firstrun.save",
         "history.list", "history.get", "history.save", "history.copy", "history.delete", "history.deleteAll", "history.setRetention",
     };
 
@@ -231,6 +231,11 @@ public sealed class BridgeDispatcher
                 if (days.ValueKind != JsonValueKind.Number || !days.TryGetInt32(out var d) || !HistoryRetention.Allowed.Contains(d)) throw new BadPayloadException();
                 _api.SetHistoryRetention(d);
                 return new { days = d };
+            case "firstrun.test":
+                return new { run = _api.StartFirstRunTest(FirstRunArgs(payload)) ?? throw new BusyException() };
+            case "firstrun.save":
+                _api.SaveFirstRunKey(FirstRunArgs(payload));
+                return new { saved = true };
             case TestCommand:
                 var test = _api.StartConnectionTest(SettingsArgs(payload)) ?? throw new BusyException();
                 return new { run = test };
@@ -249,6 +254,17 @@ public sealed class BridgeDispatcher
     {
         if (p is not { ValueKind: JsonValueKind.Object } e || e.EnumerateObject().Count() != names.Length) throw new BadPayloadException();
         return names.Select(n => e.TryGetProperty(n, out var v) ? v : throw new BadPayloadException()).ToArray();
+    }
+
+    // Exactly { provider, key }: a provider from the short list and a key that is one plain line.
+    private static FirstRunKey FirstRunArgs(JsonElement? payload)
+    {
+        var v = Exact(payload, "provider", "key");
+        if (v[0].ValueKind != JsonValueKind.String || v[1].ValueKind != JsonValueKind.String) throw new BadPayloadException();
+        var provider = v[0].GetString()!;
+        var key = v[1].GetString()!.Trim();
+        if (!FirstRun.Providers.Contains(provider) || key.Length is 0 or > SettingsPayload.MaxKeyChars || key.Any(char.IsControl)) throw new BadPayloadException();
+        return new FirstRunKey(provider, key);
     }
 
     private static SettingsDraft SettingsArgs(JsonElement? payload) => SettingsPayload.TryParse(payload, out var draft) switch

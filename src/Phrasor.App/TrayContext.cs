@@ -61,8 +61,13 @@ internal sealed class TrayContext : ApplicationContext
 
         if (!HasUsableKey())
         {
-            OpenSettings("Model");
-            _services.Notify("Welcome! Add a free Groq API key to start (Settings → Model → Get a key).", ToolTipIcon.Info);
+            // First run is a page in the main window. Without the browser engine the classic window does the job, as before.
+            if (EngineCheck.Version() is null)
+            {
+                OpenSettings("Model");
+                _services.Notify("Welcome! Add a free Groq API key to start (Settings → Model → Get a key).", ToolTipIcon.Info);
+            }
+            else OpenMain();
         }
         else if (!startedInBackground)
         {

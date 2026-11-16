@@ -40,6 +40,9 @@
     });
   });
 
+  // Other scripts ask for a page by name (first run shows itself this way).
+  window.addEventListener("phrasor:show", function (event) { show(event.detail, true); });
+
   var hour = new Date().getHours();
   document.getElementById("greet").textContent = hour < 12 ? "Good morning." : hour < 18 ? "Good afternoon." : "Good evening.";
 

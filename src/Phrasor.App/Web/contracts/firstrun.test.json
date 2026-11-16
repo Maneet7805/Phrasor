@@ -1,0 +1,17 @@
+{
+  "request": {
+    "id": "c30",
+    "type": "firstrun.test",
+    "payload": {
+      "provider": "groq",
+      "key": "gsk_example_not_a_real_key"
+    }
+  },
+  "reply": {
+    "id": "c30",
+    "ok": true,
+    "payload": {
+      "run": 3
+    }
+  }
+}

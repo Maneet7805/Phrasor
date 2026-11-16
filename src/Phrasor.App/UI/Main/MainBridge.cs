@@ -237,6 +237,29 @@ internal sealed class MainBridge : IMainWindowApi
         return number;
     }
 
+    public int? StartFirstRunTest(FirstRunKey key)
+    {
+        if (_test is not null) return null;
+        var settings = SettingsStore.Clone(_services.Settings);
+        FirstRun.Apply(settings, key.Provider);
+        var secrets = new OverlaySecretStore(_services.Secrets, new Dictionary<string, string> { [key.Provider] = key.Key });
+        _test = new CancellationTokenSource();
+        var number = ++_testNumber;
+        _ = RunTestAsync(number, settings, secrets, _test);
+        return number;
+    }
+
+    public void SaveFirstRunKey(FirstRunKey key)
+    {
+        // As in SaveSettings: check and apply on a copy, write the key and the file, then switch the live settings.
+        var next = SettingsStore.Clone(_services.Settings);
+        FirstRun.Apply(next, key.Provider);
+        _services.Secrets.Set(key.Provider, key.Key);
+        SettingsStore.Save(AppPaths.SettingsFile, next);
+        _services.Settings = next;
+        Log.Info($"first run key saved provider={key.Provider}");
+    }
+
     private async Task RunTestAsync(int number, AppSettings settings, ISecretStore secrets, CancellationTokenSource cts)
     {
         await Task.Yield(); // the "started" reply must reach the page before the result does

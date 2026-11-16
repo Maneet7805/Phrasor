@@ -8,7 +8,7 @@
   var pending = {};
   var counter = 0;
   var tryItHandler = null;
-  var settingsTestHandler = null;
+  var settingsTestHandlers = []; // Settings and first run each filter on their own run number
   var TIMEOUT_MS = 10000;
 
   if (host) {
@@ -17,7 +17,7 @@
       try { reply = JSON.parse(event.data); } catch (e) { return; }
       // Pushed by the app, not a reply: the finished (or failed) Try-it run.
       if (reply && reply.event === "tryit") { if (tryItHandler) tryItHandler(reply); return; }
-      if (reply && reply.event === "settingsTest") { if (settingsTestHandler) settingsTestHandler(reply); return; }
+      if (reply && reply.event === "settingsTest") { settingsTestHandlers.forEach(function (handler) { handler(reply); }); return; }
       var call = reply && typeof reply.id === "string" ? pending[reply.id] : null;
       if (!call) return;
       delete pending[reply.id];
@@ -57,7 +57,9 @@
     settingsGet: function () { return send("settings.get"); },
     settingsSave: function (draft) { return send("settings.save", draft); },
     settingsTest: function (draft) { return send("settings.testConnection", draft); },
-    onSettingsTest: function (handler) { settingsTestHandler = handler; },
+    onSettingsTest: function (handler) { settingsTestHandlers.push(handler); },
+    firstRunTest: function (provider, key) { return send("firstrun.test", { provider: provider, key: key }); },
+    firstRunSave: function (provider, key) { return send("firstrun.save", { provider: provider, key: key }); },
     shortcutRecordStart: function () { return send("shortcut.recordStart"); },
     shortcutRecordStop: function () { return send("shortcut.recordStop"); },
     historyList: function (query, limit) { return send("history.list", { query: query, limit: limit }); },

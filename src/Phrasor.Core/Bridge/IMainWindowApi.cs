@@ -70,6 +70,15 @@ public interface IMainWindowApi
     /// </summary>
     int? StartConnectionTest(SettingsDraft draft);
 
+    /// <summary>
+    /// First run: tests the typed key with the provider's default model without saving anything. Returns a run number, or null when a
+    /// test is going. The result is pushed like <see cref="StartConnectionTest"/>'s.
+    /// </summary>
+    int? StartFirstRunTest(FirstRunKey key);
+
+    /// <summary>First run: stores the key and makes the provider the main model. Throws if the settings could not be written.</summary>
+    void SaveFirstRunKey(FirstRunKey key);
+
     /// <summary>Saved items for the History page (limit 0 = all) or Home's Recent list. Removes items past the retention first.</summary>
     HistoryListView ListHistory(string query, int limit);
 
