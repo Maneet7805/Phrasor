@@ -9,9 +9,9 @@ public enum HistoryLoadOutcome
     Ok,
     /// <summary>Nothing was stored yet.</summary>
     Empty,
-    /// <summary>The file was unreadable or from a newer app; it was kept as a .bad copy and the list starts empty.</summary>
+    /// <summary>The file was unreadable; it was kept as a .bad copy and the list starts empty.</summary>
     MovedAside,
-    /// <summary>The file could not be read or moved aside. The list is empty and saving is refused so the file is never overwritten.</summary>
+    /// <summary>The file could not be read or moved aside, or it was written by a newer Phrasor. It is left untouched, the list is empty and saving is refused so the file is never overwritten.</summary>
     Unavailable,
 }
 
@@ -126,7 +126,9 @@ public sealed class HistoryStore
 
         if (plain is null) { LoadOutcome = HistoryLoadOutcome.Empty; return; }
 
-        var parsed = Parse(plain);
+        List<HistoryEntry>? parsed;
+        try { parsed = Parse(plain); }
+        catch (NewerHistoryFileException) { LoadOutcome = HistoryLoadOutcome.Unavailable; return; } // newer data: leave it, never overwrite it
         if (parsed is null) { MoveAside(); return; }
         _entries = parsed;
         LoadOutcome = HistoryLoadOutcome.Ok;
@@ -151,6 +153,7 @@ public sealed class HistoryStore
         FileModel? model;
         try { model = JsonSerializer.Deserialize<FileModel>(plain); }
         catch (JsonException) { return null; }
+        if (model is { Version: > CurrentVersion }) throw new NewerHistoryFileException();
         // Version 1 is the first format, so anything else is unknown. A migration for older versions goes here when a version 2 exists.
         if (model is not { Version: CurrentVersion, Entries: not null }) return null;
 
