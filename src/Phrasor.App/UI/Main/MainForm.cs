@@ -6,7 +6,7 @@ namespace Phrasor.App.UI.Main;
 /// <summary>
 /// The main window's frame: Windows still sees a normal resizable window (so snap, Win+arrows, Alt+Space and the
 /// shadow work), but the client area covers the title bar and <see cref="CaptionStrip"/> paints it instead.
-/// The body is blank for now; closing the window disposes it.
+/// The body hosts <see cref="WebHost"/>; closing the window disposes it.
 /// </summary>
 internal sealed class MainForm : Form
 {
@@ -14,6 +14,7 @@ internal sealed class MainForm : Form
 
     private readonly CaptionStrip _strip = new();
     private readonly Panel _body = new() { Dock = DockStyle.Fill };
+    private readonly WebHost _web = new() { Dock = DockStyle.Fill };
 
     public MainForm()
     {
@@ -21,6 +22,7 @@ internal sealed class MainForm : Form
         Icon = AppIcon.Get();
         AutoScaleMode = AutoScaleMode.Dpi;
         StartPosition = FormStartPosition.CenterScreen;
+        _body.Controls.Add(_web);
         Controls.Add(_body);
         Controls.Add(_strip); // added last so it docks above the body
         ApplyColors();
@@ -30,6 +32,7 @@ internal sealed class MainForm : Form
     private void ApplyColors()
     {
         BackColor = _body.BackColor = Theme.Color("window");
+        _web.ApplyTheme();
         _strip.Invalidate();
     }
 
@@ -54,6 +57,12 @@ internal sealed class MainForm : Form
         MinimumSize = new Size(LogicalToDeviceUnits(MinWidth), LogicalToDeviceUnits(MinHeight));
         ClientSize = new Size(LogicalToDeviceUnits(StartWidth), LogicalToDeviceUnits(StartHeight));
         CenterToScreen();
+    }
+
+    protected override async void OnShown(EventArgs e)
+    {
+        base.OnShown(e);
+        await _web.StartAsync(); // reports its own failures in the window
     }
 
     protected override void OnSizeChanged(EventArgs e)
