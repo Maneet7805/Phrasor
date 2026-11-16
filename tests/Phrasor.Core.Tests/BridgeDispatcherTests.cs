@@ -40,7 +40,7 @@ public class BridgeDispatcherTests
         public SettingsDraft? Saved, Tested;
         public int? NextTest = 3;
         public SettingsView GetSettings() => SettingsPage.BuildView(Settings, new SettingsTests.MemorySecrets(), false);
-        public SettingsView SaveSettings(SettingsDraft draft) { Saved = draft; return GetSettings(); }
+        public SettingsView SaveSettings(SettingsDraft draft) { if (Throw is not null) throw Throw; Saved = draft; return GetSettings(); }
         public int? StartConnectionTest(SettingsDraft draft) { if (NextTest is not null) Tested = draft; return NextTest; }
     }
 

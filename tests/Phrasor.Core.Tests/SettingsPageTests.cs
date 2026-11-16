@@ -113,6 +113,27 @@ public class SettingsPageTests
     }
 
     [Fact]
+    public void A_failed_save_is_a_plain_failed_reply_with_no_key_text()
+    {
+        _api.Throw = new IOException($"disk full while writing {FakeKey}");
+        var reply = Send("settings.save", Draft());
+        Assert.Equal(BridgeError.Failed, ErrorOf(reply));
+        Assert.DoesNotContain(FakeKey, reply);
+        Assert.All(_log, l => Assert.DoesNotContain(FakeKey, l));
+    }
+
+    [Fact]
+    public void Apply_on_a_copy_leaves_the_live_settings_unchanged()
+    {
+        var live = new AppSettings();
+        var next = SettingsStore.Clone(live);
+        Send("settings.save", Draft());
+        SettingsPage.Apply(next, _api.Saved!);
+        Assert.NotEqual(next.Primary.Model, live.Primary.Model);
+        Assert.Equal(new AppSettings().Primary.Model, live.Primary.Model);
+    }
+
+    [Fact]
     public void Too_long_about_me_text_is_too_large_and_the_limit_is_allowed_through()
     {
         var d = Draft();

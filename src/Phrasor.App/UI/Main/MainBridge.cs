@@ -122,13 +122,14 @@ internal sealed class MainBridge : IMainWindowApi
 
     public SettingsView SaveSettings(SettingsDraft draft)
     {
-        // Check and apply on a copy; the live settings change only after the file is written.
+        // Check and apply on a copy; the live settings change only after keys and file are written.
+        // A throw here reaches the page as the bridge's plain "failed" reply (no text), and the live settings stay as they were.
         var next = SettingsStore.Clone(_services.Settings);
         SettingsPage.Apply(next, draft);
-        _services.Settings = next;
-        _services.SaveSettings();
         foreach (var (id, key) in draft.NewKeys) _services.Secrets.Set(id, key);
         foreach (var id in draft.RemoveKeys) _services.Secrets.Set(id, null);
+        SettingsStore.Save(AppPaths.SettingsFile, next);
+        _services.Settings = next;
         try { StartupRegistration.Set(draft.StartWithWindows); }
         catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException or IOException)
         {
