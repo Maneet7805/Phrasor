@@ -217,7 +217,7 @@ internal sealed class TrayContext : ApplicationContext
             _ = Foreground.BringToFrontAsync(_mainForm.Handle);
             return;
         }
-        _mainForm = new MainForm();
+        _mainForm = new MainForm(_services);
         _mainForm.FormClosed += (_, _) => _mainForm = null;
         _mainForm.Show();
         _ = Foreground.BringToFrontAsync(_mainForm.Handle);

@@ -1,0 +1,12 @@
+{
+  "request": {
+    "id": "c4",
+    "type": "window.maximize",
+    "payload": {}
+  },
+  "reply": {
+    "id": "c4",
+    "ok": true,
+    "payload": {}
+  }
+}

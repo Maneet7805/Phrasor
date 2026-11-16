@@ -16,8 +16,9 @@ internal sealed class MainForm : Form
     private readonly Panel _body = new() { Dock = DockStyle.Fill };
     private readonly WebHost _web = new() { Dock = DockStyle.Fill };
 
-    public MainForm()
+    public MainForm(AppServices services)
     {
+        _web.CoreReady += new MainBridge(this, services).Attach;
         Text = "Phrasor";
         Icon = AppIcon.Get();
         AutoScaleMode = AutoScaleMode.Dpi;

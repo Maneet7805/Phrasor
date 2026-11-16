@@ -1,0 +1,11 @@
+{
+  "request": {
+    "id": "c3",
+    "type": "window.minimize"
+  },
+  "reply": {
+    "id": "c3",
+    "ok": true,
+    "payload": {}
+  }
+}

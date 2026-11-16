@@ -1,0 +1,15 @@
+{
+  "request": {
+    "id": "c1",
+    "type": "state.get"
+  },
+  "reply": {
+    "id": "c1",
+    "ok": true,
+    "payload": {
+      "theme": "dark",
+      "dark": true,
+      "maximised": false
+    }
+  }
+}

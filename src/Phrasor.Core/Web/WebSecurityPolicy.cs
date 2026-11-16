@@ -12,11 +12,12 @@ public static class WebSecurityPolicy
     public const string DefaultFile = "index.html";
 
     /// <summary>
-    /// Everything is off except same-origin styles. Widen it only for something a page really needs
-    /// (scripts and images come with the pages that use them); never add a wildcard, a remote host or an unsafe keyword.
+    /// Everything is off except same-origin styles and scripts (files only: no inline script, no eval, no remote).
+    /// Widen it only for something a page really needs (images and fonts come with the pages that use them);
+    /// never add a wildcard, a remote host or an unsafe keyword.
     /// </summary>
     public const string ContentSecurityPolicy =
-        "default-src 'none'; style-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+        "default-src 'none'; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
     /// <summary>True for an http(s) URL on exactly our host and port, with no user info.</summary>
     public static bool IsAllowedUrl(string? url) => TryParse(url, out _);

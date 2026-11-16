@@ -77,6 +77,16 @@ public class WebSecurityPolicyTests
     }
 
     [Fact]
+    public void Csp_allows_script_files_from_our_origin_only()
+    {
+        var directives = WebSecurityPolicy.ContentSecurityPolicy.Split(';', StringSplitOptions.TrimEntries);
+        Assert.Contains("script-src 'self'", directives);
+        Assert.DoesNotContain("'unsafe-inline'", WebSecurityPolicy.ContentSecurityPolicy);
+        Assert.DoesNotContain("'unsafe-eval'", WebSecurityPolicy.ContentSecurityPolicy);
+        Assert.DoesNotContain(directives, d => d.StartsWith("connect-src") || d.StartsWith("frame-src"));
+    }
+
+    [Fact]
     public void Every_response_carries_the_csp_and_no_store()
     {
         var headers = WebSecurityPolicy.ResponseHeaders("text/html; charset=utf-8").ToDictionary(h => h.Name, h => h.Value);
