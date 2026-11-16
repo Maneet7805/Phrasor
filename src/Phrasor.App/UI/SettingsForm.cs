@@ -47,7 +47,7 @@ internal sealed class SettingsForm : Form
     private readonly ComboBox _judgeProvider = Combo([ProviderPresets.Gemini.Id, ProviderPresets.Groq.Id]);
     private readonly TextBox _judgeModel = new() { Width = 260 };
     private readonly Label _testResult = new() { AutoSize = true, MaximumSize = new Size(680, 0) };
-    private readonly Label _providerNotes = new() { AutoSize = true, MaximumSize = new Size(680, 0), ForeColor = SystemColors.GrayText };
+    private readonly Label _providerNotes = new() { AutoSize = true, MaximumSize = new Size(680, 0), Tag = "muted" };
 
     // Hotkeys
     private readonly HotkeyBox _hkOptimize = new() { Width = 200 };
@@ -96,20 +96,22 @@ internal sealed class SettingsForm : Form
         cancel.Click += (_, _) => { DialogResult = DialogResult.Cancel; Close(); };
         save.Click += (_, _) => Save();
         var buttons = new FlowLayoutPanel { Dock = DockStyle.Bottom, AutoSize = true, FlowDirection = FlowDirection.RightToLeft, Padding = new Padding(8) };
-        var version = new Label { Text = $"Version {Application.ProductVersion}", AutoSize = true, ForeColor = SystemColors.GrayText, Padding = new Padding(0, 6, 0, 0) };
+        var version = new Label { Text = $"Version {Application.ProductVersion}", AutoSize = true, Tag = "muted", Padding = new Padding(0, 6, 0, 0) };
         buttons.Controls.AddRange([cancel, save, version]);
         CancelButton = cancel;
 
         Controls.Add(tabs);
         Controls.Add(buttons);
         LoadValues();
+        ApplyColors();
+        Theme.Changed += OnThemeChanged;
     }
 
     public AppSettings Result => _s;
 
     private Control BuildGeneral() => Stack(
         Row(new Label { Text = "Default mode", AutoSize = true, Padding = new Padding(0, 4, 0, 0) }, _defaultMode,
-            new Label { Text = "Light = minimal edits · Standard = balanced · Detailed = full structure for complex tasks", AutoSize = true, ForeColor = SystemColors.GrayText, Padding = new Padding(0, 4, 0, 0) }),
+            new Label { Text = "Light = minimal edits · Standard = balanced · Detailed = full structure for complex tasks", AutoSize = true, Tag = "muted", Padding = new Padding(0, 4, 0, 0) }),
         _review, _startup, _appHint, _repair, _updates,
         new Label { Text = "About me (optional, used only when relevant; never used to invent task details):", AutoSize = true, Padding = new Padding(0, 10, 0, 0) },
         _personal);
@@ -191,7 +193,7 @@ internal sealed class SettingsForm : Form
         _voiceOn,
         Row(Label("Provider"), _voiceProvider, Label("Model"), _voiceModel),
         Hint("Groq's free plan includes Whisper transcription (2,000 requests/day) with the same API key."),
-        Row(Label("Language"), _voiceLanguage, new Label { Text = "ISO code such as en or ms; leave empty to auto-detect", AutoSize = true, ForeColor = SystemColors.GrayText, Padding = new Padding(0, 4, 0, 0) }),
+        Row(Label("Language"), _voiceLanguage, new Label { Text = "ISO code such as en or ms; leave empty to auto-detect", AutoSize = true, Tag = "muted", Padding = new Padding(0, 4, 0, 0) }),
         Row(Label("Stop after"), _voiceMax, new Label { Text = "seconds", AutoSize = true, Padding = new Padding(0, 4, 0, 0) }),
         _voiceAuto,
         Hint("Windows also has free built-in voice typing (Win+H) that works in most text boxes, if you'd rather not send audio to a cloud service."));
@@ -372,7 +374,7 @@ internal sealed class SettingsForm : Form
         // Use keys typed but not yet saved.
         var typed = new OverlaySecrets(_secrets, _keys.Where(k => !string.IsNullOrWhiteSpace(k.Value.Text)).ToDictionary(k => k.Key, k => k.Value.Text.Trim()));
         button.Enabled = false;
-        _testResult.ForeColor = SystemColors.ControlText;
+        Tone(_testResult, "text");
         _testResult.Text = "Testing…";
         try
         {
@@ -382,18 +384,25 @@ internal sealed class SettingsForm : Form
                 [new ChatMessage("user", "Reply with the single word OK.")],
                 new ChatOptions { MaxTokens = 300, JsonMode = false, Mode = OptimizeMode.Light, Timeout = TimeSpan.FromSeconds(20) },
                 CancellationToken.None);
-            _testResult.ForeColor = Color.FromArgb(38, 150, 80);
+            Tone(_testResult, "ok");
             _testResult.Text = $"Connected to {endpoint.Label} in {sw.ElapsedMilliseconds} ms.";
         }
         catch (Exception ex) when (ex is LlmException or MissingKeyException or InvalidOperationException)
         {
-            _testResult.ForeColor = Color.FromArgb(200, 60, 60);
+            Tone(_testResult, "bad");
             _testResult.Text = ex is LlmException llm ? $"{llm.UserMessage} ({llm.Message})" : ex.Message;
         }
         finally
         {
             button.Enabled = true;
         }
+    }
+
+    /// <summary>Colours a label from a theme token and remembers it, so a theme change recolours it.</summary>
+    private static void Tone(System.Windows.Forms.Label label, string token)
+    {
+        label.Tag = token;
+        label.ForeColor = Theme.Color(token);
     }
 
     private static void OpenUrl(string target)
@@ -417,7 +426,7 @@ internal sealed class SettingsForm : Form
 
     private static Label Heading(string text) => new() { Text = text, AutoSize = true, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Padding = new Padding(0, 8, 0, 2), MaximumSize = new Size(680, 0) };
 
-    private static Label Hint(string text) => new() { Text = text, AutoSize = true, ForeColor = SystemColors.GrayText, MaximumSize = new Size(680, 0), Padding = new Padding(0, 0, 0, 6) };
+    private static Label Hint(string text) => new() { Text = text, AutoSize = true, Tag = "muted", MaximumSize = new Size(680, 0), Padding = new Padding(0, 0, 0, 6) };
 
     private static FlowLayoutPanel Row(params Control[] controls)
     {
@@ -431,6 +440,58 @@ internal sealed class SettingsForm : Form
         var stack = new FlowLayoutPanel { FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoSize = true, Dock = DockStyle.Top };
         stack.Controls.AddRange(controls);
         return stack;
+    }
+
+    /// <summary>
+    /// Colours a window's controls from the theme. Labels tagged with a token name ("muted", "ok", "bad", "warn")
+    /// take that colour. Combo boxes, buttons and tab headers are drawn by Windows and only partly follow.
+    /// </summary>
+    internal static void ApplyTheme(Control root)
+    {
+        switch (root)
+        {
+            case TextBoxBase or ComboBox or NumericUpDown:
+                root.BackColor = Theme.Color("card");
+                root.ForeColor = Theme.Color("text");
+                if (root is ComboBox combo) combo.FlatStyle = FlatStyle.Flat;
+                break;
+            case Button button:
+                button.FlatStyle = FlatStyle.Flat;
+                button.FlatAppearance.BorderColor = Theme.Color("border");
+                button.BackColor = Theme.Color("card");
+                button.ForeColor = Theme.Color("text");
+                break;
+            case TabPage page:
+                page.UseVisualStyleBackColor = false;
+                page.BackColor = Theme.Color("window");
+                page.ForeColor = Theme.Color("text");
+                break;
+            case System.Windows.Forms.Label when root.Tag is string token:
+                root.ForeColor = Theme.Color(token);
+                break;
+        }
+        foreach (Control child in root.Controls) ApplyTheme(child);
+    }
+
+    private void ApplyColors()
+    {
+        BackColor = Theme.Color("window");
+        ForeColor = Theme.Color("text");
+        ApplyTheme(this);
+    }
+
+    // Theme.Changed can arrive on another thread.
+    private void OnThemeChanged()
+    {
+        if (IsDisposed) return;
+        if (InvokeRequired && IsHandleCreated) BeginInvoke(ApplyColors);
+        else if (!InvokeRequired) ApplyColors();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) Theme.Changed -= OnThemeChanged;
+        base.Dispose(disposing);
     }
 
     private static TabPage Page(string title, Control content)

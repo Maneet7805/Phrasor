@@ -8,7 +8,8 @@ internal sealed class HotkeyBox : TextBox
     public HotkeyBox()
     {
         ReadOnly = true;
-        BackColor = SystemColors.Window;
+        BackColor = Theme.Color("card");
+        ForeColor = Theme.Color("text");
         Cursor = Cursors.Hand;
         ShortcutsEnabled = false;
         PlaceholderText = "Click, then press a shortcut";

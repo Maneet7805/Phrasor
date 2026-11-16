@@ -28,6 +28,7 @@ internal sealed class TrayContext : ApplicationContext
 
     public TrayContext(bool startedInBackground)
     {
+        Theme.Apply(_services.Settings.Ui.Theme);
         _optimize = new OptimizeController(_services);
         _voice = new VoiceController(_services, _optimize);
         _updates = new UpdateController(_services);

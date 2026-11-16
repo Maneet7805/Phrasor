@@ -20,8 +20,9 @@ internal sealed class InstallingForm : Form
         ShowInTaskbar = false;
         TopMost = true;
         StartPosition = FormStartPosition.Manual;
-        BackColor = Color.FromArgb(24, 24, 31);
-        ForeColor = Color.FromArgb(245, 245, 250);
+        // Lives about a second, so it reads the colours once and does not follow Theme.Changed.
+        BackColor = Theme.Color("card");
+        ForeColor = Theme.Color("text");
         ClientSize = new Size(FormWidth, FormHeight);
         AccessibleRole = AccessibleRole.Alert;
         AccessibleName = $"Installing Phrasor {version}";
