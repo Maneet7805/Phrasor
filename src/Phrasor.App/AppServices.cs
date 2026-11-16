@@ -12,6 +12,9 @@ internal sealed class AppServices : IDisposable
     public AppServices()
     {
         Directory.CreateDirectory(AppPaths.DataDir);
+        LegacyDataMigration.Run(AppPaths.LegacyDataDir, AppPaths.DataDir,
+            new DpapiSecretStore(Path.Combine(AppPaths.LegacyDataDir, "secrets.dat"), "PromptForge.v1.api-keys"),
+            new DpapiSecretStore(AppPaths.SecretsFile), ProviderPresets.All.Select(p => p.Id), Log.Info);
         Settings = SettingsStore.Load(AppPaths.SettingsFile, Log.Warn);
         Secrets = new DpapiSecretStore(AppPaths.SecretsFile);
         Http = new HttpClient { Timeout = Timeout.InfiniteTimeSpan }; // per-request timeouts are applied by the client

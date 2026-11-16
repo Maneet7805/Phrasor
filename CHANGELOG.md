@@ -4,6 +4,9 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+### Fixed
+- Upgrading from a PromptForge build now keeps your settings and API keys: on first start Phrasor copies settings from the old `PromptForge` data folder and re-saves your keys. The old folder is left untouched, and a profile that already has Phrasor settings is not changed (#201).
+
 ### Added
 - Settings in the main window now has **General** (theme, default mode, review window, start with Windows, app hint, fix dropped details, update check, About me) and **Model** (main and fallback model, API keys, **Test connection**), with explicit **Save** and **Discard**. A saved key is never shown again, not even to the window itself: it only says Saved or Not set. Shortcuts, voice, requirements and data stay in the classic Settings window for now. A wrong model name now says so plainly in Try-it too (#199).
 - Home in the main window now shows real status (running or paused, your model, whether an API key is saved, and your shortcuts, with a Pause button that does what the tray's "Pause shortcuts" does). The **Try it** box now rewrites a draft the same way the shortcut does and shows the result in the window with a Copy button. It never pastes into another app, never saves anything, and errors are shown as plain messages (#191).
