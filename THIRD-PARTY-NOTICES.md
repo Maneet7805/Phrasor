@@ -1,6 +1,6 @@
 # Third-party notices
 
-PromptForge itself is MIT licensed (see `LICENSE`). It includes the following third-party software.
+Phrasor itself is MIT licensed (see `LICENSE`). It includes the following third-party software.
 
 ## Silero VAD
 

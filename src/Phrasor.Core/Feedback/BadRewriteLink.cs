@@ -12,7 +12,7 @@ namespace Phrasor.Core.Feedback;
 /// <param name="SkippedForSecret">The user asked to include text but it looked like it held a credential.</param>
 public sealed record BadRewriteLink(string Url, bool TextIncluded, bool Truncated, bool SkippedForSecret)
 {
-    public const string IssueFormUrl = "https://github.com/Maneet7805/PromptForge/issues/new";
+    public const string IssueFormUrl = "https://github.com/Maneet7805/Phrasor/issues/new";
     public const string Template = "bad_rewrite.yml";
 
     // Field ids in .github/ISSUE_TEMPLATE/bad_rewrite.yml.

@@ -1,22 +1,22 @@
 <div align="center">
 
-<img src="docs/images/icon.png" width="96" alt="PromptForge icon">
+<img src="docs/images/icon.png" width="96" alt="Phrasor icon">
 
-# PromptForge
+# Phrasor
 
 **Turn the rough prompt you're typing into a clear one without leaving the app you're in.**
 
 Type naturally, press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>P</kbd>, review the rewrite, press <kbd>Ctrl</kbd>+<kbd>Enter</kbd>.
 
-[![Latest release](https://img.shields.io/github/v/release/Maneet7805/PromptForge?label=download&color=6d4aff)](https://github.com/Maneet7805/PromptForge/releases/latest)
-[![CI](https://github.com/Maneet7805/PromptForge/actions/workflows/ci.yml/badge.svg)](https://github.com/Maneet7805/PromptForge/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/Maneet7805/Phrasor?label=download&color=6d4aff)](https://github.com/Maneet7805/Phrasor/releases/latest)
+[![CI](https://github.com/Maneet7805/Phrasor/actions/workflows/ci.yml/badge.svg)](https://github.com/Maneet7805/Phrasor/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078d4)
 ![.NET 10](https://img.shields.io/badge/.NET-10-512bd4)
 
-[**Download**](https://github.com/Maneet7805/PromptForge/releases/latest) · [Quick start](#quick-start) · [How it works](#how-it-works) · [FAQ](#troubleshooting) · [Contributing](CONTRIBUTING.md)
+[**Download**](https://github.com/Maneet7805/Phrasor/releases/latest) · [Quick start](#quick-start) · [How it works](#how-it-works) · [FAQ](#troubleshooting) · [Contributing](CONTRIBUTING.md)
 
-<img src="docs/images/review-improved.png" width="640" alt="PromptForge review window showing an improved prompt, follow-up questions and what changed">
+<img src="docs/images/review-improved.png" width="640" alt="Phrasor review window showing an improved prompt, follow-up questions and what changed">
 
 </div>
 
@@ -24,7 +24,7 @@ Type naturally, press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>P</kbd>, review the re
 
 ## Why
 
-Most prompts are typed in a hurry: no deliverable, missing context, details buried in a run-on sentence. PromptForge is a small Windows tray app that fixes that in place, following [Anthropic's prompt engineering guidance](https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview). It never sends anything for you: you always see the rewrite first and decide.
+Most prompts are typed in a hurry: no deliverable, missing context, details buried in a run-on sentence. Phrasor is a small Windows tray app that fixes that in place, following [Anthropic's prompt engineering guidance](https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview). It never sends anything for you: you always see the rewrite first and decide.
 
 ## Features
 
@@ -46,13 +46,13 @@ Most prompts are typed in a hurry: no deliverable, missing context, details buri
 ## Quick start
 
 1. **Get a free API key** at <https://console.groq.com/keys>. It takes about a minute, and no card is needed.
-2. **Download [`PromptForge.exe`](https://github.com/Maneet7805/PromptForge/releases/latest/download/PromptForge.exe)** from the latest release and double-click it.
+2. **Download [`Phrasor.exe`](https://github.com/Maneet7805/Phrasor/releases/latest/download/Phrasor.exe)** from the latest release and double-click it.
    - Windows SmartScreen may say *"Windows protected your PC"*, because the app isn't code-signed (signing needs a paid certificate). Click **More info → Run anyway**.
-3. Choose **Yes** to install. PromptForge copies itself to `%LOCALAPPDATA%\Programs\PromptForge`, adds a Start menu shortcut, and can start with Windows. It doesn't need admin rights or a separate .NET install.
+3. Choose **Yes** to install. Phrasor copies itself to `%LOCALAPPDATA%\Programs\Phrasor`, adds a Start menu shortcut, and can start with Windows. It doesn't need admin rights or a separate .NET install.
 4. Settings opens on the **Model** tab. Paste your key, click **Test connection**, then **Save**.
 5. Click into any text box, type a rough prompt, and press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>P</kbd>.
 
-**Update:** from 1.1.0 on, PromptForge checks for a new release once a day and shows a notification. Click it (or **Update to …** in the tray menu), and it downloads the new exe, checks it against the release's `SHA256SUMS.txt`, and asks **Yes** to update. Your settings and keys are kept. You can also download the newer `PromptForge.exe` yourself, run it, and choose **Yes**. To turn the daily check off: Settings → General.
+**Update:** from 1.1.0 on, Phrasor checks for a new release once a day and shows a notification. Click it (or **Update to …** in the tray menu), and it downloads the new exe, checks it against the release's `SHA256SUMS.txt`, and asks **Yes** to update. Your settings and keys are kept. You can also download the newer `Phrasor.exe` yourself, run it, and choose **Yes**. To turn the daily check off: Settings → General.
 **Uninstall:** run `uninstall.cmd` from the release zip. It removes the app, the shortcut and start-with-Windows, and asks whether to delete settings, keys and logs.
 
 ## Usage
@@ -82,7 +82,7 @@ Set the default mode from the tray icon. The tray menu also has *Copy last origi
 
 ## Where it works
 
-PromptForge reads and writes text by sending <kbd>Ctrl</kbd>+<kbd>A</kbd> / <kbd>C</kbd> / <kbd>V</kbd> to the focused app. It then reads the field back to confirm the replacement actually happened.
+Phrasor reads and writes text by sending <kbd>Ctrl</kbd>+<kbd>A</kbd> / <kbd>C</kbd> / <kbd>V</kbd> to the focused app. It then reads the field back to confirm the replacement actually happened.
 
 | Where | Status | Notes |
 | --- | --- | --- |
@@ -157,10 +157,10 @@ A typical rewrite uses about 1,200 input tokens, most of which is the cached sys
 
 - Your text never leaves your PC until you press a shortcut. Then only the text you chose goes to your model provider, and dictated audio goes to your voice provider.
 - The update check (on by default, Settings → General) asks `api.github.com` once a day which release is newest. It sends no prompt text, settings or keys.
-- API keys are encrypted with Windows DPAPI for your Windows account (`%APPDATA%\PromptForge\secrets.dat`).
-- No prompt history is stored. Logs (`%APPDATA%\PromptForge\logs`, kept 7 days) contain events and timings only: never prompt text, transcripts or keys.
+- API keys are encrypted with Windows DPAPI for your Windows account (`%APPDATA%\Phrasor\secrets.dat`).
+- No prompt history is stored. Logs (`%APPDATA%\Phrasor\logs`, kept 7 days) contain events and timings only: never prompt text, transcripts or keys.
 - "Report bad rewrite" opens a pre-filled GitHub issue form in your browser. Your draft and the rewrite go into the link only if you answer Yes, never if they look like a key, and nothing is sent until you submit the form.
-- Text PromptForge puts on the clipboard is marked to stay out of Windows clipboard history and cloud sync.
+- Text Phrasor puts on the clipboard is marked to stay out of Windows clipboard history and cloud sync.
 
 ## Troubleshooting
 
@@ -170,23 +170,23 @@ A typical rewrite uses about 1,200 input tokens, most of which is the cached sys
 | "Couldn't read text here" | The field is empty, or the app runs as administrator. Select the text and use *Optimise selection*, or copy it manually |
 | "Rate limit reached" | Wait a few seconds; the fallback model is used automatically |
 | Result copied instead of replaced | Focus changed, the field changed, or the app rejected the paste. Press <kbd>Ctrl</kbd>+<kbd>V</kbd> |
-| A shortcut types a character (e.g. <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>D</kbd> types "ḍ") | Your keyboard layout uses <kbd>Ctrl</kbd>+<kbd>Alt</kbd> as AltGr. PromptForge warns about this at startup and in Settings; pick a shortcut without <kbd>Ctrl</kbd>+<kbd>Alt</kbd>, e.g. <kbd>Alt</kbd>+<kbd>V</kbd> |
-| Voice records the wrong microphone | PromptForge uses Windows' default recording device: Settings → System → Sound → Input |
+| A shortcut types a character (e.g. <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>D</kbd> types "ḍ") | Your keyboard layout uses <kbd>Ctrl</kbd>+<kbd>Alt</kbd> as AltGr. Phrasor warns about this at startup and in Settings; pick a shortcut without <kbd>Ctrl</kbd>+<kbd>Alt</kbd>, e.g. <kbd>Alt</kbd>+<kbd>V</kbd> |
+| Voice records the wrong microphone | Phrasor uses Windows' default recording device: Settings → System → Sound → Input |
 | Voice: "Couldn't start the microphone" | Windows Settings → Privacy & security → Microphone → allow desktop apps |
-| Anything else | Tray icon → *Open logs folder*, check the latest `promptforge-*.log`, and [open an issue](https://github.com/Maneet7805/PromptForge/issues/new/choose) |
+| Anything else | Tray icon → *Open logs folder*, check the latest `phrasor-*.log`, and [open an issue](https://github.com/Maneet7805/Phrasor/issues/new/choose) |
 
 ## Build from source
 
 You need the [.NET 10 SDK](https://dotnet.microsoft.com/download). The code builds on Windows, Linux or macOS; the app runs on Windows 10/11 x64.
 
 ```bash
-git clone https://github.com/Maneet7805/PromptForge.git
-cd PromptForge
+git clone https://github.com/Maneet7805/Phrasor.git
+cd Phrasor
 dotnet test tests/Phrasor.Core.Tests
 dotnet publish src/Phrasor.App -c Release -o publish
 ```
 
-The output is a single self-contained `publish/PromptForge.exe` (~72 MB). Releases are built by [GitHub Actions](.github/workflows/release.yml) whenever a `v*` tag is pushed.
+The output is a single self-contained `publish/Phrasor.exe` (~72 MB). Releases are built by [GitHub Actions](.github/workflows/release.yml) whenever a `v*` tag is pushed.
 
 ```
 src/Phrasor.Core     optimiser pipeline, provider client, settings, eval runner (cross-platform, unit-tested)

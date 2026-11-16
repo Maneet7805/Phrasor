@@ -1,5 +1,5 @@
 name: Bad rewrite
-description: PromptForge changed what you meant, dropped something, or invented something
+description: Phrasor changed what you meant, dropped something, or invented something
 labels: [prompt-quality]
 body:
   - type: markdown
@@ -10,14 +10,14 @@ body:
     id: original
     attributes:
       label: Your original draft
-      description: Exactly what you typed, before PromptForge.
+      description: Exactly what you typed, before Phrasor.
       render: text
     validations:
       required: true
   - type: textarea
     id: rewrite
     attributes:
-      label: PromptForge's rewrite
+      label: Phrasor's rewrite
       render: text
     validations:
       required: true
