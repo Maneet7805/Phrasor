@@ -17,6 +17,7 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 
 ### Fixed
 - Saving Settings in the main window now writes the file before the running app uses the new settings, and a failed save says so plainly and changes nothing (#203).
+- Upgrading from a PromptForge build now keeps your settings and API keys: on first start Phrasor copies settings from the old `PromptForge` data folder and re-saves your keys. The old folder is left untouched, and a profile that already has Phrasor settings is not changed (#201).
 - A request the provider calls too large is now retried on the same model with a smaller reply budget, instead of sending the fallback the same oversized request (#101).
 - Voice: recordings with only typing, clicks, breathing or room noise are no longer sent for transcription, so they stop turning into words like "Thank you."; a small speech model now checks that someone actually spoke (#66). Very quiet or whispered words may be treated as no speech.
 
