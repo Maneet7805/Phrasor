@@ -151,7 +151,6 @@ public class HistoryStoreTests : IDisposable
 
     [Theory]
     [InlineData("not json at all")]
-    [InlineData("{\"Version\":2,\"Entries\":[]}")]
     [InlineData("{\"Version\":0,\"Entries\":[]}")]
     [InlineData("{\"Entries\":[]}")]
     [InlineData("{\"Version\":1}")]
@@ -289,14 +288,78 @@ public class HistoryStoreTests : IDisposable
         Assert.True(File.Exists(FilePath));
     }
 
+    private static byte[] Header(byte version) => [.. "PHST"u8.ToArray(), version];
+
     [Fact]
-    public void A_newer_version_file_is_kept_as_dot_bad()
+    public void A_file_with_a_newer_version_byte_is_left_untouched_and_saving_is_refused()
     {
         Directory.CreateDirectory(_dir);
-        var newer = new XorProtector().Protect("{\"Version\":99,\"Entries\":[]}"u8.ToArray());
+        byte[] newer = [.. Header(2), 1, 2, 3];
         File.WriteAllBytes(FilePath, newer);
+        var store = OpenFileStore();
+        Assert.Equal(HistoryLoadOutcome.Unavailable, store.LoadOutcome);
+        Assert.Throws<InvalidOperationException>(() => store.Add("a", "b"));
+        Assert.Throws<InvalidOperationException>(store.Clear);
+        Assert.Equal(newer, File.ReadAllBytes(FilePath));
+        Assert.Equal([FilePath], Directory.GetFiles(_dir));
+    }
+
+    [Fact]
+    public void A_newer_Version_inside_the_data_is_left_untouched_too()
+    {
+        var fake = new FakePersistence { Data = "{\"Version\":2,\"Entries\":[]}"u8.ToArray() };
+        var store = new HistoryStore(fake);
+        Assert.Equal(HistoryLoadOutcome.Unavailable, store.LoadOutcome);
+        Assert.False(fake.MovedAside);
+    }
+
+    [Fact]
+    public void Saved_files_start_with_the_marker_and_version_byte()
+    {
+        OpenFileStore().Add("a", "b");
+        Assert.Equal(Header(1), File.ReadAllBytes(FilePath)[..5]);
+    }
+
+    [Fact]
+    public void A_file_without_a_header_still_loads_and_gets_one_on_the_next_save()
+    {
+        Directory.CreateDirectory(_dir);
+        var json = "{\"Version\":1,\"Entries\":[{\"Id\":\"old\",\"SavedUtc\":\"2026-01-01T00:00:00Z\",\"Original\":\"o\",\"Rewrite\":\"legacy\"}]}"u8.ToArray();
+        File.WriteAllBytes(FilePath, new XorProtector().Protect(json));
+        var store = OpenFileStore();
+        Assert.Equal(HistoryLoadOutcome.Ok, store.LoadOutcome);
+        Assert.Equal("legacy", store.Get("old")!.Rewrite);
+        store.Add("n", "new");
+        Assert.Equal(Header(1), File.ReadAllBytes(FilePath)[..5]);
+        Assert.Equal(2, OpenFileStore().List().Count);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    public void A_header_with_version_zero_is_corrupt_and_kept_as_dot_bad(byte version)
+    {
+        Directory.CreateDirectory(_dir);
+        File.WriteAllBytes(FilePath, [.. Header(version), 9, 9]);
         Assert.Equal(HistoryLoadOutcome.MovedAside, OpenFileStore().LoadOutcome);
-        Assert.Equal(newer, File.ReadAllBytes(FilePath + ".bad"));
+        Assert.True(File.Exists(FilePath + ".bad"));
+    }
+
+    [Fact]
+    public void A_truncated_header_is_corrupt_and_kept_as_dot_bad()
+    {
+        Directory.CreateDirectory(_dir);
+        File.WriteAllBytes(FilePath, "PHST"u8.ToArray());
+        Assert.Equal(HistoryLoadOutcome.MovedAside, OpenFileStore().LoadOutcome);
+        Assert.True(File.Exists(FilePath + ".bad"));
+    }
+
+    [Fact]
+    public void A_headed_file_that_cannot_be_decrypted_is_kept_as_dot_bad()
+    {
+        Directory.CreateDirectory(_dir);
+        File.WriteAllBytes(FilePath, [.. Header(1), 1, 2, 3]);
+        Assert.Equal(HistoryLoadOutcome.MovedAside, OpenFileStore().LoadOutcome);
+        Assert.True(File.Exists(FilePath + ".bad"));
     }
 
     [Fact]
