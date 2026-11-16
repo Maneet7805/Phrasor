@@ -1,5 +1,6 @@
 using Phrasor.Core.Optimization;
 using Phrasor.Core.Settings;
+using Phrasor.Core.Theme;
 
 namespace Phrasor.Core.Tests;
 
@@ -47,6 +48,75 @@ public class SettingsLoadTests
             Assert.NotNull(loaded.Hotkeys);
             Assert.NotNull(loaded.Voice);
             Assert.Empty(loaded.StandingRequirements);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    private static AppSettings LoadJson(string json)
+    {
+        var path = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(path, json);
+            return SettingsStore.Load(path);
+        }
+        finally
+        {
+            File.Delete(path);
+            File.Delete(path + ".bad");
+        }
+    }
+
+    [Fact]
+    public void An_old_settings_file_without_ui_loads_with_the_system_theme_and_keeps_its_values()
+    {
+        var loaded = LoadJson("""{"version":1,"primary":{"provider":"gemini","model":"m"},"reviewBeforeReplace":false}""");
+
+        Assert.Equal(ThemeMode.System, loaded.Ui.Theme);
+        Assert.Equal("gemini", loaded.Primary.Provider);
+        Assert.False(loaded.ReviewBeforeReplace);
+    }
+
+    [Fact]
+    public void A_null_ui_section_loads_as_usable_defaults()
+    {
+        Assert.Equal(ThemeMode.System, LoadJson("""{"ui":null}""").Ui.Theme);
+    }
+
+    [Theory]
+    [InlineData("Dark", ThemeMode.Dark)]
+    [InlineData("light", ThemeMode.Light)]
+    [InlineData("Sepia", ThemeMode.System)]
+    [InlineData("7", ThemeMode.System)]
+    public void The_theme_setting_reads_names_and_falls_back_to_system_for_unknown_values(string value, ThemeMode expected)
+    {
+        Assert.Equal(expected, LoadJson("{\"ui\":{\"theme\":\"" + value + "\"}}").Ui.Theme);
+    }
+
+    [Theory]
+    [InlineData("""{"ui":{"theme":7}}""")]
+    [InlineData("""{"ui":{"theme":{"a":[1]}}}""")]
+    [InlineData("""{"ui":{"theme":null}}""")]
+    public void A_theme_value_of_the_wrong_type_falls_back_to_system_and_the_rest_still_loads(string json)
+    {
+        var loaded = LoadJson(json.Replace("{\"ui\"", "{\"hotkeys\":{\"voice\":\"Ctrl+Alt+V\"},\"ui\""));
+
+        Assert.Equal(ThemeMode.System, loaded.Ui.Theme);
+        Assert.Equal("Ctrl+Alt+V", loaded.Hotkeys.Voice);
+    }
+
+    [Fact]
+    public void The_theme_setting_round_trips()
+    {
+        var path = Path.GetTempFileName();
+        try
+        {
+            SettingsStore.Save(path, new AppSettings { Ui = new UiSettings { Theme = ThemeMode.Dark } });
+            Assert.Contains("\"Dark\"", File.ReadAllText(path));
+            Assert.Equal(ThemeMode.Dark, SettingsStore.Load(path).Ui.Theme);
         }
         finally
         {
