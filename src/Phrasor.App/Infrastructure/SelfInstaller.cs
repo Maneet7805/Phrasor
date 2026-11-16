@@ -94,9 +94,9 @@ internal static class SelfInstaller
                 title, MessageBoxButtons.OK, MessageBoxIcon.Information);
             return 1;
         }
-        if (MessageBox.Show("Uninstall Phrasor?\n\nThe app is removed from this computer. Your settings and API keys are kept unless you choose to delete them next.",
+        if (MessageBox.Show("Uninstall Phrasor?\n\nThe app is removed from this computer. Your settings, API keys and saved History are kept unless you choose to delete them next.",
                 title, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return 0;
-        var deleteData = MessageBox.Show("Also delete your settings and API keys?\n\nChoose No to keep them, for example to reinstall later.",
+        var deleteData = MessageBox.Show("Also delete your settings, API keys and saved History?\n\nChoose No to keep them, for example to reinstall later.",
             title, MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) == DialogResult.Yes;
 
         try

@@ -26,6 +26,7 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 - Voice: recordings with only typing, clicks, breathing or room noise are no longer sent for transcription, so they stop turning into words like "Thank you."; a small speech model now checks that someone actually spoke (#66). Very quiet or whispered words may be treated as no speech.
 
 ### Changed
+- The README, SECURITY.md, the website, the uninstall prompts and the classic Settings window now say what is true: a rewrite is saved only if you press Save to History, it is stored encrypted for your Windows account in Local app data, and Delete all data and uninstall can remove it (#208).
 - The review, settings, update and status windows now use Phrasor's warm dark or light colours, following Windows (or the `Ui.Theme` setting). Layout and shortcuts are unchanged; combo boxes, buttons and tab headers only partly follow the theme (#179).
 - The app has a new name: Phrasor. The program, install folder, Start menu entry and tray name changed. Earlier installed copies don't offer this update: install once by hand and enter your API keys again (#171).
 - Rewrites now keep the parts of a draft that report what happened (what worked, what failed), not only the final request (#164).

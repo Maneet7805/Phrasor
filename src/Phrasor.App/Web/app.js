@@ -129,7 +129,7 @@
   window.addEventListener("phrasor:settings-saved", refreshHome);
   window.addEventListener("focus", refreshHome); // the tray's Pause may have changed while the window was behind
 
-  // ---- Try-it: the rewrite is shown here only. Nothing is pasted, saved or sent to another app. ----
+  // ---- Try-it: the rewrite is shown here only. Nothing is pasted or sent to another app; it is saved only when Save is pressed. ----
   var draft = $("draft"), runBtn = $("run"), cancelBtn = $("cancel"), copyBtn = $("copy");
   var running = false, currentRun = null, copyTimer = 0, saveTimer = 0;
   var saveBtn = $("save");
