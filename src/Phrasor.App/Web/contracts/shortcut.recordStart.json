@@ -1,0 +1,11 @@
+{
+  "request": {
+    "id": "c24",
+    "type": "shortcut.recordStart"
+  },
+  "reply": {
+    "id": "c24",
+    "ok": true,
+    "payload": {}
+  }
+}

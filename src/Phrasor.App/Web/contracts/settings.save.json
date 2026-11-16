@@ -31,6 +31,30 @@
           "groq": "FAKE-KEY-FOR-TESTS"
         },
         "remove": []
+      },
+      "shortcuts": {
+        "optimize": "Ctrl+Alt+P",
+        "optimizeSelection": "Ctrl+Alt+Shift+P",
+        "voice": "Ctrl+Alt+D"
+      },
+      "voice": {
+        "enabled": true,
+        "provider": "groq",
+        "model": "whisper-large-v3-turbo",
+        "language": "",
+        "autoOptimize": false,
+        "maxSeconds": 120
+      },
+      "requirements": {
+        "All": "",
+        "Coding": "Find the root cause. No workarounds.",
+        "Debugging": "",
+        "Research": "",
+        "Study": "",
+        "Writing": "",
+        "Planning": "",
+        "General": "",
+        "Image": ""
       }
     }
   },
@@ -38,90 +62,166 @@
     "id": "c21",
     "ok": true,
     "payload": {
-      "general": {
-        "theme": "system",
-        "defaultMode": "Standard",
-        "reviewBeforeReplace": true,
-        "startWithWindows": false,
-        "sendAppHint": true,
-        "repairDroppedDetails": true,
-        "checkForUpdates": true,
-        "personalContext": ""
+      "saved": true,
+      "settings": {
+        "general": {
+          "theme": "system",
+          "defaultMode": "Standard",
+          "reviewBeforeReplace": true,
+          "startWithWindows": false,
+          "sendAppHint": true,
+          "repairDroppedDetails": true,
+          "checkForUpdates": true,
+          "personalContext": ""
+        },
+        "primary": {
+          "provider": "groq",
+          "model": "openai/gpt-oss-120b",
+          "baseUrl": "",
+          "enabled": true
+        },
+        "fallback": {
+          "provider": "groq",
+          "model": "openai/gpt-oss-20b",
+          "baseUrl": "",
+          "enabled": true
+        },
+        "keys": [
+          {
+            "id": "groq",
+            "name": "Groq (free tier)",
+            "set": false,
+            "linkId": "groq-keys"
+          },
+          {
+            "id": "gemini",
+            "name": "Google Gemini (free tier)",
+            "set": false,
+            "linkId": "gemini-keys"
+          },
+          {
+            "id": "custom",
+            "name": "Custom OpenAI-compatible API",
+            "set": false
+          }
+        ],
+        "providers": [
+          {
+            "id": "groq",
+            "name": "Groq (free tier)",
+            "defaultModel": "openai/gpt-oss-120b",
+            "defaultFallbackModel": "openai/gpt-oss-20b",
+            "notes": "Free plan: 30 requests/min, 1,000 requests/day, 8K tokens/min per model. Fast.",
+            "urlEditable": false,
+            "requiresKey": true
+          },
+          {
+            "id": "gemini",
+            "name": "Google Gemini (free tier)",
+            "defaultModel": "gemini-3.5-flash-lite",
+            "defaultFallbackModel": "gemini-3.1-flash-lite",
+            "notes": "Free tier prompts may be used by Google to improve its products. Flash-Lite allows roughly 500 requests/day.",
+            "urlEditable": false,
+            "requiresKey": true
+          },
+          {
+            "id": "ollama",
+            "name": "Ollama (local, private)",
+            "defaultModel": "",
+            "defaultFallbackModel": "",
+            "notes": "Runs on your PC: nothing leaves the machine, but small local models rewrite less well and use a lot of RAM. Enter the name of a model you have pulled.",
+            "urlEditable": true,
+            "requiresKey": false
+          },
+          {
+            "id": "custom",
+            "name": "Custom OpenAI-compatible API",
+            "defaultModel": "",
+            "defaultFallbackModel": "",
+            "notes": "Any service with an OpenAI-compatible /chat/completions endpoint (OpenAI, OpenRouter, Anthropic's compatibility endpoint, LM Studio...).",
+            "urlEditable": true,
+            "requiresKey": true
+          }
+        ],
+        "modes": [
+          "Light",
+          "Standard",
+          "Detailed"
+        ],
+        "shortcuts": {
+          "optimize": "Ctrl+Alt+P",
+          "optimizeSelection": "Ctrl+Alt+Shift+P",
+          "voice": "Ctrl+Alt+D"
+        },
+        "voice": {
+          "enabled": true,
+          "provider": "groq",
+          "model": "whisper-large-v3-turbo",
+          "language": "",
+          "autoOptimize": false,
+          "maxSeconds": 120
+        },
+        "voiceProviders": [
+          {
+            "id": "groq",
+            "name": "Groq (free tier)"
+          },
+          {
+            "id": "custom",
+            "name": "Custom OpenAI-compatible API"
+          }
+        ],
+        "requirements": [
+          {
+            "id": "All",
+            "label": "All tasks",
+            "text": ""
+          },
+          {
+            "id": "Coding",
+            "label": "Coding",
+            "text": ""
+          },
+          {
+            "id": "Debugging",
+            "label": "Debugging",
+            "text": ""
+          },
+          {
+            "id": "Research",
+            "label": "Research",
+            "text": ""
+          },
+          {
+            "id": "Study",
+            "label": "Study",
+            "text": ""
+          },
+          {
+            "id": "Writing",
+            "label": "Writing",
+            "text": ""
+          },
+          {
+            "id": "Planning",
+            "label": "Planning",
+            "text": ""
+          },
+          {
+            "id": "General",
+            "label": "General",
+            "text": ""
+          },
+          {
+            "id": "Image",
+            "label": "Image",
+            "text": ""
+          }
+        ],
+        "requirementsMax": 2000
       },
-      "primary": {
-        "provider": "groq",
-        "model": "openai/gpt-oss-120b",
-        "baseUrl": "",
-        "enabled": true
-      },
-      "fallback": {
-        "provider": "groq",
-        "model": "openai/gpt-oss-20b",
-        "baseUrl": "",
-        "enabled": true
-      },
-      "keys": [
-        {
-          "id": "groq",
-          "name": "Groq (free tier)",
-          "set": false,
-          "linkId": "groq-keys"
-        },
-        {
-          "id": "gemini",
-          "name": "Google Gemini (free tier)",
-          "set": false,
-          "linkId": "gemini-keys"
-        },
-        {
-          "id": "custom",
-          "name": "Custom OpenAI-compatible API",
-          "set": false
-        }
-      ],
-      "providers": [
-        {
-          "id": "groq",
-          "name": "Groq (free tier)",
-          "defaultModel": "openai/gpt-oss-120b",
-          "defaultFallbackModel": "openai/gpt-oss-20b",
-          "notes": "Free plan: 30 requests/min, 1,000 requests/day, 8K tokens/min per model. Fast.",
-          "urlEditable": false,
-          "requiresKey": true
-        },
-        {
-          "id": "gemini",
-          "name": "Google Gemini (free tier)",
-          "defaultModel": "gemini-3.5-flash-lite",
-          "defaultFallbackModel": "gemini-3.1-flash-lite",
-          "notes": "Free tier prompts may be used by Google to improve its products. Flash-Lite allows roughly 500 requests/day.",
-          "urlEditable": false,
-          "requiresKey": true
-        },
-        {
-          "id": "ollama",
-          "name": "Ollama (local, private)",
-          "defaultModel": "",
-          "defaultFallbackModel": "",
-          "notes": "Runs on your PC: nothing leaves the machine, but small local models rewrite less well and use a lot of RAM. Enter the name of a model you have pulled.",
-          "urlEditable": true,
-          "requiresKey": false
-        },
-        {
-          "id": "custom",
-          "name": "Custom OpenAI-compatible API",
-          "defaultModel": "",
-          "defaultFallbackModel": "",
-          "notes": "Any service with an OpenAI-compatible /chat/completions endpoint (OpenAI, OpenRouter, Anthropic's compatibility endpoint, LM Studio...).",
-          "urlEditable": true,
-          "requiresKey": true
-        }
-      ],
-      "modes": [
-        "Light",
-        "Standard",
-        "Detailed"
-      ]
+      "problems": [],
+      "warnings": []
     }
   }
 }
