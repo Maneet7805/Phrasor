@@ -1,0 +1,14 @@
+{
+  "request": {
+    "id": "c6",
+    "type": "link.open",
+    "payload": {
+      "id": "groq-keys"
+    }
+  },
+  "reply": {
+    "id": "c6",
+    "ok": true,
+    "payload": {}
+  }
+}

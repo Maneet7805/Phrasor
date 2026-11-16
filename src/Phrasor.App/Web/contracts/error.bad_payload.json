@@ -1,0 +1,14 @@
+{
+  "request": {
+    "id": "c8",
+    "type": "theme.set",
+    "payload": {
+      "mode": "purple"
+    }
+  },
+  "reply": {
+    "id": "c8",
+    "ok": false,
+    "error": "bad_request"
+  }
+}

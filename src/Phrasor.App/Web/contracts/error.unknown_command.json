@@ -1,0 +1,11 @@
+{
+  "request": {
+    "id": "c7",
+    "type": "history.list"
+  },
+  "reply": {
+    "id": "c7",
+    "ok": false,
+    "error": "unknown_command"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "rawRequest": "{not json",
+  "reply": {
+    "ok": false,
+    "error": "bad_json"
+  }
+}

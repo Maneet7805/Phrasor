@@ -1,0 +1,11 @@
+{
+  "request": {
+    "id": "c5",
+    "type": "window.close"
+  },
+  "reply": {
+    "id": "c5",
+    "ok": true,
+    "payload": {}
+  }
+}

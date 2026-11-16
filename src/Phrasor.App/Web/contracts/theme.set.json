@@ -1,0 +1,16 @@
+{
+  "request": {
+    "id": "c2",
+    "type": "theme.set",
+    "payload": {
+      "mode": "light"
+    }
+  },
+  "reply": {
+    "id": "c2",
+    "ok": true,
+    "payload": {
+      "theme": "light"
+    }
+  }
+}

@@ -58,7 +58,8 @@
   <ItemGroup>
     <EmbeddedResource Include="Assets\Phrasor.ico" />
     <!-- The main window's pages, served from inside the exe (see EmbeddedWeb). -->
-    <EmbeddedResource Include="Web\**\*" LogicalName="web/%(RecursiveDir)%(Filename)%(Extension)" />
+    <!-- Web\contracts holds test examples for Core; they are not shipped. -->
+    <EmbeddedResource Include="Web\**\*" Exclude="Web\contracts\**" LogicalName="web/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>

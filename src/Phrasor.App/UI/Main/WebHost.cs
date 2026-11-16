@@ -21,6 +21,9 @@ internal sealed class WebHost : Panel
     private readonly Stopwatch _clock = new();
     private string? _userDataFolder;
 
+    /// <summary>Raised once the browser is locked down and before the first page loads; the bridge attaches here.</summary>
+    public event Action<CoreWebView2>? CoreReady;
+
     public WebHost()
     {
         Controls.Add(_message);
@@ -61,6 +64,7 @@ internal sealed class WebHost : Panel
             await _view.EnsureCoreWebView2Async(environment);
             if (IsDisposed) return;
             Lock(_view.CoreWebView2);
+            CoreReady?.Invoke(_view.CoreWebView2);
             ApplyTheme();
             _view.Visible = true;
             Log.Info($"webview2 ready version={environment.BrowserVersionString} ms={_clock.ElapsedMilliseconds}");
@@ -99,11 +103,11 @@ internal sealed class WebHost : Panel
     private void Lock(CoreWebView2 core)
     {
         var settings = core.Settings;
-        settings.IsScriptEnabled = false; // the pages have no script yet; the bridge step turns it on
+        settings.IsScriptEnabled = true; // only files from our own origin run (CSP script-src 'self'); see MainBridge for what they may ask
         settings.AreDefaultContextMenusEnabled = false;
         settings.AreDefaultScriptDialogsEnabled = false;
         settings.AreHostObjectsAllowed = false;
-        settings.IsWebMessageEnabled = false;
+        settings.IsWebMessageEnabled = true;
         settings.IsStatusBarEnabled = false;
         settings.IsZoomControlEnabled = false;
         settings.IsPinchZoomEnabled = false;
