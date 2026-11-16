@@ -23,7 +23,9 @@ internal sealed class CaptionStrip : Control
     public CaptionStrip()
     {
         Dock = DockStyle.Top;
-        SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint, true);
+        // ResizeRedraw: the buttons are right-aligned, so after a resize only the newly exposed strip is repainted
+        // and the old buttons stay behind (a ghost set mid-strip, and the real close button half drawn).
+        SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
         TabStop = false;
         Height = Scale(LogicalHeight);
     }
