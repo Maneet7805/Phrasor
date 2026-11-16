@@ -107,6 +107,7 @@ internal static class SelfInstaller
             UninstallRegistration.Remove();
             Log.Info($"uninstalled keepData={!deleteData}"); // before the data folder goes: logging recreates it
             if (deleteData && Directory.Exists(AppPaths.DataDir)) Directory.Delete(AppPaths.DataDir, recursive: true);
+            if (deleteData && Directory.Exists(AppPaths.HistoryDir)) Directory.Delete(AppPaths.HistoryDir, recursive: true);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException or System.ComponentModel.Win32Exception)
         {

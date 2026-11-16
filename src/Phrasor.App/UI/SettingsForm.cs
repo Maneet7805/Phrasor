@@ -212,6 +212,7 @@ internal sealed class SettingsForm : Form
             _secrets.Clear();
             StartupRegistration.Set(false);
             try { Directory.Delete(AppPaths.DataDir, recursive: true); } catch (IOException) { }
+            try { if (Directory.Exists(AppPaths.HistoryDir)) Directory.Delete(AppPaths.HistoryDir, recursive: true); } catch (IOException) { }
             Application.Exit();
         };
         var quality = new Button { Text = "Run quality check on a test set…", AutoSize = true, Enabled = _runQualityCheck is not null };

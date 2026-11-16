@@ -1,4 +1,5 @@
 using Phrasor.App.Infrastructure;
+using Phrasor.Core.History;
 using Phrasor.Core.Llm;
 using Phrasor.Core.Optimization;
 using Phrasor.Core.Settings;
@@ -16,6 +17,7 @@ internal sealed class AppServices : IDisposable
         Http = new HttpClient { Timeout = Timeout.InfiniteTimeSpan }; // per-request timeouts are applied by the client
         Client = new OpenAiCompatibleClient(Http);
         Optimizer = new PromptOptimizer(Client);
+        _history = new Lazy<HistoryStore>(() => new HistoryStore(new EncryptedHistoryFile(AppPaths.HistoryFile, new DpapiBlobProtector())));
     }
 
     public AppSettings Settings { get; set; }
@@ -23,6 +25,11 @@ internal sealed class AppServices : IDisposable
     public HttpClient Http { get; }
     public ILlmClient Client { get; }
     public PromptOptimizer Optimizer { get; }
+
+    private readonly Lazy<HistoryStore> _history;
+
+    /// <summary>Created on first use, so startup never touches the History file.</summary>
+    public HistoryStore History => _history.Value;
 
     /// <summary>Shows a tray notification. Set by the tray context.</summary>
     public Action<string, ToolTipIcon> Notify { get; set; } = (_, _) => { };

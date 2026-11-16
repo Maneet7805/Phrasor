@@ -8,6 +8,14 @@ public class InstallPathsTests
     private static readonly string Install = InstallPaths.InstallDir(Local);
 
     [Fact]
+    public void History_lives_under_local_app_data_next_to_but_not_inside_the_install_folder()
+    {
+        var history = InstallPaths.HistoryDir(Local);
+        Assert.Equal(Path.Combine(Local, "Phrasor", "History"), history);
+        Assert.False(InstallPaths.IsSafeToDelete(history, Local));
+    }
+
+    [Fact]
     public void The_install_folder_is_under_programs()
     {
         Assert.Equal(Path.Combine(Local, "Programs", "Phrasor"), Install);
