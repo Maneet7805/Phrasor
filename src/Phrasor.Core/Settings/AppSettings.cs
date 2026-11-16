@@ -140,6 +140,10 @@ public static class SettingsStore
         }
     }
 
+    /// <summary>An independent copy, so a change can be checked and applied as a whole or dropped.</summary>
+    public static AppSettings Clone(AppSettings s) =>
+        JsonSerializer.Deserialize<AppSettings>(JsonSerializer.Serialize(s, JsonOptions), JsonOptions)!;
+
     public static void Save(string path, AppSettings settings)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);

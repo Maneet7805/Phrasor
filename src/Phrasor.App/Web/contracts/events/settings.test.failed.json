@@ -1,0 +1,11 @@
+{
+  "run": 4,
+  "error": "key_rejected",
+  "event": {
+    "event": "settingsTest",
+    "run": 4,
+    "ok": false,
+    "error": "key_rejected",
+    "message": "The provider did not accept your API key. Check it in Settings."
+  }
+}

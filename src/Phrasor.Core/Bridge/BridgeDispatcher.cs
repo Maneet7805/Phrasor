@@ -21,6 +21,11 @@ public sealed class BridgeDispatcher
     public const int MaxTryItBytes = 128 * 1024;
     public const int MaxTryItChars = 20_000;
     private const string TryItCommand = "tryit.run";
+
+    /// <summary>Settings carry the About-me text and typed keys: 4,000 characters can take 6 bytes each once escaped.</summary>
+    public const int MaxSettingsBytes = 32 * 1024;
+    private const string SaveCommand = "settings.save";
+    private const string TestCommand = "settings.testConnection";
     public const int MaxIdLength = 64;
     public const int MaxMessagesPerWindow = 30;
     public const int WindowMs = 1000;
@@ -31,6 +36,7 @@ public sealed class BridgeDispatcher
     {
         "state.get", "theme.set", "window.minimize", "window.maximize", "window.close", "link.open",
         "home.get", "pause.set", TryItCommand, "tryit.cancel", "clipboard.copy",
+        "settings.get", SaveCommand, TestCommand,
     };
 
     private static readonly JsonSerializerOptions Json = new()
@@ -93,8 +99,8 @@ public sealed class BridgeDispatcher
         }
 
         if (message is null) return Fail(null, BridgeError.BadJson);
-        // A message may only be bigger than the default if it names tryit.run; the real check is repeated once the command is parsed.
-        var limit = message.Contains($"\"{TryItCommand}\"", StringComparison.Ordinal) ? MaxTryItBytes : MaxMessageBytes;
+        // A message may only be bigger than the default if it names a command that needs room; the real check is repeated once the command is parsed.
+        var limit = CommandNames.Select(c => LimitFor(c) > MaxMessageBytes && message.Contains($"\"{c}\"", StringComparison.Ordinal) ? LimitFor(c) : MaxMessageBytes).Max();
         if (bytes > limit) return Fail(null, BridgeError.TooLarge);
         if (!TryAcquire(start)) return Fail(null, BridgeError.RateLimited);
 
@@ -123,7 +129,7 @@ public sealed class BridgeDispatcher
             if (!CommandNames.Contains(type)) return Fail(id, BridgeError.UnknownCommand);
 
             _command = type;
-            if (bytes > MaxMessageBytes && type != TryItCommand) return Fail(id, BridgeError.TooLarge);
+            if (bytes > LimitFor(type)) return Fail(id, BridgeError.TooLarge);
             object result;
             try { result = Run(type, payload); }
             catch (BadPayloadException) { return Fail(id, BridgeError.BadRequest); }
@@ -133,6 +139,13 @@ public sealed class BridgeDispatcher
             return JsonSerializer.Serialize(new Reply(id, true, result, null), Json);
         }
     }
+
+    private static int LimitFor(string type) => type switch
+    {
+        TryItCommand => MaxTryItBytes,
+        SaveCommand or TestCommand => MaxSettingsBytes,
+        _ => MaxMessageBytes,
+    };
 
     private object Run(string type, JsonElement? payload)
     {
@@ -169,9 +182,21 @@ public sealed class BridgeDispatcher
                 return new { run };
             case "tryit.cancel": NoPayload(payload); _api.CancelTryIt(); return new { };
             case "clipboard.copy": NoPayload(payload); return new { copied = _api.CopyRewrite() };
+            case "settings.get": NoPayload(payload); return _api.GetSettings();
+            case SaveCommand: return _api.SaveSettings(SettingsArgs(payload));
+            case TestCommand:
+                var test = _api.StartConnectionTest(SettingsArgs(payload)) ?? throw new BusyException();
+                return new { run = test };
             default: throw new BadPayloadException();
         }
     }
+
+    private static SettingsDraft SettingsArgs(JsonElement? payload) => SettingsPayload.TryParse(payload, out var draft) switch
+    {
+        SettingsPayload.Outcome.Ok => draft,
+        SettingsPayload.Outcome.TooLarge => throw new TooLargeException(),
+        _ => throw new BadPayloadException(),
+    };
 
     private static object HomeView(HomeStatus h) => new
     {

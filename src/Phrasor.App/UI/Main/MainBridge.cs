@@ -1,9 +1,11 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using Microsoft.Web.WebView2.Core;
+using Phrasor.App.Infrastructure;
 using Phrasor.App.TextAccess;
 using Phrasor.Core.Bridge;
 using Phrasor.Core.Home;
+using Phrasor.Core.Settings;
 using Phrasor.Core.Theme;
 
 namespace Phrasor.App.UI.Main;
@@ -22,6 +24,8 @@ internal sealed class MainBridge : IMainWindowApi
     private CoreWebView2? _core;
     private CancellationTokenSource? _run; // set while a Try-it run is going: only one at a time
     private int _runNumber;
+    private CancellationTokenSource? _test; // set while Test connection is going: only one at a time
+    private int _testNumber;
     private string? _lastRewrite; // the one string clipboard.copy can copy; kept in memory only, dropped with the window
 
     public MainBridge(MainForm form, AppServices services, MainHooks hooks)
@@ -30,7 +34,7 @@ internal sealed class MainBridge : IMainWindowApi
         _services = services;
         _hooks = hooks;
         _dispatcher = new BridgeDispatcher(this, Log.Info);
-        form.FormClosed += (_, _) => _run?.Cancel();
+        form.FormClosed += (_, _) => { _run?.Cancel(); _test?.Cancel(); };
     }
 
     public void Attach(CoreWebView2 core)
@@ -112,6 +116,49 @@ internal sealed class MainBridge : IMainWindowApi
         _run = null;
         Log.Info(TryItLog.Describe(outcome, request.Text.Length, clock.ElapsedMilliseconds));
         Post(json);
+    }
+
+    public SettingsView GetSettings() => SettingsPage.BuildView(_services.Settings, _services.Secrets, StartupRegistration.IsEnabled());
+
+    public SettingsView SaveSettings(SettingsDraft draft)
+    {
+        // Check and apply on a copy; the live settings change only after the file is written.
+        var next = SettingsStore.Clone(_services.Settings);
+        SettingsPage.Apply(next, draft);
+        _services.Settings = next;
+        _services.SaveSettings();
+        foreach (var (id, key) in draft.NewKeys) _services.Secrets.Set(id, key);
+        foreach (var id in draft.RemoveKeys) _services.Secrets.Set(id, null);
+        try { StartupRegistration.Set(draft.StartWithWindows); }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException or IOException)
+        {
+            Log.Warn($"startup registration failed type={ex.GetType().Name}");
+        }
+        Theme.Apply(next.Ui.Theme);
+        Log.Info($"settings saved from main window keysSet={draft.NewKeys.Count} keysRemoved={draft.RemoveKeys.Count}");
+        return GetSettings();
+    }
+
+    public int? StartConnectionTest(SettingsDraft draft)
+    {
+        if (_test is not null) return null;
+        var settings = SettingsStore.Clone(_services.Settings);
+        SettingsPage.Apply(settings, draft);
+        var secrets = new OverlaySecretStore(_services.Secrets, draft.NewKeys);
+        _test = new CancellationTokenSource();
+        var number = ++_testNumber;
+        _ = RunTestAsync(number, settings, secrets, _test);
+        return number;
+    }
+
+    private async Task RunTestAsync(int number, AppSettings settings, ISecretStore secrets, CancellationTokenSource cts)
+    {
+        await Task.Yield(); // the "started" reply must reach the page before the result does
+        var result = await SettingsPage.TestAsync(_services.Client, settings, secrets, cts.Token);
+        cts.Dispose();
+        _test = null;
+        Log.Info($"settings test outcome={result.Error ?? BridgeLog.Ok} ms={result.Milliseconds}");
+        Post(result.Ok ? BridgeEvents.SettingsTestDone(number, result) : BridgeEvents.SettingsTestFailed(number, result.Error!));
     }
 
     public MainWindowState GetState() =>

@@ -1,0 +1,44 @@
+{
+  "request": {
+    "id": "c22",
+    "type": "settings.testConnection",
+    "payload": {
+      "general": {
+        "theme": "dark",
+        "defaultMode": "Standard",
+        "reviewBeforeReplace": true,
+        "startWithWindows": false,
+        "sendAppHint": true,
+        "repairDroppedDetails": true,
+        "checkForUpdates": true,
+        "personalContext": "Year 3 CS student."
+      },
+      "model": {
+        "primary": {
+          "provider": "groq",
+          "model": "openai/gpt-oss-120b",
+          "baseUrl": ""
+        },
+        "fallback": {
+          "enabled": true,
+          "provider": "groq",
+          "model": "openai/gpt-oss-20b",
+          "baseUrl": ""
+        }
+      },
+      "keys": {
+        "set": {
+          "groq": "FAKE-KEY-FOR-TESTS"
+        },
+        "remove": []
+      }
+    }
+  },
+  "reply": {
+    "id": "c22",
+    "ok": true,
+    "payload": {
+      "run": 3
+    }
+  }
+}
