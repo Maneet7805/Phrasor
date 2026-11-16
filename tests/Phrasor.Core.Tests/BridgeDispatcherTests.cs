@@ -2,6 +2,7 @@ using System.Text.Json;
 using Phrasor.Core.Bridge;
 using Phrasor.Core.Home;
 using Phrasor.Core.Optimization;
+using Phrasor.Core.Settings;
 using Phrasor.Core.Theme;
 using Phrasor.Core.Web;
 
@@ -34,6 +35,13 @@ public class BridgeDispatcherTests
         public int? StartTryIt(TryItRequest request) { if (NextRun is not null) Runs.Add(request); return NextRun; }
         public void CancelTryIt() => Cancels++;
         public bool CopyRewrite() => CanCopy;
+
+        public AppSettings Settings = new();
+        public SettingsDraft? Saved, Tested;
+        public int? NextTest = 3;
+        public SettingsView GetSettings() => SettingsPage.BuildView(Settings, new SettingsTests.MemorySecrets(), false);
+        public SettingsView SaveSettings(SettingsDraft draft) { Saved = draft; return GetSettings(); }
+        public int? StartConnectionTest(SettingsDraft draft) { if (NextTest is not null) Tested = draft; return NextTest; }
     }
 
     private readonly FakeApi _api = new();

@@ -1,0 +1,96 @@
+{
+  "request": {
+    "id": "c20",
+    "type": "settings.get"
+  },
+  "reply": {
+    "id": "c20",
+    "ok": true,
+    "payload": {
+      "general": {
+        "theme": "system",
+        "defaultMode": "Standard",
+        "reviewBeforeReplace": true,
+        "startWithWindows": false,
+        "sendAppHint": true,
+        "repairDroppedDetails": true,
+        "checkForUpdates": true,
+        "personalContext": ""
+      },
+      "primary": {
+        "provider": "groq",
+        "model": "openai/gpt-oss-120b",
+        "baseUrl": "",
+        "enabled": true
+      },
+      "fallback": {
+        "provider": "groq",
+        "model": "openai/gpt-oss-20b",
+        "baseUrl": "",
+        "enabled": true
+      },
+      "keys": [
+        {
+          "id": "groq",
+          "name": "Groq (free tier)",
+          "set": false,
+          "linkId": "groq-keys"
+        },
+        {
+          "id": "gemini",
+          "name": "Google Gemini (free tier)",
+          "set": false,
+          "linkId": "gemini-keys"
+        },
+        {
+          "id": "custom",
+          "name": "Custom OpenAI-compatible API",
+          "set": false
+        }
+      ],
+      "providers": [
+        {
+          "id": "groq",
+          "name": "Groq (free tier)",
+          "defaultModel": "openai/gpt-oss-120b",
+          "defaultFallbackModel": "openai/gpt-oss-20b",
+          "notes": "Free plan: 30 requests/min, 1,000 requests/day, 8K tokens/min per model. Fast.",
+          "urlEditable": false,
+          "requiresKey": true
+        },
+        {
+          "id": "gemini",
+          "name": "Google Gemini (free tier)",
+          "defaultModel": "gemini-3.5-flash-lite",
+          "defaultFallbackModel": "gemini-3.1-flash-lite",
+          "notes": "Free tier prompts may be used by Google to improve its products. Flash-Lite allows roughly 500 requests/day.",
+          "urlEditable": false,
+          "requiresKey": true
+        },
+        {
+          "id": "ollama",
+          "name": "Ollama (local, private)",
+          "defaultModel": "",
+          "defaultFallbackModel": "",
+          "notes": "Runs on your PC: nothing leaves the machine, but small local models rewrite less well and use a lot of RAM. Enter the name of a model you have pulled.",
+          "urlEditable": true,
+          "requiresKey": false
+        },
+        {
+          "id": "custom",
+          "name": "Custom OpenAI-compatible API",
+          "defaultModel": "",
+          "defaultFallbackModel": "",
+          "notes": "Any service with an OpenAI-compatible /chat/completions endpoint (OpenAI, OpenRouter, Anthropic's compatibility endpoint, LM Studio...).",
+          "urlEditable": true,
+          "requiresKey": true
+        }
+      ],
+      "modes": [
+        "Light",
+        "Standard",
+        "Detailed"
+      ]
+    }
+  }
+}

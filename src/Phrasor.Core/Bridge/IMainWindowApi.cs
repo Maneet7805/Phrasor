@@ -39,4 +39,16 @@ public interface IMainWindowApi
 
     /// <summary>Copies the last rewrite the app produced. The page cannot supply the text. False when there is none.</summary>
     bool CopyRewrite();
+
+    /// <summary>What the Settings page may show. Keys appear only as set or not set.</summary>
+    SettingsView GetSettings();
+
+    /// <summary>Stores the page's choices and typed keys, then returns the settings as saved. Throws if nothing could be saved.</summary>
+    SettingsView SaveSettings(SettingsDraft draft);
+
+    /// <summary>
+    /// Tests the main model with the draft (typed keys included) without saving anything. Returns a run number, or null when a
+    /// test is going. The result is pushed later (<see cref="BridgeEvents"/>).
+    /// </summary>
+    int? StartConnectionTest(SettingsDraft draft);
 }

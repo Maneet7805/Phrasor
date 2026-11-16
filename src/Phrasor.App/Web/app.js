@@ -1,11 +1,10 @@
-// Thin renderer: shows one page at a time, greets by the hour, sends the theme choice to the app, shows Home status
+// Thin renderer: shows one page at a time, greets by the hour, shows Home status
 // and runs Try-it. All text from the app goes in with textContent. No data and no rules live here; the window buttons are painted by the app itself, so nothing here touches them.
 (function () {
   "use strict";
 
   var pages = document.querySelectorAll("[data-page]");
   var navButtons = document.querySelectorAll("[data-nav]");
-  var themeRadios = document.querySelectorAll("input[name=theme]");
 
   function show(name, moveFocus) {
     var shown = null;
@@ -42,22 +41,6 @@
 
   var hour = new Date().getHours();
   document.getElementById("greet").textContent = hour < 12 ? "Good morning." : hour < 18 ? "Good afternoon." : "Good evening.";
-
-  function showTheme(mode) {
-    themeRadios.forEach(function (radio) { radio.checked = radio.value === mode; });
-  }
-
-  themeRadios.forEach(function (radio) {
-    radio.addEventListener("change", function () {
-      window.phrasor.setTheme(radio.value).then(
-        function (reply) { showTheme(reply.theme); },
-        syncTheme);
-    });
-  });
-
-  function syncTheme() {
-    window.phrasor.getState().then(function (state) { showTheme(state.theme); }, function () {});
-  }
 
   // ---- Home status ----
   var $ = function (id) { return document.getElementById(id); };
@@ -126,7 +109,7 @@
     setText("s-model", h.provider + " · " + h.model);
     if (!h.keyRequired) setText("s-key", "Not needed for this provider.", "");
     else if (h.keySet) setText("s-key", "Saved.", "ok");
-    else setText("s-key", "Not set. Add it in Settings (tray menu).", "warn");
+    else setText("s-key", "Not set. Add it in Settings.", "warn");
     $("pause").textContent = h.paused ? "Resume shortcuts" : "Pause shortcuts";
     renderShortcuts(h);
     if (!modeTouched) $("mode").value = h.defaultMode;
@@ -142,6 +125,7 @@
     window.phrasor.setPaused(!paused).then(refreshHome, refreshHome);
   });
   $("mode").addEventListener("change", function () { modeTouched = true; });
+  window.addEventListener("phrasor:settings-saved", refreshHome);
   window.addEventListener("focus", refreshHome); // the tray's Pause may have changed while the window was behind
 
   // ---- Try-it: the rewrite is shown here only. Nothing is pasted, saved or sent to another app. ----
@@ -230,6 +214,5 @@
   });
 
   show("home");
-  syncTheme();
   refreshHome();
 })();

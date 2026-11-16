@@ -1,0 +1,14 @@
+{
+  "run": 3,
+  "result": {
+    "label": "openai/gpt-oss-120b (groq)",
+    "ms": 412
+  },
+  "event": {
+    "event": "settingsTest",
+    "run": 3,
+    "ok": true,
+    "label": "openai/gpt-oss-120b (groq)",
+    "ms": 412
+  }
+}

@@ -19,7 +19,7 @@ public sealed record TryItOutput(string Rewrite, string Verdict, string Task, IR
 public static class TryItErrors
 {
     public const string Cancelled = "cancelled", NoKey = "no_key", NoModel = "no_model", Empty = "empty", TooLong = "too_long",
-        KeyRejected = "key_rejected", RateLimit = "rate_limit", Offline = "offline", Timeout = "timeout",
+        KeyRejected = "key_rejected", ModelNotFound = "model_not_found", RateLimit = "rate_limit", Offline = "offline", Timeout = "timeout",
         ProviderError = "provider_error", BadResponse = "bad_response", Failed = "failed";
 
     private static readonly Dictionary<string, string> Messages = new()
@@ -30,6 +30,7 @@ public static class TryItErrors
         [Empty] = "Type or paste a draft first.",
         [TooLong] = "That draft is too long to rewrite here. Try a shorter one.",
         [KeyRejected] = "The provider did not accept your API key. Check it in Settings.",
+        [ModelNotFound] = "The provider doesn't know that model name. Check the model in Settings.",
         [RateLimit] = "The provider's rate limit was reached. Wait a minute and try again.",
         [Offline] = "Couldn't reach the provider. Check your internet connection.",
         [Timeout] = "The provider took too long to answer. Try again.",
@@ -59,6 +60,7 @@ public static class TryItErrors
     private static string FromLlm(LlmErrorKind kind) => kind switch
     {
         LlmErrorKind.Auth => KeyRejected,
+        LlmErrorKind.ModelNotFound => ModelNotFound,
         LlmErrorKind.RateLimit => RateLimit,
         LlmErrorKind.Network => Offline,
         LlmErrorKind.Timeout => Timeout,
@@ -82,4 +84,10 @@ public static class BridgeEvents
 
     public static string TryItFailed(int run, string kind) =>
         JsonSerializer.Serialize(new { @event = "tryit", run, ok = false, error = kind, message = TryItErrors.MessageFor(kind) }, Json);
+
+    public static string SettingsTestDone(int run, ConnectionResult r) =>
+        JsonSerializer.Serialize(new { @event = "settingsTest", run, ok = true, label = r.Label, ms = r.Milliseconds }, Json);
+
+    public static string SettingsTestFailed(int run, string kind) =>
+        JsonSerializer.Serialize(new { @event = "settingsTest", run, ok = false, error = kind, message = TryItErrors.MessageFor(kind) }, Json);
 }
