@@ -221,6 +221,45 @@ internal sealed class MainBridge : IMainWindowApi
         catch (Win32Exception ex) { Log.Warn($"bridge link open failed type={ex.GetType().Name}"); }
     }
 
+    public void OpenDataFolder(DataFolder folder)
+    {
+        var dir = folder == DataFolder.Logs ? AppPaths.LogDir : AppPaths.DataDir;
+        try
+        {
+            Directory.CreateDirectory(dir);
+            Process.Start(new ProcessStartInfo(dir) { UseShellExecute = true });
+        }
+        catch (Exception ex) when (ex is Win32Exception or IOException or UnauthorizedAccessException)
+        {
+            Log.Warn($"open data folder failed type={ex.GetType().Name}");
+        }
+    }
+
+    public bool DeleteAllData()
+    {
+        Log.Info("delete all data from main window"); // before the folder goes: logging recreates it
+        var complete = true;
+        try { _services.Secrets.Clear(); StartupRegistration.Set(false); }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException or IOException)
+        {
+            complete = false;
+            Log.Warn($"delete all data: keys or startup entry failed type={ex.GetType().Name}");
+        }
+        foreach (var dir in new[] { AppPaths.DataDir, AppPaths.HistoryDir })
+        {
+            try { if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                complete = false;
+                Log.Warn($"delete all data: a folder failed type={ex.GetType().Name}");
+            }
+        }
+        if (!complete) return false;
+        Log.Stop(); // otherwise the exit line would bring the logs folder back
+        _form.BeginInvoke(Application.Exit); // after the reply is posted
+        return true;
+    }
+
 #if DEBUG
     // Debug builds only: set PHRASOR_BRIDGE_SELFTEST=1 to have the page exercise the bridge once it has loaded.
     // The results are the "bridge cmd=... outcome=..." lines in the log. The theme is put back afterwards.

@@ -201,7 +201,38 @@
         </div>
       </section>
 
-      <p class="sm mute">Data and quality check settings are still in the classic Settings window (tray menu).</p>
+      <section class="sec" aria-labelledby="set-data">
+        <h2 id="set-data">Data</h2>
+        <div class="grp">
+          <div class="sr col">
+            <span class="st">What Phrasor stores<small>Settings: %APPDATA%\Phrasor\settings.json. API keys: secrets.dat in the same folder, encrypted for your Windows account.</small><small>Logs: events, timings and error types, kept for 7 days. Never your text or keys.</small></span>
+          </div>
+          <div class="sr col">
+            <span class="st">What leaves your PC<small>Text you choose to rewrite (with a shortcut, or in Try it) goes to the model provider you set up. Dictated audio goes to the voice provider. Free tiers may use data to improve their services (Google says so for Gemini's free tier). The update check contacts GitHub.</small></span>
+          </div>
+          <div class="sr">
+            <span class="st">Folders<small>Open them in Explorer.</small></span>
+            <div class="rtools">
+              <button class="btn" type="button" id="d-open-data">Open data folder</button>
+              <button class="btn" type="button" id="d-open-logs">Open logs folder</button>
+            </div>
+          </div>
+          <div class="sr">
+            <span class="st">Delete all data<small>Removes your settings, API keys, logs and anything you saved to History, then closes Phrasor.</small></span>
+            <button class="btn" type="button" id="d-delete">Delete all data…</button>
+          </div>
+          <div class="sr col" id="d-confirm" role="alertdialog" aria-labelledby="d-confirm-q" hidden>
+            <span class="st bad" id="d-confirm-q">Delete everything Phrasor has stored? This cannot be undone.<small>Settings, API keys, logs and saved History are removed and Start with Windows is turned off. Phrasor then closes.</small></span>
+            <div class="row">
+              <button class="btn danger" type="button" id="d-yes">Yes, delete everything</button>
+              <button class="btn" type="button" id="d-no">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <p class="sm" id="d-state" role="status" data-tone=""></p>
+      </section>
+
+      <p class="sm mute">Quality check settings are still in the classic Settings window (tray menu).</p>
 
       <div class="bar" role="group" aria-label="Save settings">
         <span class="sm mute grow" id="set-state" role="status">No changes.</span>
@@ -215,5 +246,6 @@
 <script src="/bridge.js"></script>
 <script src="/app.js"></script>
 <script src="/settings.js"></script>
+<script src="/data.js"></script>
 </body>
 </html>

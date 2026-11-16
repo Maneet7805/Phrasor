@@ -44,6 +44,12 @@ public class BridgeDispatcherTests
         public List<bool> Recording = [];
         public void SetShortcutRecording(bool recording) => Recording.Add(recording);
         public int? StartConnectionTest(SettingsDraft draft) { if (NextTest is not null) Tested = draft; return NextTest; }
+
+        public List<DataFolder> Opened = [];
+        public int Wipes;
+        public bool WipeWorks = true;
+        public void OpenDataFolder(DataFolder folder) => Opened.Add(folder);
+        public bool DeleteAllData() { Wipes++; return WipeWorks; }
     }
 
     private readonly FakeApi _api = new();
@@ -62,6 +68,50 @@ public class BridgeDispatcherTests
         return (r.GetProperty("ok").GetBoolean(),
             r.TryGetProperty("error", out var e) ? e.GetString() : null,
             r.TryGetProperty("id", out var i) ? i.GetString() : null);
+    }
+
+    [Theory]
+    [InlineData("data", DataFolder.Data)]
+    [InlineData("logs", DataFolder.Logs)]
+    public void Data_openFolder_opens_only_the_two_known_folders(string name, DataFolder expected)
+    {
+        Assert.True(Parse(Make().Handle(Origin, true, Msg("data.openFolder", $$"""{"which":"{{name}}"}"""))).Ok);
+        Assert.Equal([expected], _api.Opened);
+    }
+
+    [Theory]
+    [InlineData("""{"which":"C:\\Windows"}""")]
+    [InlineData("""{"which":"history"}""")]
+    [InlineData("""{"which":"data","path":"C:\\x"}""")]
+    [InlineData("""{"path":"C:\\x"}""")]
+    public void Data_openFolder_refuses_anything_else(string payload)
+    {
+        Assert.Equal(BridgeError.BadRequest, Parse(Make().Handle(Origin, true, Msg("data.openFolder", payload))).Error);
+        Assert.Empty(_api.Opened);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("""{}""")]
+    [InlineData("""{"confirm":false}""")]
+    [InlineData("""{"confirm":"true"}""")]
+    [InlineData("""{"confirm":true,"extra":1}""")]
+    public void Data_deleteAll_needs_an_explicit_confirm_true(string? payload)
+    {
+        Assert.Equal(BridgeError.BadRequest, Parse(Make().Handle(Origin, true, Msg("data.deleteAll", payload))).Error);
+        Assert.Equal(0, _api.Wipes);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Data_deleteAll_reports_whether_everything_was_deleted(bool works)
+    {
+        _api.WipeWorks = works;
+        var reply = Make().Handle(Origin, true, Msg("data.deleteAll", """{"confirm":true}"""));
+        using var doc = JsonDocument.Parse(reply!);
+        Assert.Equal(works, doc.RootElement.GetProperty("payload").GetProperty("deleted").GetBoolean());
+        Assert.Equal(1, _api.Wipes);
     }
 
     [Fact]

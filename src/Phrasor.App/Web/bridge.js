@@ -59,6 +59,8 @@
     settingsTest: function (draft) { return send("settings.testConnection", draft); },
     onSettingsTest: function (handler) { settingsTestHandler = handler; },
     shortcutRecordStart: function () { return send("shortcut.recordStart"); },
-    shortcutRecordStop: function () { return send("shortcut.recordStop"); }
+    shortcutRecordStop: function () { return send("shortcut.recordStop"); },
+    openFolder: function (which) { return send("data.openFolder", { which: which }); },
+    deleteAllData: function () { return send("data.deleteAll", { confirm: true }); }
   });
 })();

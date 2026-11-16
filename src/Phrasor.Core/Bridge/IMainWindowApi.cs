@@ -5,6 +5,9 @@ namespace Phrasor.Core.Bridge;
 
 public enum WindowAction { Minimize, ToggleMaximize, Close }
 
+/// <summary>The two folders the Data group may open. The page never names a path.</summary>
+public enum DataFolder { Data, Logs }
+
 /// <summary>What the page sees of the app. Never holds keys or text.</summary>
 public sealed record MainWindowState(ThemeMode Theme, bool Dark, bool Maximised);
 
@@ -60,4 +63,13 @@ public interface IMainWindowApi
     /// test is going. The result is pushed later (<see cref="BridgeEvents"/>).
     /// </summary>
     int? StartConnectionTest(SettingsDraft draft);
+
+    /// <summary>Opens the settings folder or the logs folder in Explorer.</summary>
+    void OpenDataFolder(DataFolder folder);
+
+    /// <summary>
+    /// Deletes the settings, saved API keys, logs and saved History, turns off Start with Windows, then closes Phrasor.
+    /// Returns false (and keeps running) when something could not be deleted. The page asks the user to confirm first.
+    /// </summary>
+    bool DeleteAllData();
 }

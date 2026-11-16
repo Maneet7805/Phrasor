@@ -37,6 +37,7 @@ public sealed class BridgeDispatcher
         "state.get", "theme.set", "window.minimize", "window.maximize", "window.close", "link.open",
         "home.get", "pause.set", TryItCommand, "tryit.cancel", "clipboard.copy",
         "settings.get", SaveCommand, TestCommand, "shortcut.recordStart", "shortcut.recordStop",
+        "data.openFolder", "data.deleteAll",
     };
 
     private static readonly JsonSerializerOptions Json = new()
@@ -188,6 +189,17 @@ public sealed class BridgeDispatcher
                 return new { saved = saved.Saved, settings = saved.Settings, problems = saved.Problems, warnings = saved.Warnings };
             case "shortcut.recordStart": NoPayload(payload); _api.SetShortcutRecording(true); return new { };
             case "shortcut.recordStop": NoPayload(payload); _api.SetShortcutRecording(false); return new { };
+            case "data.openFolder":
+                _api.OpenDataFolder(OneString(payload, "which") switch
+                {
+                    "data" => DataFolder.Data,
+                    "logs" => DataFolder.Logs,
+                    _ => throw new BadPayloadException(),
+                });
+                return new { };
+            case "data.deleteAll":
+                if (!OneBool(payload, "confirm")) throw new BadPayloadException(); // the page asks the user first, then sends true
+                return new { deleted = _api.DeleteAllData() };
             case TestCommand:
                 var test = _api.StartConnectionTest(SettingsArgs(payload)) ?? throw new BusyException();
                 return new { run = test };
