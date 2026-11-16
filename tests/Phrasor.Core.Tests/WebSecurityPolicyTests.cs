@@ -77,6 +77,15 @@ public class WebSecurityPolicyTests
     }
 
     [Fact]
+    public void Csp_allows_fonts_and_images_from_our_own_files_only()
+    {
+        var directives = WebSecurityPolicy.ContentSecurityPolicy.Split(';', StringSplitOptions.TrimEntries);
+        Assert.Contains("font-src 'self'", directives);
+        Assert.Contains("img-src 'self'", directives);
+        Assert.DoesNotContain("data:", WebSecurityPolicy.ContentSecurityPolicy);
+    }
+
+    [Fact]
     public void Csp_allows_script_files_from_our_origin_only()
     {
         var directives = WebSecurityPolicy.ContentSecurityPolicy.Split(';', StringSplitOptions.TrimEntries);

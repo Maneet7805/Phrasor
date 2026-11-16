@@ -1,4 +1,6 @@
 using System.Text.RegularExpressions;
+using Phrasor.Core.Theme;
+using Phrasor.Core.Web;
 
 namespace Phrasor.Core.Tests;
 
@@ -28,6 +30,48 @@ public class WebAndMainGuardTests
             var name = Path.GetFileName(file);
             Assert.All(ForbiddenInWeb, token => Assert.False(text.Contains(token, StringComparison.Ordinal), $"{name} contains '{token}'"));
             Assert.False(Regex.IsMatch(text, @"https?://|\bwss?://", RegexOptions.IgnoreCase), $"{name} contains a remote URL");
+        }
+    }
+
+    [Fact]
+    public void Web_files_hold_no_colour_values_only_theme_variables()
+    {
+        // Colours live in Palette (Core) and reach the page as theme.css variables; see-through shades are mixed from them.
+        foreach (var file in WebFiles())
+        {
+            var text = Regex.Replace(File.ReadAllText(file), @"/\*.*?\*/", "", RegexOptions.Singleline);
+            if (!file.EndsWith(".html", StringComparison.OrdinalIgnoreCase)) Assert.DoesNotMatch(@"#[0-9a-fA-F]{3,8}\b", text);
+            Assert.DoesNotMatch(@"\b(rgb|rgba|hsl|hsla|hwb|lab|lch|oklab|oklch)\(", text);
+            if (file.EndsWith(".css", StringComparison.OrdinalIgnoreCase)) Assert.DoesNotMatch(@"(?<![\w-])(white|black|red|green|blue|orange|gray|grey)(?![\w-])", text);
+        }
+    }
+
+    [Fact]
+    public void Every_css_variable_in_use_is_defined_by_the_theme_or_the_stylesheet()
+    {
+        var css = WebFiles().Where(f => f.EndsWith(".css")).Select(File.ReadAllText).ToList();
+        var defined = Regex.Matches(ThemeCss.Build(Palette.Light, Palette.Dark), @"--([a-z0-9-]+):").Select(m => m.Groups[1].Value)
+            .Concat(css.SelectMany(c => Regex.Matches(c, @"(?<![\w-])--([a-z0-9-]+)\s*:").Select(m => m.Groups[1].Value)))
+            .ToHashSet();
+        var used = css.SelectMany(c => Regex.Matches(c, @"var\(--([a-z0-9-]+)").Select(m => m.Groups[1].Value)).ToHashSet();
+        Assert.NotEmpty(used);
+        Assert.Empty(used.Except(defined));
+    }
+
+    [Fact]
+    public void Files_the_pages_point_at_exist_and_are_served_types()
+    {
+        var web = Path.Combine(Root(), "src", "Phrasor.App", "Web");
+        foreach (var file in WebFiles())
+        {
+            var text = File.ReadAllText(file);
+            var refs = Regex.Matches(text, @"(?:src|href)=""(/[^""#]*)""|url\(""(/[^""]*)""\)")
+                .Select(m => m.Groups[1].Success ? m.Groups[1].Value : m.Groups[2].Value);
+            foreach (var path in refs.Select(r => r.TrimStart('/')).Where(r => r != "theme.css")) // theme.css is generated
+            {
+                Assert.True(File.Exists(Path.Combine(web, path)), $"{Path.GetFileName(file)} points at missing {path}");
+                Assert.NotNull(WebSecurityPolicy.ContentTypeFor(path));
+            }
         }
     }
 

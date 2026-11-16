@@ -49,6 +49,26 @@ public class PaletteTests
 
     [Theory]
     [MemberData(nameof(Themes))]
+    public void Muted_text_is_readable_on_the_rail_and_the_input_field(string theme)
+    {
+        var p = Get(theme);
+        Assert.True(Palette.Contrast(p["muted"], p["rail"]) >= ReadableText, $"{theme} muted on rail");
+        Assert.True(Palette.Contrast(p["muted"], p["field"]) >= ReadableText, $"{theme} muted on field");
+        Assert.True(Palette.Contrast(p["text"], p["field"]) >= ReadableText, $"{theme} text on field");
+    }
+
+    [Theory]
+    [MemberData(nameof(Themes))]
+    public void Home_banner_text_and_accent_are_readable_on_both_ends_of_its_gradient(string theme)
+    {
+        var p = Get(theme);
+        foreach (var end in new[] { "hero-top", "hero-bottom" })
+            foreach (var ink in new[] { "hero-text", "hero-accent" })
+                Assert.True(Palette.Contrast(p[ink], p[end]) >= ReadableText, $"{theme} {ink} on {end}");
+    }
+
+    [Theory]
+    [MemberData(nameof(Themes))]
     public void Button_text_is_readable_on_the_button(string theme)
     {
         var p = Get(theme);

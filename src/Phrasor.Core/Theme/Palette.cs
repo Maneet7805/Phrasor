@@ -3,7 +3,9 @@ namespace Phrasor.Core.Theme;
 /// <summary>
 /// One set of colour tokens (dark or light) as plain 0xRRGGBB integers, so Core stays free of Windows types.
 /// Both themes use the same token names. Values for window, rail, card, text, muted, accent, button and focus
-/// come from the approved prototype; border and the status colours are chosen here.
+/// come from the approved prototype; border and the status colours are chosen here. The hero tokens (the Home banner is
+/// dark in both themes), field, glow and shadow serve the web pages. See-through shades (hover, selected, status
+/// backgrounds) are mixed from these in the CSS, so no colour value lives outside this class.
 /// </summary>
 public sealed class Palette
 {
@@ -30,6 +32,13 @@ public sealed class Palette
         ("ok", 0x7CC48A),
         ("bad", 0xF2766B),
         ("warn", 0xF0B35A),
+        ("field", 0x151210),
+        ("hero-top", 0x2A2420),
+        ("hero-bottom", 0x141211),
+        ("hero-text", 0xFFE9D4),
+        ("hero-accent", 0xF7A768),
+        ("glow", 0xE8742A),
+        ("shadow", 0x000000),
     ]);
 
     public static Palette Light { get; } = new(
@@ -47,6 +56,13 @@ public sealed class Palette
         ("ok", 0x2E7D4B),
         ("bad", 0xB3261E),
         ("warn", 0x8A5A00),
+        ("field", 0xFFFFFF),
+        ("hero-top", 0x2A2420),
+        ("hero-bottom", 0x141211),
+        ("hero-text", 0xFFE9D4),
+        ("hero-accent", 0xF7A768),
+        ("glow", 0xE8742A),
+        ("shadow", 0x3C2410),
     ]);
 
     /// <summary>WCAG contrast ratio of two 0xRRGGBB colours: 1 (none) to 21 (black on white).</summary>
