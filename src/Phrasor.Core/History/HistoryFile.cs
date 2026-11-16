@@ -20,7 +20,7 @@ public interface IHistoryPersistence
     /// <summary>Keeps the unreadable data as a <c>.bad</c> copy and leaves nothing at the normal place.</summary>
     void MoveAside();
 
-    /// <summary>Removes everything stored.</summary>
+    /// <summary>Removes everything stored, including any <c>.bad</c> copy.</summary>
     void Delete();
 }
 
@@ -54,5 +54,6 @@ public sealed class EncryptedHistoryFile(string path, IBlobProtector protector) 
     {
         File.Delete(path);
         File.Delete(TempPath);
+        File.Delete(BadPath); // a set-aside copy is still the user's data
     }
 }

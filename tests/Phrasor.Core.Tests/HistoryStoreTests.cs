@@ -266,6 +266,17 @@ public class HistoryStoreTests : IDisposable
     }
 
     [Fact]
+    public void File_clear_also_removes_a_set_aside_dot_bad_copy()
+    {
+        Directory.CreateDirectory(_dir);
+        File.WriteAllBytes(FilePath, "garbage"u8.ToArray());
+        var store = OpenFileStore();
+        store.Add("a", "b");
+        store.Clear();
+        Assert.Empty(Directory.GetFiles(_dir));
+    }
+
+    [Fact]
     public void A_corrupt_file_is_kept_as_dot_bad_and_never_deleted()
     {
         Directory.CreateDirectory(_dir);
