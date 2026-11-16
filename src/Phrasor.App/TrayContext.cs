@@ -4,6 +4,7 @@ using Phrasor.App.Hotkeys;
 using Phrasor.App.Infrastructure;
 using Phrasor.App.TextAccess;
 using Phrasor.App.UI;
+using Phrasor.App.UI.Main;
 using Phrasor.Core.Llm;
 using Phrasor.Core.Optimization;
 using Phrasor.Core.Settings;
@@ -25,6 +26,7 @@ internal sealed class TrayContext : ApplicationContext
     private readonly ToolStripMenuItem _shortcutsInfo = new() { Enabled = false };
     private readonly Dictionary<OptimizeMode, ToolStripMenuItem> _modeItems = [];
     private SettingsForm? _settingsForm;
+    private MainForm? _mainForm;
 
     public TrayContext(bool startedInBackground)
     {
@@ -67,7 +69,7 @@ internal sealed class TrayContext : ApplicationContext
     }
 
     /// <summary>Called when the user launches Phrasor again while it's already running.</summary>
-    public void OnSecondInstance() => OpenSettings();
+    public void OnSecondInstance() => OpenMain();
 
     private ContextMenuStrip BuildMenu()
     {
@@ -104,6 +106,7 @@ internal sealed class TrayContext : ApplicationContext
         };
         menu.Items.Add(_pause);
         menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add(new ToolStripMenuItem("Open Phrasor", null, (_, _) => OpenMain()) { Font = new Font(menu.Font, FontStyle.Bold) });
         menu.Items.Add("Settings…", null, (_, _) => OpenSettings());
         _updateItem.Click += async (_, _) =>
         {
@@ -204,6 +207,20 @@ internal sealed class TrayContext : ApplicationContext
                 _voice.OnHotkey(mainKey);
                 break;
         }
+    }
+
+    private void OpenMain()
+    {
+        if (_mainForm is { IsDisposed: false })
+        {
+            if (_mainForm.WindowState == FormWindowState.Minimized) _mainForm.WindowState = FormWindowState.Normal;
+            _ = Foreground.BringToFrontAsync(_mainForm.Handle);
+            return;
+        }
+        _mainForm = new MainForm();
+        _mainForm.FormClosed += (_, _) => _mainForm = null;
+        _mainForm.Show();
+        _ = Foreground.BringToFrontAsync(_mainForm.Handle);
     }
 
     private void OpenSettings(string? tab = null)
