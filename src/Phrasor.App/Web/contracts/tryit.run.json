@@ -1,0 +1,18 @@
+{
+  "request": {
+    "id": "c13",
+    "type": "tryit.run",
+    "payload": {
+      "text": "fix my login bug",
+      "task": "Auto",
+      "mode": "Standard"
+    }
+  },
+  "reply": {
+    "id": "c13",
+    "ok": true,
+    "payload": {
+      "run": 7
+    }
+  }
+}

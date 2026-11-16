@@ -1,0 +1,16 @@
+{
+  "request": {
+    "id": "c11",
+    "type": "pause.set",
+    "payload": {
+      "paused": true
+    }
+  },
+  "reply": {
+    "id": "c11",
+    "ok": true,
+    "payload": {
+      "paused": true
+    }
+  }
+}

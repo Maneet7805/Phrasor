@@ -1,0 +1,23 @@
+{
+  "run": 7,
+  "ok": true,
+  "output": {
+    "rewrite": "Fix the login bug. Describe the error you see and the steps to reproduce it.",
+    "verdict": "Rewritten",
+    "task": "Debugging",
+    "changes": ["Added what to include"],
+    "warnings": []
+  },
+  "event": {
+    "event": "tryit",
+    "run": 7,
+    "ok": true,
+    "payload": {
+      "rewrite": "Fix the login bug. Describe the error you see and the steps to reproduce it.",
+      "verdict": "Rewritten",
+      "task": "Debugging",
+      "changes": ["Added what to include"],
+      "warnings": []
+    }
+  }
+}

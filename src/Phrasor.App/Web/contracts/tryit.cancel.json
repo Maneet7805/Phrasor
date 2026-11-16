@@ -1,0 +1,11 @@
+{
+  "request": {
+    "id": "c15",
+    "type": "tryit.cancel"
+  },
+  "reply": {
+    "id": "c15",
+    "ok": true,
+    "payload": {}
+  }
+}

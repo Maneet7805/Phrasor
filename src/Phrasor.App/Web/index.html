@@ -34,40 +34,56 @@
       <section class="herocard" aria-labelledby="greet">
         <div class="hl">
           <h1 id="greet">Good afternoon.</h1>
-          <p class="hsub">Select text in any app, then press</p>
-          <p class="big"><span class="chord" aria-label="Control plus Alt plus P"><kbd class="kbd">Ctrl</kbd><span aria-hidden="true">+</span><kbd class="kbd">Alt</kbd><span aria-hidden="true">+</span><kbd class="kbd">P</kbd></span></p>
+          <p class="hsub" id="hsub">Select text in any app, then press</p>
+          <p class="big"><span class="chord" id="chord"></span></p>
           <div class="row">
             <button class="btn pri lg" type="button" data-focus="draft">Rewrite a draft</button>
             <button class="btn link" type="button" data-nav="settings">Change shortcuts</button>
           </div>
-          <div class="alt">
-            <span class="i">Selection only <kbd class="kbd">Ctrl+Alt+Shift+P</kbd></span>
-            <span class="i">Dictate <kbd class="kbd">Ctrl+Alt+D</kbd></span>
-          </div>
+          <div class="alt" id="alt"></div>
         </div>
         <img class="hart" src="/img/hero.webp" alt="">
+      </section>
+
+      <section class="sec" aria-labelledby="status">
+        <div class="sech">
+          <h2 id="status">Status</h2>
+          <button class="btn" type="button" id="pause">Pause shortcuts</button>
+        </div>
+        <div class="grp" aria-live="polite">
+          <div class="sr"><span class="st">Phrasor<small id="s-state" data-tone="">Checking…</small></span></div>
+          <div class="sr"><span class="st">Model<small id="s-model">Checking…</small></span></div>
+          <div class="sr"><span class="st">API key<small id="s-key" data-tone="">Checking…</small></span></div>
+        </div>
       </section>
 
       <section class="sec" aria-labelledby="tryit">
         <div>
           <h2 id="tryit">Try it</h2>
-          <p class="sub">Type or paste a rough prompt. You review it before anything is used.</p>
+          <p class="sub">Type or paste a rough prompt. You see the rewrite here and nothing is used until you copy it.</p>
         </div>
         <div class="composer">
           <label class="vh" for="draft">Draft to rewrite</label>
-          <textarea id="draft" rows="5" spellcheck="false" placeholder="Type or paste a rough prompt"></textarea>
+          <textarea id="draft" rows="5" maxlength="20000" spellcheck="false" placeholder="Type or paste a rough prompt"></textarea>
           <div class="ctools">
             <label>Task
-              <select aria-label="Task"><option>Auto</option><option>Coding</option><option>Debugging</option><option>Research</option><option>Study</option><option>Writing</option><option>Planning</option><option>General</option><option>Image</option></select>
+              <select id="task"><option value="Auto">Auto</option><option value="Coding">Coding</option><option value="Debugging">Debugging</option><option value="Research">Research</option><option value="Study">Study</option><option value="Writing">Writing</option><option value="Planning">Planning</option><option value="General">General</option><option value="Image">Image</option></select>
             </label>
             <label>Mode
-              <select aria-label="Mode"><option>Light</option><option selected>Standard</option><option>Detailed</option></select>
+              <select id="mode"><option value="Light">Light</option><option value="Standard" selected>Standard</option><option value="Detailed">Detailed</option></select>
             </label>
             <span class="grow"></span>
-            <button class="btn pri" type="button" disabled aria-describedby="soon">Rewrite</button>
+            <button class="btn" type="button" id="cancel" hidden>Cancel</button>
+            <button class="btn pri" type="button" id="run" disabled>Rewrite</button>
           </div>
         </div>
-        <p class="sm mute" id="soon">Preview: this box is connected in a later update. Nothing is sent anywhere.</p>
+        <p class="sm mute" id="trystate" role="status">Nothing is pasted into other apps or saved. Your draft goes only to the model provider you chose.</p>
+        <p class="sm err" id="tryerr" role="alert" hidden></p>
+        <div class="result" id="result" hidden>
+          <div class="sech"><h3 id="result-h">Rewritten prompt</h3><button class="btn" type="button" id="copy">Copy</button></div>
+          <div class="out" id="out" tabindex="0" role="region" aria-labelledby="result-h"></div>
+          <ul class="notes" id="notes"></ul>
+        </div>
       </section>
 
       <section class="sec" aria-labelledby="recent">

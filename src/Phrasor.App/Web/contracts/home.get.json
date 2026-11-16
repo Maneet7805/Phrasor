@@ -1,0 +1,22 @@
+{
+  "request": {
+    "id": "c10",
+    "type": "home.get"
+  },
+  "reply": {
+    "id": "c10",
+    "ok": true,
+    "payload": {
+      "state": "ready",
+      "paused": false,
+      "provider": "Groq (free tier)",
+      "model": "openai/gpt-oss-120b",
+      "keyRequired": true,
+      "keySet": true,
+      "defaultMode": "Standard",
+      "shortcuts": [
+        { "id": "optimize", "label": "Rewrite", "chord": "Ctrl+Alt+P", "registered": true }
+      ]
+    }
+  }
+}

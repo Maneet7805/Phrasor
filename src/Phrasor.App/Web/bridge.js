@@ -7,12 +7,15 @@
   var host = window.chrome && window.chrome.webview;
   var pending = {};
   var counter = 0;
+  var tryItHandler = null;
   var TIMEOUT_MS = 10000;
 
   if (host) {
     host.addEventListener("message", function (event) {
       var reply;
       try { reply = JSON.parse(event.data); } catch (e) { return; }
+      // Pushed by the app, not a reply: the finished (or failed) Try-it run.
+      if (reply && reply.event === "tryit") { if (tryItHandler) tryItHandler(reply); return; }
       var call = reply && typeof reply.id === "string" ? pending[reply.id] : null;
       if (!call) return;
       delete pending[reply.id];
@@ -42,6 +45,12 @@
     minimize: function () { return send("window.minimize"); },
     maximize: function () { return send("window.maximize"); },
     close: function () { return send("window.close"); },
-    openLink: function (id) { return send("link.open", { id: id }); }
+    openLink: function (id) { return send("link.open", { id: id }); },
+    home: function () { return send("home.get"); },
+    setPaused: function (paused) { return send("pause.set", { paused: paused }); },
+    tryItRun: function (text, task, mode) { return send("tryit.run", { text: text, task: task, mode: mode }); },
+    tryItCancel: function () { return send("tryit.cancel"); },
+    copyRewrite: function () { return send("clipboard.copy"); },
+    onTryIt: function (handler) { tryItHandler = handler; }
   });
 })();

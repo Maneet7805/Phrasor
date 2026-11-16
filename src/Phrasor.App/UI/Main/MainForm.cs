@@ -16,11 +16,11 @@ internal sealed class MainForm : Form
     private readonly Panel _body = new() { Dock = DockStyle.Fill };
     private readonly WebHost _web = new() { Dock = DockStyle.Fill };
 
-    public MainForm(AppServices services, Action openClassicSettings)
+    public MainForm(AppServices services, MainHooks hooks, Action openClassicSettings)
     {
         _web.ClassicSettingsRequested += openClassicSettings;
         _web.NotNowRequested += Close;
-        _web.CoreReady += new MainBridge(this, services).Attach;
+        _web.CoreReady += new MainBridge(this, services, hooks).Attach;
         Text = "Phrasor";
         Icon = AppIcon.Get();
         AutoScaleMode = AutoScaleMode.Dpi;

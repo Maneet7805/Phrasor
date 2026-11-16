@@ -1,7 +1,9 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using Microsoft.Web.WebView2.Core;
+using Phrasor.App.TextAccess;
 using Phrasor.Core.Bridge;
+using Phrasor.Core.Home;
 using Phrasor.Core.Theme;
 
 namespace Phrasor.App.UI.Main;
@@ -15,14 +17,20 @@ internal sealed class MainBridge : IMainWindowApi
 {
     private readonly MainForm _form;
     private readonly AppServices _services;
+    private readonly MainHooks _hooks;
     private readonly BridgeDispatcher _dispatcher;
     private CoreWebView2? _core;
+    private CancellationTokenSource? _run; // set while a Try-it run is going: only one at a time
+    private int _runNumber;
+    private string? _lastRewrite; // the one string clipboard.copy can copy; kept in memory only, dropped with the window
 
-    public MainBridge(MainForm form, AppServices services)
+    public MainBridge(MainForm form, AppServices services, MainHooks hooks)
     {
         _form = form;
         _services = services;
+        _hooks = hooks;
         _dispatcher = new BridgeDispatcher(this, Log.Info);
+        form.FormClosed += (_, _) => _run?.Cancel();
     }
 
     public void Attach(CoreWebView2 core)
@@ -39,13 +47,71 @@ internal sealed class MainBridge : IMainWindowApi
         string? message;
         try { message = e.TryGetWebMessageAsString(); }
         catch (ArgumentException) { message = null; } // the page posted something that is not a string
-        var reply = _dispatcher.Handle(e.Source, isTopFrame: true, message);
-        if (reply is null || _core is null) return;
-        try { _core.PostWebMessageAsString(reply); }
+        Post(_dispatcher.Handle(e.Source, isTopFrame: true, message));
+    }
+
+    private void Post(string? json)
+    {
+        if (json is null || _core is null) return;
+        try { _core.PostWebMessageAsString(json); }
         catch (Exception ex) when (ex is InvalidOperationException or ObjectDisposedException)
         {
             // The window closed while the message was being handled.
         }
+    }
+
+    public HomeStatus GetHome() => HomeStatus.Build(_services.Settings, _services.Secrets, _hooks.IsPaused(), _hooks.RegisteredShortcuts());
+
+    public bool SetPaused(bool paused)
+    {
+        _hooks.SetPaused(paused);
+        return _hooks.IsPaused();
+    }
+
+    public int? StartTryIt(TryItRequest request)
+    {
+        if (_run is not null) return null;
+        _lastRewrite = null;
+        _run = new CancellationTokenSource();
+        var number = ++_runNumber;
+        _ = RunTryItAsync(number, request, _run);
+        return number;
+    }
+
+    public void CancelTryIt() => _run?.Cancel();
+
+    public bool CopyRewrite()
+    {
+        if (_lastRewrite is not { } text) return false;
+        try { ClipboardText.Write(text); return true; }
+        catch (Exception ex) when (ex is System.Runtime.InteropServices.ExternalException or InvalidOperationException)
+        {
+            Log.Warn($"tryit copy failed type={ex.GetType().Name}");
+            return false;
+        }
+    }
+
+    private async Task RunTryItAsync(int number, TryItRequest request, CancellationTokenSource cts)
+    {
+        await Task.Yield(); // the "started" reply must reach the page before any result does
+        var clock = Stopwatch.StartNew();
+        string outcome, json;
+        try
+        {
+            var r = await _hooks.Optimize(request.Text, request.Mode, request.Task, cts.Token);
+            _lastRewrite = r.Prompt;
+            outcome = BridgeLog.Ok;
+            json = BridgeEvents.TryItDone(number, new TryItOutput(r.Prompt, r.Verdict.ToString(), r.TaskType.ToString(), r.Changes, r.Warnings));
+        }
+        catch (Exception ex)
+        {
+            outcome = TryItErrors.KindOf(ex); // a kind from a fixed list; the message is never read
+            json = BridgeEvents.TryItFailed(number, outcome);
+        }
+        cts.Dispose();
+        _run = null;
+        Log.Info(TryItLog.Describe(outcome, request.Text.Length, clock.ElapsedMilliseconds));
+        Post(json);
     }
 
     public MainWindowState GetState() =>

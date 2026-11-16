@@ -1,6 +1,8 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Phrasor.Core.Home;
+using Phrasor.Core.Optimization;
 using Phrasor.Core.Theme;
 using Phrasor.Core.Web;
 
@@ -14,6 +16,11 @@ namespace Phrasor.Core.Bridge;
 public sealed class BridgeDispatcher
 {
     public const int MaxMessageBytes = 4 * 1024; // raise per command when a command needs text
+
+    /// <summary>Only <c>tryit.run</c> may be bigger: it carries a draft. 20,000 characters can take 6 bytes each once escaped.</summary>
+    public const int MaxTryItBytes = 128 * 1024;
+    public const int MaxTryItChars = 20_000;
+    private const string TryItCommand = "tryit.run";
     public const int MaxIdLength = 64;
     public const int MaxMessagesPerWindow = 30;
     public const int WindowMs = 1000;
@@ -23,6 +30,7 @@ public sealed class BridgeDispatcher
     public static readonly IReadOnlySet<string> CommandNames = new HashSet<string>
     {
         "state.get", "theme.set", "window.minimize", "window.maximize", "window.close", "link.open",
+        "home.get", "pause.set", TryItCommand, "tryit.cancel", "clipboard.copy",
     };
 
     private static readonly JsonSerializerOptions Json = new()
@@ -85,7 +93,9 @@ public sealed class BridgeDispatcher
         }
 
         if (message is null) return Fail(null, BridgeError.BadJson);
-        if (bytes > MaxMessageBytes) return Fail(null, BridgeError.TooLarge);
+        // A message may only be bigger than the default if it names tryit.run; the real check is repeated once the command is parsed.
+        var limit = message.Contains($"\"{TryItCommand}\"", StringComparison.Ordinal) ? MaxTryItBytes : MaxMessageBytes;
+        if (bytes > limit) return Fail(null, BridgeError.TooLarge);
         if (!TryAcquire(start)) return Fail(null, BridgeError.RateLimited);
 
         JsonDocument doc;
@@ -113,9 +123,12 @@ public sealed class BridgeDispatcher
             if (!CommandNames.Contains(type)) return Fail(id, BridgeError.UnknownCommand);
 
             _command = type;
+            if (bytes > MaxMessageBytes && type != TryItCommand) return Fail(id, BridgeError.TooLarge);
             object result;
             try { result = Run(type, payload); }
             catch (BadPayloadException) { return Fail(id, BridgeError.BadRequest); }
+            catch (TooLargeException) { return Fail(id, BridgeError.TooLarge); }
+            catch (BusyException) { return Fail(id, BridgeError.Busy); }
             _log(BridgeLog.Describe(type, bytes, _nowMs() - start, BridgeLog.Ok));
             return JsonSerializer.Serialize(new Reply(id, true, result, null), Json);
         }
@@ -146,8 +159,53 @@ public sealed class BridgeDispatcher
                 if (!LinkAllowList.TryGet(OneString(payload, "id"), out var url)) throw new BadPayloadException();
                 _api.OpenLink(url);
                 return new { };
+            case "home.get":
+                NoPayload(payload);
+                return HomeView(_api.GetHome());
+            case "pause.set":
+                return new { paused = _api.SetPaused(OneBool(payload, "paused")) };
+            case TryItCommand:
+                var run = _api.StartTryIt(TryItArgs(payload)) ?? throw new BusyException();
+                return new { run };
+            case "tryit.cancel": NoPayload(payload); _api.CancelTryIt(); return new { };
+            case "clipboard.copy": NoPayload(payload); return new { copied = _api.CopyRewrite() };
             default: throw new BadPayloadException();
         }
+    }
+
+    private static object HomeView(HomeStatus h) => new
+    {
+        state = h.State.ToString().ToLowerInvariant(),
+        paused = h.Paused,
+        provider = h.Provider,
+        model = h.Model,
+        keyRequired = h.KeyRequired,
+        keySet = h.KeySet,
+        defaultMode = h.DefaultMode.ToString(),
+        shortcuts = h.Shortcuts.Select(x => new { id = x.Id, label = x.Label, chord = x.Chord, registered = x.Registered }),
+    };
+
+    // Exactly { text, task, mode }: a bounded, non-blank draft and two names from fixed lists (enum names, not numbers).
+    private static TryItRequest TryItArgs(JsonElement? p)
+    {
+        if (p is not { ValueKind: JsonValueKind.Object } e) throw new BadPayloadException();
+        string? text = null, task = null, mode = null;
+        var count = 0;
+        foreach (var prop in e.EnumerateObject())
+        {
+            count++;
+            if (prop.Value.ValueKind != JsonValueKind.String) throw new BadPayloadException();
+            switch (prop.Name)
+            {
+                case "text": text = prop.Value.GetString(); break;
+                case "task": task = prop.Value.GetString(); break;
+                case "mode": mode = prop.Value.GetString(); break;
+            }
+        }
+        if (count != 3 || text is null || task is null || mode is null || string.IsNullOrWhiteSpace(text)) throw new BadPayloadException();
+        if (text.Length > MaxTryItChars) throw new TooLargeException();
+        if (!Enum.GetNames<TaskType>().Contains(task) || !Enum.GetNames<OptimizeMode>().Contains(mode)) throw new BadPayloadException();
+        return new TryItRequest(text, Enum.Parse<TaskType>(task), Enum.Parse<OptimizeMode>(mode));
     }
 
     private static string ThemeName(ThemeMode m) => m.ToString().ToLowerInvariant();
@@ -174,6 +232,14 @@ public sealed class BridgeDispatcher
         return value;
     }
 
+    private static bool OneBool(JsonElement? p, string name)
+    {
+        if (p is not { ValueKind: JsonValueKind.Object } e) throw new BadPayloadException();
+        var props = e.EnumerateObject().ToList();
+        if (props.Count != 1 || props[0].Name != name || props[0].Value.ValueKind is not (JsonValueKind.True or JsonValueKind.False)) throw new BadPayloadException();
+        return props[0].Value.GetBoolean();
+    }
+
     private bool TryAcquire(long now)
     {
         while (_recent.Count > 0 && now - _recent.Peek() >= WindowMs) _recent.Dequeue();
@@ -188,4 +254,6 @@ public sealed class BridgeDispatcher
     private sealed record Reply(string? Id, bool Ok, object? Payload, string? Error);
 
     private sealed class BadPayloadException : Exception;
+    private sealed class TooLargeException : Exception;
+    private sealed class BusyException : Exception;
 }

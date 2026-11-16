@@ -1,0 +1,14 @@
+{
+  "request": {
+    "id": "c12",
+    "type": "pause.set",
+    "payload": {
+      "paused": "yes"
+    }
+  },
+  "reply": {
+    "id": "c12",
+    "ok": false,
+    "error": "bad_request"
+  }
+}
