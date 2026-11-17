@@ -4,6 +4,15 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-17
+
+**Read this first.**
+- **New name: Phrasor (was PromptForge).** Earlier installed copies don't offer this update. Download `Phrasor.exe` once by hand and choose **Yes**. On first start it copies your settings and re-saves your API keys from the old `PromptForge` data folder (the old folder is left untouched). An old PromptForge install is not removed: uninstall it in Settings → Apps.
+- **New main window** (Home, Try it, History, Quality check, Settings, first run). Open it from the tray. Nothing is saved to History unless you press Save.
+- **The window needs the Microsoft Edge WebView2 runtime.** It is part of Windows 11 and of most Windows 10 PCs. If it is missing, the window says so and offers **Install now** (after your click it downloads Microsoft's installer, checks that Microsoft signed it, and runs it without admin rights). The shortcuts, the review window and voice dictation never depend on it.
+- **Size:** the exe is about 83 MB (1.6.0 was 76.1 MB).
+- The exe is still not code-signed, so SmartScreen may warn on a manual download.
+
 ### Added
 - **Quality check page.** The main window's Quality check page replaces the tray's Developer menu: choose a test set, set the judge model, pick runs per case, and see what the run will cost in requests and minutes (with a warning if it is more than a day of the free allowance) before you press **Start**. It never starts on its own. It shows progress, **Cancel** (a cancelled check saves nothing) and **Open results folder**, and asks before you close the window mid-run. Results go to `%APPDATA%\Phrasor\quality\`; logs hold only counts. The judge setting moved here from the classic Settings window (#212).
 - **First run in the main window.** When there is no usable API key, Phrasor now opens its main window on three steps instead of the classic Settings window and a balloon: get a free Groq or Gemini key (the links open in your browser), paste it and test it (it is saved only after a passing test, and you can **Skip for now**), then see your shortcuts. Your shortcuts and the tray keep working throughout. If the browser engine can't start, the classic Settings window opens as before (#211).
