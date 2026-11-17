@@ -198,6 +198,8 @@ public sealed class PromptOptimizer(ILlmClient client, Func<TimeSpan, Cancellati
             Questions = parsed.Questions,
             Warnings = warnings,
             Model = endpoint.Label,
+            UsedBackup = IndexOfEndpoint(endpoints, endpoint) > 0,
+            PrimaryModel = endpoints[0].Label,
             Elapsed = stopwatch.Elapsed,
             PromptTokens = promptTokens,
             CompletionTokens = completionTokens,

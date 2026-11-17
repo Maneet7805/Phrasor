@@ -23,7 +23,7 @@ public sealed record HomeStatus(
     public static HomeStatus Build(AppSettings settings, ISecretStore secrets, bool paused, IReadOnlySet<string> registeredIds)
     {
         var preset = ProviderPresets.Get(settings.Primary.Provider);
-        var keySet = !preset.RequiresKey || !string.IsNullOrWhiteSpace(secrets.Get(preset.Id));
+        var keySet = !preset.RequiresKey || !string.IsNullOrWhiteSpace(secrets.Get(settings.Primary.KeyId ?? preset.Id));
 
         var shortcuts = new List<ShortcutStatus>();
         void Add(string id, string label, string chord)

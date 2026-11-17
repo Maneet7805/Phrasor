@@ -164,7 +164,7 @@ public static class SettingsPage
         {
             var cfg = s.Primary;
             if (string.IsNullOrWhiteSpace(cfg.Model)) return new(false, null, 0, TryItErrors.NoModel);
-            var endpoint = EndpointResolver.Build(cfg.Provider, cfg.Model, cfg.BaseUrl, secrets, out var keyProblem);
+            var endpoint = EndpointResolver.Build(cfg.Provider, cfg.Model, cfg.BaseUrl, secrets, out var keyProblem, cfg.KeyId);
             if (endpoint is null) return new(false, null, 0, keyProblem is null ? TryItErrors.NoModel : TryItErrors.NoKey);
             await client.CompleteAsync(endpoint, [new ChatMessage("user", "Reply with the single word OK.")],
                 new ChatOptions { MaxTokens = 300, JsonMode = false, Mode = OptimizeMode.Light, Timeout = TimeSpan.FromSeconds(20) }, ct);

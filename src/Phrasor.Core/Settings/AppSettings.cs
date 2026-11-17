@@ -16,6 +16,74 @@ public sealed class EndpointSettings
     public string? BaseUrl { get; set; }
 
     public bool Enabled { get; set; } = true;
+
+    /// <summary>Key-store id of a key kept just for this model. Null means the provider's key is used.</summary>
+    public string? KeyId { get; set; }
+}
+
+/// <summary>A model the user saved to switch between. One of them is the default; others can be the backup chain.</summary>
+public sealed class SavedModel
+{
+    public string Id { get; set; } = "";
+    public string Provider { get; set; } = ProviderPresets.Groq.Id;
+    public string Model { get; set; } = "";
+
+    /// <summary>Only used by the "custom" and "ollama" providers.</summary>
+    public string? BaseUrl { get; set; }
+
+    /// <summary>True when this model has its own API key. False reuses the provider's key.</summary>
+    public bool SeparateKey { get; set; }
+
+    [JsonIgnore] public string? KeyId => SeparateKey ? ModelList.KeyIdFor(Id) : null;
+    [JsonIgnore] public bool IsLocal => ModelList.IsLocal(Provider, BaseUrl);
+}
+
+/// <summary>How the review window looks and starts. Defaults suit a fresh install and an old settings file alike.</summary>
+public sealed class ReviewWindowSettings
+{
+    public const int MinBarCount = 4, MaxBarCount = 10, DefaultBarCount = 6;
+
+    /// <summary>Task chips after Auto, in the order shown. Auto is always first and is not listed.</summary>
+    public List<string> TaskOrder { get; set; } = [.. PreferredOrder];
+
+    /// <summary>How many chips show in the bar before "More", counting Auto.</summary>
+    public int BarCount { get; set; } = DefaultBarCount;
+
+    public string DefaultTask { get; set; } = nameof(TaskType.Auto);
+    public bool HighlightChanges { get; set; }
+
+    /// <summary>Start with the task and mode the user last chose, instead of the defaults. Only those two words are kept.</summary>
+    public bool RememberLastChoice { get; set; }
+    public string LastTask { get; set; } = nameof(TaskType.Auto);
+    public string LastMode { get; set; } = nameof(OptimizeMode.Standard);
+
+    /// <summary>After the first result, quietly write the other two modes. Three times the requests, so off by default.</summary>
+    public bool PrefetchOtherModes { get; set; }
+
+    internal static readonly string[] PreferredOrder =
+        [nameof(TaskType.Coding), nameof(TaskType.Writing), nameof(TaskType.Research), nameof(TaskType.Image), nameof(TaskType.Video),
+         nameof(TaskType.Debugging), nameof(TaskType.Study), nameof(TaskType.Planning), nameof(TaskType.General)];
+
+    /// <summary>Repairs a hand-edited or older file: every task listed once, counts in range, names valid.</summary>
+    public void Normalise()
+    {
+        var all = PreferredOrder.Concat(Enum.GetNames<TaskType>().Where(n => n != nameof(TaskType.Auto))).Distinct().ToList();
+        var order = new List<string>();
+        foreach (var name in TaskOrder ?? [])
+        {
+            var match = all.FirstOrDefault(a => a.Equals(name?.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (match is not null && !order.Contains(match)) order.Add(match);
+        }
+        order.AddRange(all.Where(a => !order.Contains(a)));
+        TaskOrder = order;
+        BarCount = Math.Clamp(BarCount, MinBarCount, MaxBarCount);
+        DefaultTask = Canonical(DefaultTask, nameof(TaskType.Auto));
+        LastTask = Canonical(LastTask, nameof(TaskType.Auto));
+        LastMode = Enum.TryParse(LastMode, ignoreCase: true, out OptimizeMode mode) && Enum.IsDefined(mode) ? mode.ToString() : nameof(OptimizeMode.Standard);
+    }
+
+    private static string Canonical(string? value, string fallback) =>
+        Enum.GetNames<TaskType>().FirstOrDefault(n => n.Equals(value?.Trim(), StringComparison.OrdinalIgnoreCase)) ?? fallback;
 }
 
 public sealed class HotkeySettings
@@ -79,6 +147,17 @@ public sealed class AppSettings
     public EndpointSettings Fallback { get; set; } = new() { Model = ProviderPresets.Groq.DefaultFallbackModel };
 
     /// <summary>
+    /// The models the user can switch between. <see cref="Primary"/> and <see cref="Fallback"/> mirror the default model and the first
+    /// backup, so older code and old settings files keep working; <see cref="ModelList.Normalise"/> keeps the two in step.
+    /// </summary>
+    public List<SavedModel> SavedModels { get; set; } = [];
+    public string DefaultModelId { get; set; } = "";
+
+    /// <summary>Models tried, in this order, when the default cannot answer.</summary>
+    public List<string> BackupModelIds { get; set; } = [];
+    public ReviewWindowSettings ReviewWindow { get; set; } = new();
+
+    /// <summary>
     /// The model that grades rewrites in the quality check. A different provider from the optimiser,
     /// so the judge isn't grading its own model family. Uses the API key saved for that provider.
     /// </summary>
@@ -140,6 +219,9 @@ public static class SettingsStore
             settings.History.RetentionDays = HistoryRetention.Normalise(settings.History.RetentionDays);
             settings.Judge ??= new AppSettings().Judge;
             settings.StandingRequirements ??= [];
+            settings.ReviewWindow ??= new ReviewWindowSettings();
+            settings.ReviewWindow.Normalise();
+            ModelList.Normalise(settings);
             return settings;
         }
         catch (Exception ex) when (ex is JsonException or IOException or NotSupportedException)
@@ -156,6 +238,9 @@ public static class SettingsStore
 
     public static void Save(string path, AppSettings settings)
     {
+        ModelList.Normalise(settings);
+        settings.ReviewWindow ??= new ReviewWindowSettings();
+        settings.ReviewWindow.Normalise();
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         var temp = path + ".tmp";
         File.WriteAllText(temp, JsonSerializer.Serialize(settings, JsonOptions));
