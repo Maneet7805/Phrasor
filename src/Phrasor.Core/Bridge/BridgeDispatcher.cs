@@ -39,6 +39,7 @@ public sealed class BridgeDispatcher
         "home.get", "pause.set", TryItCommand, "tryit.cancel", "clipboard.copy",
         "settings.get", SaveCommand, TestCommand, "shortcut.recordStart", "shortcut.recordStop",
         "data.openFolder", "data.deleteAll", "firstrun.test", "firstrun.save",
+        "quality.get", "quality.setJudge", "quality.chooseCases", "quality.plan", "quality.run", "quality.cancel", "quality.openResults",
         "history.list", "history.get", "history.save", "history.copy", "history.delete", "history.deleteAll", "history.setRetention",
     };
 
@@ -140,6 +141,7 @@ public sealed class BridgeDispatcher
             catch (BusyException) { return Fail(id, BridgeError.Busy); }
             catch (HistoryUnavailableException) { return Fail(id, BridgeError.HistoryUnavailable); }
             catch (NothingToSaveException) { return Fail(id, BridgeError.NothingToSave); }
+            catch (QualityNotReadyException) { return Fail(id, BridgeError.NotReady); }
             _log(BridgeLog.Describe(type, bytes, _nowMs() - start, BridgeLog.Ok));
             return JsonSerializer.Serialize(new Reply(id, true, result, null), Json);
         }
@@ -236,6 +238,21 @@ public sealed class BridgeDispatcher
             case "firstrun.save":
                 _api.SaveFirstRunKey(FirstRunArgs(payload));
                 return new { saved = true };
+            case "quality.get": NoPayload(payload); return _api.GetQuality();
+            case "quality.setJudge":
+                var judge = Exact(payload, "provider", "model");
+                if (judge[0].ValueKind != JsonValueKind.String || judge[1].ValueKind != JsonValueKind.String) throw new BadPayloadException();
+                var judgeProvider = judge[0].GetString()!;
+                var judgeModel = judge[1].GetString()!.Trim();
+                if (!FirstRun.Providers.Contains(judgeProvider) || judgeModel.Length is 0 or > QualityPage.MaxModelChars || judgeModel.Any(char.IsControl)) throw new BadPayloadException();
+                _api.SetQualityJudge(judgeProvider, judgeModel);
+                return new { saved = true };
+            case "quality.chooseCases": NoPayload(payload); return new { cases = _api.ChooseQualityCases() };
+            case "quality.plan": return _api.PlanQuality(QualityArgs(payload, confirm: false));
+            case "quality.run":
+                return new { run = _api.StartQualityRun(QualityArgs(payload, confirm: true)) ?? throw new BusyException() };
+            case "quality.cancel": NoPayload(payload); _api.CancelQualityRun(); return new { };
+            case "quality.openResults": NoPayload(payload); return new { opened = _api.OpenQualityResults() };
             case TestCommand:
                 var test = _api.StartConnectionTest(SettingsArgs(payload)) ?? throw new BusyException();
                 return new { run = test };
@@ -265,6 +282,16 @@ public sealed class BridgeDispatcher
         var key = v[1].GetString()!.Trim();
         if (!FirstRun.Providers.Contains(provider) || key.Length is 0 or > SettingsPayload.MaxKeyChars || key.Any(char.IsControl)) throw new BadPayloadException();
         return new FirstRunKey(provider, key);
+    }
+
+    // { repeat, judge, heldOut } (plus confirm: true when the run is really being started, which only a click on the page sends).
+    private static QualityRunOptions QualityArgs(JsonElement? payload, bool confirm)
+    {
+        var v = confirm ? Exact(payload, "repeat", "judge", "heldOut", "confirm") : Exact(payload, "repeat", "judge", "heldOut");
+        if (v[0].ValueKind != JsonValueKind.Number || !v[0].TryGetInt32(out var repeat) || repeat is < 1 or > QualityPage.MaxRepeat) throw new BadPayloadException();
+        if (v.Skip(1).Any(x => x.ValueKind is not (JsonValueKind.True or JsonValueKind.False))) throw new BadPayloadException();
+        if (confirm && !v[3].GetBoolean()) throw new BadPayloadException();
+        return new QualityRunOptions(repeat, v[1].GetBoolean(), v[2].GetBoolean());
     }
 
     private static SettingsDraft SettingsArgs(JsonElement? payload) => SettingsPayload.TryParse(payload, out var draft) switch

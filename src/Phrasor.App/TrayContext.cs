@@ -120,9 +120,6 @@ internal sealed class TrayContext : ApplicationContext
             else await _updates.CheckAsync(manual: true);
         };
         menu.Items.Add(_updateItem);
-        var developer = new ToolStripMenuItem("Developer");
-        developer.DropDownItems.Add("Run quality check on a test set…", null, async (_, _) => await RunEvalAsync());
-        menu.Items.Add(developer);
         menu.Items.Add("Open logs folder", null, (_, _) =>
         {
             Directory.CreateDirectory(AppPaths.LogDir);
@@ -132,40 +129,6 @@ internal sealed class TrayContext : ApplicationContext
         menu.Items.Add("Exit", null, (_, _) => ExitThread());
         menu.Opening += (_, _) => _restore.Enabled = _optimize.LastOriginal is not null;
         return menu;
-    }
-
-    private bool _evalRunning;
-
-    private async Task RunEvalAsync()
-    {
-        if (_evalRunning)
-        {
-            _services.Notify("A quality check is already running.", ToolTipIcon.Info);
-            return;
-        }
-        using var dialog = new OpenFileDialog
-        {
-            Title = "Choose the test set (eval\\cases.json)",
-            Filter = "Test sets (*.json)|*.json",
-            CheckFileExists = true,
-        };
-        if (dialog.ShowDialog() != DialogResult.OK) return;
-        var judge = MessageBox.Show(
-            $"Also grade each rewrite with the judge model (Settings → Data)? It checks for invented details, dropped requirements, changed intent, added requests and replies written in the AI's voice.\n\nEach case runs {EvalCommand.DefaultRepeat} times so results can be told apart from noise. The judge doubles the number of requests.",
-            "Phrasor quality check", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes;
-        var outDir = Path.Combine(Path.GetDirectoryName(dialog.FileName)!, "results", DateTime.Now.ToString("yyyyMMdd-HHmm"));
-        _evalRunning = true;
-        _services.Notify($"Quality check started. Results will be in {outDir}", ToolTipIcon.Info);
-        try
-        {
-            var ok = await EvalCommand.RunAsync(_services, dialog.FileName, outDir, judge, TimeSpan.FromSeconds(8));
-            _services.Notify(ok ? "Quality check finished. Open report.md in the results folder." : "Quality check failed; see progress.txt in the results folder.",
-                ok ? ToolTipIcon.Info : ToolTipIcon.Warning);
-        }
-        finally
-        {
-            _evalRunning = false;
-        }
     }
 
     private void SetMode(OptimizeMode mode)
@@ -273,7 +236,7 @@ internal sealed class TrayContext : ApplicationContext
         }
         // Shortcuts are paused while settings are open so pressing one records it instead of triggering it.
         _hotkeys.UnregisterAll();
-        _settingsForm = new SettingsForm(_services.Settings, _services.Secrets, _hotkeys, _services.Client, tab, () => _ = RunEvalAsync());
+        _settingsForm = new SettingsForm(_services.Settings, _services.Secrets, _hotkeys, _services.Client, tab);
         _settingsForm.FormClosed += (_, _) =>
         {
             if (_settingsForm.DialogResult == DialogResult.OK)

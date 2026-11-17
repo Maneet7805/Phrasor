@@ -1,0 +1,16 @@
+{
+  "request": {
+    "id": "c40",
+    "type": "quality.plan",
+    "payload": {
+      "repeat": 99,
+      "judge": true,
+      "heldOut": false
+    }
+  },
+  "reply": {
+    "id": "c40",
+    "ok": false,
+    "error": "bad_request"
+  }
+}

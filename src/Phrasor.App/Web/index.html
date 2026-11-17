@@ -180,7 +180,43 @@
 
     <div class="page" data-page="quality" hidden>
       <h1 tabindex="-1">Quality check</h1>
-      <div class="empty"><b>Coming soon</b><span>Run the built-in quality check and read the results here.</span></div>
+      <p class="sub">Measures how well Phrasor rewrites a set of test drafts. It uses your own API key and the free allowance.</p>
+
+      <section class="sec" aria-labelledby="q-judge-h">
+        <h2 id="q-judge-h">Judge</h2>
+        <p class="sm mute">A second model that grades each rewrite. Choose a different provider from your main model so it does not grade its own family. Save that provider's key on the Settings page.</p>
+        <div class="grp">
+          <div class="sr col">
+            <div class="fields">
+              <label>Provider<select id="q-provider"><option value="gemini">Google Gemini</option><option value="groq">Groq</option></select></label>
+              <label>Model<input class="txt" type="text" id="q-model" maxlength="100" spellcheck="false" autocomplete="off"></label>
+            </div>
+            <small class="mute" id="q-judge-note"></small>
+          </div>
+        </div>
+        <div class="row">
+          <button class="btn" type="button" id="q-judge-save" disabled>Save judge</button>
+          <span class="sm" id="q-judge-state" role="status" data-tone=""></span>
+        </div>
+      </section>
+
+      <section class="sec" aria-labelledby="q-run-h">
+        <h2 id="q-run-h">Run</h2>
+        <div class="grp">
+          <div class="sr"><span class="st">Test set<small id="q-cases">None chosen. Pick the repo's eval/cases.json.</small></span><button class="btn" type="button" id="q-choose">Choose…</button></div>
+          <label class="sr"><span class="st">Runs per case<small>More runs tell real changes from noise, and use more of your allowance.</small></span><select id="q-repeat"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option></select></label>
+          <label class="sr"><span class="st">Grade with the judge<small>Doubles the requests.</small></span><input class="chk" type="checkbox" id="q-judge" checked></label>
+          <label class="sr"><span class="st">Include held-out cases<small>Only for a final check. Do not tune the rules against them.</small></span><input class="chk" type="checkbox" id="q-held"></label>
+        </div>
+        <p class="sm" id="q-cost" role="status" data-tone=""></p>
+        <div class="row">
+          <button class="btn pri" type="button" id="q-start" disabled>Start quality check</button>
+          <button class="btn" type="button" id="q-cancel" hidden>Cancel</button>
+          <button class="btn link" type="button" id="q-open" hidden>Open results folder</button>
+        </div>
+        <progress id="q-bar" max="1" value="0" hidden aria-label="Quality check progress"></progress>
+        <p class="sm qstate" id="q-state" role="status" data-tone=""></p>
+      </section>
     </div>
 
     <div class="page" data-page="settings" hidden>
@@ -313,8 +349,6 @@
         <p class="sm" id="d-state" role="status" data-tone=""></p>
       </section>
 
-      <p class="sm mute">Quality check settings are still in the classic Settings window (tray menu).</p>
-
       <div class="bar" role="group" aria-label="Save settings">
         <span class="sm mute grow" id="set-state" role="status">No changes.</span>
         <button class="btn" type="button" id="set-discard" disabled>Discard</button>
@@ -330,5 +364,6 @@
 <script src="/data.js"></script>
 <script src="/history.js"></script>
 <script src="/firstrun.js"></script>
+<script src="/quality.js"></script>
 </body>
 </html>

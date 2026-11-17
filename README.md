@@ -140,7 +140,7 @@ With `--judge`, a second model also checks for answering instead of rewriting, i
 | 0.2 | 48/53 (91%) | 830 ms / 1.5 s |
 | 0.3 – 1.0 | 50/53 (94%) | 914 ms / 1.7 s |
 
-The tests used `openai/gpt-oss-120b` on Groq's free tier, with one run per case; later results use repeats. Run it yourself: **Settings → Data → Run quality check** and pick `eval/cases.json`. To compare two versions of the rewriting rules, see [eval/README.md](eval/README.md).
+The tests used `openai/gpt-oss-120b` on Groq's free tier, with one run per case; later results use repeats. Run it yourself: the **Quality check** page of the main window, and pick `eval/cases.json`. To compare two versions of the rewriting rules, see [eval/README.md](eval/README.md).
 
 ## Models and free-tier limits
 

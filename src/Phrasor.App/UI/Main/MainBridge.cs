@@ -4,8 +4,10 @@ using Microsoft.Web.WebView2.Core;
 using Phrasor.App.Infrastructure;
 using Phrasor.App.TextAccess;
 using Phrasor.Core.Bridge;
+using Phrasor.Core.Eval;
 using Phrasor.Core.History;
 using Phrasor.Core.Home;
+using Phrasor.Core.Llm;
 using Phrasor.Core.Settings;
 using Phrasor.Core.Theme;
 
@@ -27,6 +29,11 @@ internal sealed class MainBridge : IMainWindowApi
     private int _runNumber;
     private CancellationTokenSource? _test; // set while Test connection is going: only one at a time
     private int _testNumber;
+    private CancellationTokenSource? _quality; // set while a quality check is going: only one at a time
+    private int _qualityNumber;
+    private string? _casesPath; // the test set the user chose; the page only ever sees its file name and counts
+    private IReadOnlyList<EvalCase>? _cases;
+    private string? _resultsDir; // the last finished run's folder, for "Open results"
     private bool _recording; // the page is recording a chord, so the global shortcuts are released
     private string? _lastRewrite; // the one string clipboard.copy can copy; kept in memory only, dropped with the window
     private string? _lastOriginal; // with _lastRewrite, the only text history.save can store: the page never supplies any
@@ -38,7 +45,15 @@ internal sealed class MainBridge : IMainWindowApi
         _services = services;
         _hooks = hooks;
         _dispatcher = new BridgeDispatcher(this, Log.Info);
-        form.FormClosed += (_, _) => { _run?.Cancel(); _test?.Cancel(); if (_recording) SetShortcutRecording(false); };
+        form.FormClosed += (_, _) => { _run?.Cancel(); _test?.Cancel(); _quality?.Cancel(); if (_recording) SetShortcutRecording(false); };
+        // A check can take an hour and stopping it loses its results, so closing the window asks first.
+        form.FormClosing += (_, e) =>
+        {
+            if (_quality is not null && e.CloseReason == CloseReason.UserClosing &&
+                MessageBox.Show(form, "A quality check is running. Closing the window stops it and its results are lost. Close anyway?", "Phrasor",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                e.Cancel = true;
+        };
         // Leaving the window while recording (Alt+Tab, a click elsewhere) must not leave the shortcuts released.
         form.Deactivate += (_, _) => { if (_recording) SetShortcutRecording(false); };
     }
@@ -268,6 +283,112 @@ internal sealed class MainBridge : IMainWindowApi
         _test = null;
         Log.Info($"settings test outcome={result.Error ?? BridgeLog.Ok} ms={result.Milliseconds}");
         Post(result.Ok ? BridgeEvents.SettingsTestDone(number, result) : BridgeEvents.SettingsTestFailed(number, result.Error!));
+    }
+
+    public QualityView GetQuality()
+    {
+        var judge = _services.Settings.Judge;
+        var provider = FirstRun.Providers.Contains(judge.Provider) ? judge.Provider : ProviderPresets.Gemini.Id;
+        return new QualityView(provider, judge.Model, !string.IsNullOrEmpty(_services.Secrets.Get(provider)),
+            provider == _services.Settings.Primary.Provider, CasesView(), _quality is not null, _resultsDir is not null,
+            FirstRun.Providers.ToDictionary(id => id, id => ProviderPresets.Get(id).DefaultModel));
+    }
+
+    private QualityCasesView? CasesView() => _cases is null || _casesPath is null ? null
+        : new QualityCasesView(Path.GetFileName(_casesPath), _cases.Count, _cases.Count(c => c.HeldOut));
+
+    public void SetQualityJudge(string provider, string model)
+    {
+        var next = SettingsStore.Clone(_services.Settings);
+        next.Judge = new EndpointSettings { Provider = provider, Model = model };
+        SettingsStore.Save(AppPaths.SettingsFile, next);
+        _services.Settings = next;
+        Log.Info($"quality judge saved provider={provider}");
+    }
+
+    public QualityCasesView? ChooseQualityCases()
+    {
+        using var dialog = new OpenFileDialog
+        {
+            Title = "Choose the test set (eval\\cases.json)",
+            Filter = "Test sets (*.json)|*.json",
+            CheckFileExists = true,
+        };
+        if (dialog.ShowDialog(_form) != DialogResult.OK) return null;
+        try
+        {
+            _cases = EvalRunner.LoadCases(dialog.FileName);
+            _casesPath = dialog.FileName;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException)
+        {
+            Log.Warn($"quality test set refused type={ex.GetType().Name}");
+            throw new QualityNotReadyException();
+        }
+        Log.Info($"quality test set chosen cases={_cases.Count}");
+        return CasesView();
+    }
+
+    public QualityPlanView PlanQuality(QualityRunOptions options) =>
+        _cases is null ? throw new QualityNotReadyException() : QualityPage.Plan(_cases, options);
+
+    public int? StartQualityRun(QualityRunOptions options)
+    {
+        if (_quality is not null) return null;
+        if (_cases is null || _casesPath is null) throw new QualityNotReadyException();
+        try { EndpointResolver.Resolve(_services.Settings, _services.Secrets); }
+        catch (MissingKeyException) { throw new QualityNotReadyException(); }
+        _quality = new CancellationTokenSource();
+        var number = ++_qualityNumber;
+        _ = RunQualityAsync(number, _casesPath, QualityPage.Plan(_cases, options).Runs, options, _quality);
+        return number;
+    }
+
+    public void CancelQualityRun() => _quality?.Cancel();
+
+    private async Task RunQualityAsync(int number, string casesPath, int total, QualityRunOptions o, CancellationTokenSource cts)
+    {
+        await Task.Yield(); // the "started" reply must reach the page before any progress does
+        var dir = Path.Combine(AppPaths.DataDir, "quality", DateTime.Now.ToString("yyyyMMdd-HHmmss"));
+        var progress = new QualityProgress();
+        string state;
+        (int Passed, int Errored, int Total) counts = (0, 0, 0);
+        try
+        {
+            // Called on this (the UI) thread: the callback is posted through the context RunAsync was started on.
+            var ok = await EvalCommand.RunAsync(_services, casesPath, dir, o.Judge, TimeSpan.FromSeconds(8), o.Repeat, null, o.IncludeHeldOut, cts.Token,
+                line =>
+                {
+                    progress.Update(line);
+                    Post(BridgeEvents.QualityProgress(number, Math.Min(progress.Current, total), total, progress.Waiting));
+                });
+            state = cts.IsCancellationRequested ? QualityState.Cancelled : !ok ? QualityState.Failed : progress.Stopped ? QualityState.Stopped : QualityState.Done;
+            if (state is QualityState.Done or QualityState.Stopped)
+            {
+                counts = QualityPage.Summarise(await File.ReadAllTextAsync(Path.Combine(dir, "results.json")));
+                _resultsDir = dir;
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
+        {
+            state = QualityState.Failed;
+        }
+        cts.Dispose();
+        _quality = null;
+        // Counts and a state from a fixed list: no case text, rewrite or path reaches the log or the page.
+        Log.Info($"quality check state={state} passed={counts.Passed} errored={counts.Errored} total={counts.Total}");
+        Post(BridgeEvents.QualityFinished(number, state, counts.Passed, counts.Errored, counts.Total));
+    }
+
+    public bool OpenQualityResults()
+    {
+        if (_resultsDir is null || !Directory.Exists(_resultsDir)) return false;
+        try { Process.Start(new ProcessStartInfo(_resultsDir) { UseShellExecute = true }); return true; }
+        catch (Exception ex) when (ex is Win32Exception or IOException)
+        {
+            Log.Warn($"open quality results failed type={ex.GetType().Name}");
+            return false;
+        }
     }
 
     public MainWindowState GetState() =>

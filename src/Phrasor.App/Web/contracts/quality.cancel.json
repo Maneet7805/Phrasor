@@ -1,0 +1,11 @@
+{
+  "request": {
+    "id": "c40",
+    "type": "quality.cancel"
+  },
+  "reply": {
+    "id": "c40",
+    "ok": true,
+    "payload": {}
+  }
+}

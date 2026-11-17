@@ -1,0 +1,17 @@
+{
+  "request": {
+    "id": "c40",
+    "type": "quality.chooseCases"
+  },
+  "reply": {
+    "id": "c40",
+    "ok": true,
+    "payload": {
+      "cases": {
+        "name": "cases.json",
+        "cases": 40,
+        "heldOut": 10
+      }
+    }
+  }
+}

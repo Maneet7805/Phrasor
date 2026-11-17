@@ -1,0 +1,13 @@
+{
+  "request": {
+    "id": "c40",
+    "type": "quality.openResults"
+  },
+  "reply": {
+    "id": "c40",
+    "ok": true,
+    "payload": {
+      "opened": true
+    }
+  }
+}

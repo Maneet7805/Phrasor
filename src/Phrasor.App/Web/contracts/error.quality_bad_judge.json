@@ -1,0 +1,15 @@
+{
+  "request": {
+    "id": "c40",
+    "type": "quality.setJudge",
+    "payload": {
+      "provider": "custom",
+      "model": "x"
+    }
+  },
+  "reply": {
+    "id": "c40",
+    "ok": false,
+    "error": "bad_request"
+  }
+}

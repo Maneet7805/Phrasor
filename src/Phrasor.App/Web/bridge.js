@@ -8,8 +8,10 @@
   var pending = {};
   var counter = 0;
   var tryItHandler = null;
+  var qualityHandler = null;
   var settingsTestHandlers = []; // Settings and first run each filter on their own run number
   var TIMEOUT_MS = 10000;
+  var DIALOG_TIMEOUT_MS = 10 * 60 * 1000; // the file dialog holds the reply until the user is done
 
   if (host) {
     host.addEventListener("message", function (event) {
@@ -18,6 +20,7 @@
       // Pushed by the app, not a reply: the finished (or failed) Try-it run.
       if (reply && reply.event === "tryit") { if (tryItHandler) tryItHandler(reply); return; }
       if (reply && reply.event === "settingsTest") { settingsTestHandlers.forEach(function (handler) { handler(reply); }); return; }
+      if (reply && reply.event === "quality") { if (qualityHandler) qualityHandler(reply); return; }
       var call = reply && typeof reply.id === "string" ? pending[reply.id] : null;
       if (!call) return;
       delete pending[reply.id];
@@ -26,7 +29,7 @@
     });
   }
 
-  function send(type, payload) {
+  function send(type, payload, timeoutMs) {
     return new Promise(function (resolve, reject) {
       if (!host) { reject(new Error("no_host")); return; }
       var id = "c" + (++counter);
@@ -35,7 +38,7 @@
       pending[id] = {
         resolve: resolve,
         reject: reject,
-        timer: setTimeout(function () { delete pending[id]; reject(new Error("timeout")); }, TIMEOUT_MS)
+        timer: setTimeout(function () { delete pending[id]; reject(new Error("timeout")); }, timeoutMs || TIMEOUT_MS)
       };
       host.postMessage(JSON.stringify(message));
     });
@@ -60,6 +63,14 @@
     onSettingsTest: function (handler) { settingsTestHandlers.push(handler); },
     firstRunTest: function (provider, key) { return send("firstrun.test", { provider: provider, key: key }); },
     firstRunSave: function (provider, key) { return send("firstrun.save", { provider: provider, key: key }); },
+    qualityGet: function () { return send("quality.get"); },
+    qualitySetJudge: function (provider, model) { return send("quality.setJudge", { provider: provider, model: model }); },
+    qualityChooseCases: function () { return send("quality.chooseCases", undefined, DIALOG_TIMEOUT_MS); },
+    qualityPlan: function (o) { return send("quality.plan", { repeat: o.repeat, judge: o.judge, heldOut: o.heldOut }); },
+    qualityRun: function (o) { return send("quality.run", { repeat: o.repeat, judge: o.judge, heldOut: o.heldOut, confirm: true }); },
+    qualityCancel: function () { return send("quality.cancel"); },
+    qualityOpenResults: function () { return send("quality.openResults"); },
+    onQuality: function (handler) { qualityHandler = handler; },
     shortcutRecordStart: function () { return send("shortcut.recordStart"); },
     shortcutRecordStop: function () { return send("shortcut.recordStop"); },
     historyList: function (query, limit) { return send("history.list", { query: query, limit: limit }); },

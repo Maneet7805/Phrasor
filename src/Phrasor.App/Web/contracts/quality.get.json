@@ -1,0 +1,27 @@
+{
+  "request": {
+    "id": "c40",
+    "type": "quality.get"
+  },
+  "reply": {
+    "id": "c40",
+    "ok": true,
+    "payload": {
+      "judgeProvider": "gemini",
+      "judgeModel": "gemini-3.5-flash-lite",
+      "judgeKeySet": true,
+      "judgeSameAsMain": false,
+      "cases": {
+        "name": "cases.json",
+        "cases": 40,
+        "heldOut": 10
+      },
+      "running": false,
+      "hasResults": true,
+      "defaultModels": {
+        "gemini": "gemini-3.5-flash-lite",
+        "groq": "openai/gpt-oss-120b"
+      }
+    }
+  }
+}

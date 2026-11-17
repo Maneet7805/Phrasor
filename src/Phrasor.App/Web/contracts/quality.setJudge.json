@@ -1,0 +1,17 @@
+{
+  "request": {
+    "id": "c40",
+    "type": "quality.setJudge",
+    "payload": {
+      "provider": "gemini",
+      "model": "gemini-3.5-flash-lite"
+    }
+  },
+  "reply": {
+    "id": "c40",
+    "ok": true,
+    "payload": {
+      "saved": true
+    }
+  }
+}

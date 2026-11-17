@@ -90,4 +90,10 @@ public static class BridgeEvents
 
     public static string SettingsTestFailed(int run, string kind) =>
         JsonSerializer.Serialize(new { @event = "settingsTest", run, ok = false, error = kind, message = TryItErrors.MessageFor(kind) }, Json);
+
+    public static string QualityProgress(int run, int current, int total, bool waiting) =>
+        JsonSerializer.Serialize(new { @event = "quality", run, state = "running", current, total, waiting }, Json);
+
+    public static string QualityFinished(int run, string state, int passed, int errored, int total) =>
+        JsonSerializer.Serialize(new { @event = "quality", run, state, passed, errored, total }, Json);
 }

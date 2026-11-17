@@ -9,7 +9,7 @@ namespace Phrasor.App;
 /// Runs the optimiser over a test set with the saved settings and API keys, writing report.md and
 /// results.json. Available as
 /// "Phrasor.exe --eval cases.json outDir [--judge] [--repeat N] [--system-prompt file] [--pause-seconds N]"
-/// and from the tray menu (Developer → Run quality check). Keys never leave this PC.
+/// and from the main window's Quality check page. Keys never leave this PC.
 /// "Phrasor.exe --eval-compare before\results.json after\results.json compare.md" compares two runs.
 /// "Phrasor.exe --rejudge run\results.json cases.json outDir [--grades grades.csv]" grades a saved run again (#34).
 /// </summary>
@@ -140,11 +140,16 @@ internal static class EvalCommand
 
     /// <summary>Returns true on success. Progress and the final summary go to progress.txt in the output folder.</summary>
     public static async Task<bool> RunAsync(AppServices services, string casesPath, string outDir, bool judge, TimeSpan pause,
-        int repeat = DefaultRepeat, string? instructionsPath = null, bool includeHeldOut = false)
+        int repeat = DefaultRepeat, string? instructionsPath = null, bool includeHeldOut = false,
+        CancellationToken ct = default, Action<string>? onProgress = null)
     {
         Directory.CreateDirectory(outDir);
         var progressFile = Path.Combine(outDir, "progress.txt");
-        void Progress(string msg) => File.WriteAllText(progressFile, $"{DateTime.Now:HH:mm:ss} {msg}");
+        void Progress(string msg)
+        {
+            File.WriteAllText(progressFile, $"{DateTime.Now:HH:mm:ss} {msg}");
+            onProgress?.Invoke(msg);
+        }
         try
         {
             var allCases = EvalRunner.LoadCases(casesPath);
@@ -156,7 +161,7 @@ internal static class EvalCommand
                 instructionsPath is null ? null : Path.GetFileName(instructionsPath), HeldOutSkipped: allCases.Count - cases.Count);
             var runner = new EvalRunner(services.Optimizer, services.Client);
             Log.Info($"eval started cases={cases.Count} repeat={repeat} judge={(judge ? judgeEndpoint.Label : "off")} independent={independent} customPrompt={instructionsPath is not null}");
-            var results = await runner.RunAsync(cases, endpoints, judge ? judgeEndpoint : null, pause, new Progress<string>(Progress), CancellationToken.None, repeat, options);
+            var results = await runner.RunAsync(cases, endpoints, judge ? judgeEndpoint : null, pause, new Progress<string>(Progress), ct, repeat, options);
 
             info = info with { StoppedEarly = runner.StoppedEarly };
             await File.WriteAllTextAsync(Path.Combine(outDir, "report.md"), EvalRunner.BuildReport(results, info));
@@ -167,6 +172,13 @@ internal static class EvalCommand
             Progress(summary);
             Log.Info("eval " + summary);
             return true;
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // Nothing is written: the runner saves results only when it finishes.
+            Progress("cancelled");
+            Log.Info("eval cancelled");
+            return false;
         }
         catch (Exception ex)
         {

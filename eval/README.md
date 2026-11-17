@@ -4,7 +4,7 @@
 
 ## Run it
 
-From the tray: **Developer → Run quality check** (or **Settings → Data → Run quality check**), pick `eval\cases.json`, and say yes to the judge. The report and `results.json` go to `eval\results\<date-time>\`.
+In the main window, open **Quality check**, choose `eval\cases.json`, read the cost it shows (requests and minutes), and press **Start**. It never starts by itself. You can leave the page while it runs, and **Cancel** stops it (a cancelled run saves nothing). The report and `results.json` go to `%APPDATA%\Phrasor\quality\<date-time>\`; **Open results folder** shows them.
 
 From PowerShell, in the repo folder, with Phrasor running or not:
 
@@ -14,7 +14,7 @@ From PowerShell, in the repo folder, with Phrasor running or not:
 
 | Option | What it does |
 | --- | --- |
-| `--judge` | Grade each rewrite with the judge model (Settings → Data). Doubles the requests. |
+| `--judge` | Grade each rewrite with the judge model (Quality check page). Doubles the requests. |
 | `--repeat N` | Runs per case (default 3). Cases with their own higher `repeat` keep it. |
 | `--system-prompt <file>` | Use these rewriting rules instead of the built-in ones. |
 | `--pause-seconds N` | Wait between requests (default 8), to stay inside free-tier rate limits. |
