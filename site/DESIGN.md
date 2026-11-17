@@ -12,17 +12,22 @@ If the page and this file disagree, fix whichever is wrong in the same change. T
 
 ## Colour
 
+The page uses the app's own palette (main window, `docs/design/main-window-plan.md`): warm black, cream, orange.
+
 | Token | Value | Role |
 | --- | --- | --- |
-| `--ink` | `#070A10` | Page background, dark sections |
-| `--text` | `#E9EDF2` | Text on dark |
-| `--muted` | `#9FABB8` | Secondary text on dark |
-| `--peach`, `--peach-hi` | `#F49D70`, `#FBBC94` | Accent: headline emphasis, highlights |
+| `--ink` | `#181615` | Page background, dark sections (the app's dark window) |
+| `--text` | `#F6EBDD` | Cream text on dark |
+| `--muted` | `#A89C90` | Secondary text on dark |
+| `--peach`, `--peach-hi` | `#F58E4C`, `#F7B27A` | Orange accent: headline emphasis, highlights (the app's accent and focus colours) |
+| `--glass` | `rgba(33,30,28,.72)` | Panels over the canvas (the app's card `#211E1C`) |
 | `--green` | `#85AB8B` | "Added" in the diff, success |
-| `.light` | text `#14171C`, muted `#2F363E`, accent `#B4531F` | Light sections |
+| `.light` | text `#181615`, muted `#5A5149`, accent `#B4531F` | Light sections (the app's light text and accent text) |
 
-- No purple. The app icon is purple and appears only as the small nav mark.
-- Peach is the one accent. Red and green appear only in the diff.
+- The canvas sky is warm too: near-black browns at night, cream and tan by day. No blue.
+- No purple. The app icon (a ribbon "P" on a dark tile) is the small nav mark.
+- Orange is the one accent. Red and green appear only in the diff.
+- The screenshot of the main window (`media/main-home.webp`) is a real capture of the dark theme, so the page and the app match.
 
 ## Typography
 
@@ -43,8 +48,8 @@ If the page and this file disagree, fix whichever is wrong in the same change. T
 ## Content rules
 
 - Every claim traces to the README, `rewrite-intent.md` or the code. No version number on the page: it would go stale.
-- Screenshots must not show padding such as "ask before drafting" (`rewrite-intent.md` D8). The current two do, and need re-capturing.
-- Numbers: 127 test drafts, 13 held out, each run 3 times (`eval/cases.json`, `eval/README.md`). Update them when the set changes.
+- Screenshots must not show padding such as "ask before drafting" (`rewrite-intent.md` D8). The two review-window shots (`review-improved`, `review-changes`) still do, and need re-capturing with a real model call; the main-window shot has no rewrite in it.
+- Numbers: 128 test drafts, 13 held out, each run 3 times (`eval/cases.json`, `eval/README.md`). Update them when the set changes.
 - No analytics, cookies, storage or third-party requests. External links go to GitHub only.
 
 ## Do not
