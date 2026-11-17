@@ -67,6 +67,7 @@ public static class ResponseParser
         "writing" or "editing" => TaskType.Writing,
         "planning" or "plan" => TaskType.Planning,
         "image" or "image_generation" or "image-generation" => TaskType.Image,
+        "video" or "video_generation" or "video-generation" => TaskType.Video,
         _ => TaskType.General,
     };
 

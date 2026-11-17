@@ -21,7 +21,7 @@ public class SettingsShortcutsVoiceTests
          "keys":{"set":{},"remove":[]},
          "shortcuts":{"optimize":"ctrl+alt+O","optimizeSelection":"Ctrl+Alt+Shift+O","voice":""},
          "voice":{"enabled":true,"provider":"custom","model":" whisper-x ","language":"ms","autoOptimize":true,"maxSeconds":60},
-         "requirements":{"All":"  Be brief.\r\n","Coding":"Find the root cause.","Debugging":"","Research":"","Study":"","Writing":"","Planning":"","General":"","Image":""}}
+         "requirements":{"All":"  Be brief.\r\n","Coding":"Find the root cause.","Debugging":"","Research":"","Study":"","Writing":"","Planning":"","General":"","Image":"","Video":""}}
         """)!.AsObject();
 
     private string? Send(string type, JsonNode? payload) =>
@@ -38,7 +38,7 @@ public class SettingsShortcutsVoiceTests
         Assert.Equal(new ShortcutsDraft("ctrl+alt+O", "Ctrl+Alt+Shift+O", ""), d.Shortcuts);
         Assert.Equal(new VoiceDraft(true, "custom", "whisper-x", "ms", true, 60), d.Voice);
         Assert.Equal("Be brief.", d.Requirements["All"]);
-        Assert.Equal(9, d.Requirements.Count);
+        Assert.Equal(10, d.Requirements.Count);
     }
 
     [Fact]
@@ -125,7 +125,7 @@ public class SettingsShortcutsVoiceTests
         var s = new AppSettings();
         s.StandingRequirements["coding"] = "Root cause.";
         var v = SettingsPage.BuildView(s, new SettingsTests.MemorySecrets(), false);
-        Assert.Equal(["All", "Coding", "Debugging", "Research", "Study", "Writing", "Planning", "General", "Image"], v.Requirements.Select(r => r.Id));
+        Assert.Equal(["All", "Coding", "Debugging", "Research", "Study", "Writing", "Planning", "General", "Image", "Video"], v.Requirements.Select(r => r.Id));
         Assert.Equal("Root cause.", v.Requirements.Single(r => r.Id == "Coding").Text);
         Assert.Equal(RequirementsAppender.MaxLength, v.RequirementsMax);
     }

@@ -26,7 +26,7 @@ public class SettingsPageTests
          "keys":{"set":{"custom":"  FAKE-KEY-MARKER-123  "},"remove":["gemini"]},
          "shortcuts":{"optimize":"ctrl+alt+O","optimizeSelection":"Ctrl+Alt+Shift+O","voice":""},
          "voice":{"enabled":true,"provider":"custom","model":" whisper-x ","language":"ms","autoOptimize":true,"maxSeconds":60},
-         "requirements":{"All":"  Be brief.\r\n","Coding":"Find the root cause.","Debugging":"","Research":"","Study":"","Writing":"","Planning":"","General":"","Image":""}}
+         "requirements":{"All":"  Be brief.\r\n","Coding":"Find the root cause.","Debugging":"","Research":"","Study":"","Writing":"","Planning":"","General":"","Image":"","Video":""}}
         """)!.AsObject();
 
     private string? Send(string type, JsonNode? payload, string id = "s1") =>

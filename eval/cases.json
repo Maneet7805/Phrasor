@@ -67,6 +67,12 @@
 
   { "id": "image-midjourney", "category": "image", "draft": "a lone lighthouse on a cliff at dusk, stormy sea, dramatic clouds, oil painting style, muted teal and orange palette --ar 16:9 --v 6", "expectMinimalChange": true, "maxLengthRatio": 1.3, "mustContain": ["--ar 16:9", "--v 6"], "expect": "Clarify" },
   { "id": "image-typos", "category": "image", "draft": "portait of an old fisherman, wrinkled face, natural light, shallow depth of feild, 85mm lens, photorealistic", "expectMinimalChange": true, "maxLengthRatio": 1.3, "mustContain": ["85mm"], "expect": "Clarify" },
+  { "id": "video-shot-list", "category": "video", "draft": "10 second clip of a paper boat floating down a rainy street gutter, slow camera follow, warm streetlight reflections, no people", "expectMinimalChange": true, "maxLengthRatio": 1.5, "mustContain": ["10 second", "no people"], "expect": "Clarify" },
+  { "id": "video-vague", "category": "video", "draft": "make a cool video of a robot dancing", "expect": "Clarify" },
+  { "id": "video-reel-script", "category": "video", "draft": "30 sec instagram reel for my coffee cart, hook in the first 2 seconds, show latte art being poured, upbeat music, text overlay 'Open 7am' at the end", "mustContain": ["30 sec", "2 seconds", "Open 7am"], "expect": "Clarify" },
+  { "id": "video-typos", "category": "video", "draft": "cinematc drone shot over a foggy pine forest at sunrise, slow push forwrd, 24fps, 16:9, muted colours", "expectMinimalChange": true, "maxLengthRatio": 1.4, "mustContain": ["24fps", "16:9"], "expect": "Clarify" },
+  { "id": "video-explainer-script", "category": "video", "draft": "write the script for a 60 second explainer video about how compost turns kitchen scraps into soil, friendly voiceover, for primary school kids", "mustContain": ["60 second"], "expect": "Clarify" },
+  { "id": "video-edit-request", "category": "video", "draft": "i have 3 phone clips of my dog at the beach, how do i turn them into a 20 second video with music, free software only", "mustContain": ["3 phone clips", "20 second"], "expect": "Clarify" },
 
   { "id": "placeholder-square", "category": "details", "draft": "write 3 instagram captions for [Brand]'s new [product] launch, playful tone", "mustContain": ["[Brand]", "[product]"], "expect": "Clarify" },
   { "id": "placeholder-curly", "category": "details", "draft": "draft a follow up email template starting with Hi {{first_name}}, reminding them about the {{event_name}} on {{date}}", "mustContain": ["{{first_name}}", "{{event_name}}", "{{date}}"], "expect": "Clarify" },

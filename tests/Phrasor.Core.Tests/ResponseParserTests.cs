@@ -34,6 +34,14 @@ public class ResponseParserTests
         Assert.Equal(TaskType.Image, ResponseParser.ParseTaskType(value));
     }
 
+    [Theory]
+    [InlineData("video")]
+    [InlineData("video_generation")]
+    public void Parses_the_video_task_type(string value)
+    {
+        Assert.Equal(TaskType.Video, ResponseParser.ParseTaskType(value));
+    }
+
     [Fact]
     public void New_task_types_are_appended_so_dropdown_indexes_stay_stable()
     {
@@ -41,6 +49,7 @@ public class ResponseParserTests
         Assert.Equal(0, (int)TaskType.Auto);
         Assert.Equal(7, (int)TaskType.General);
         Assert.Equal(8, (int)TaskType.Image);
+        Assert.Equal(9, (int)TaskType.Video);
     }
 
     [Fact]

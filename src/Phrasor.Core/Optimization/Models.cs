@@ -21,6 +21,7 @@ public enum TaskType
     Planning,
     General,
     Image,
+    Video,
 }
 
 /// <summary>What the model judged it needed to do to the draft.</summary>

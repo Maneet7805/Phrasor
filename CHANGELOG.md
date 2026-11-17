@@ -4,6 +4,9 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+### Added
+- **Video task type.** You can pick Video as the task for a rewrite, and add requirements for it in Settings. Auto does not choose it yet.
+
 ## [2.0.0] - 2026-11-17
 
 **Read this first.**

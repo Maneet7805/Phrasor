@@ -54,7 +54,8 @@
         "Writing": "",
         "Planning": "",
         "General": "",
-        "Image": ""
+        "Image": "",
+        "Video": ""
       }
     }
   },
@@ -215,6 +216,11 @@
           {
             "id": "Image",
             "label": "Image",
+            "text": ""
+          },
+          {
+            "id": "Video",
+            "label": "Video",
             "text": ""
           }
         ],

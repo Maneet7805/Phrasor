@@ -159,6 +159,11 @@
           "id": "Image",
           "label": "Image",
           "text": ""
+        },
+        {
+          "id": "Video",
+          "label": "Video",
+          "text": ""
         }
       ],
       "requirementsMax": 2000
