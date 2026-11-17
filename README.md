@@ -8,7 +8,7 @@
 
 Type naturally, press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>P</kbd>, review the rewrite, press <kbd>Ctrl</kbd>+<kbd>Enter</kbd>.
 
-[![Latest release](https://img.shields.io/github/v/release/Maneet7805/Phrasor?label=download&color=6d4aff)](https://github.com/Maneet7805/Phrasor/releases/latest)
+[![Latest release](https://img.shields.io/github/v/release/Maneet7805/Phrasor?label=download&color=F58E4C)](https://github.com/Maneet7805/Phrasor/releases/latest)
 [![CI](https://github.com/Maneet7805/Phrasor/actions/workflows/ci.yml/badge.svg)](https://github.com/Maneet7805/Phrasor/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078d4)

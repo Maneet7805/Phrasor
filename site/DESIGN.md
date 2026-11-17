@@ -25,7 +25,7 @@ The page uses the app's own palette (main window, `docs/design/main-window-plan.
 | `.light` | text `#181615`, muted `#5A5149`, accent `#B4531F` | Light sections (the app's light text and accent text) |
 
 - The canvas sky is warm too: near-black browns at night, cream and tan by day. No blue.
-- No purple. The app icon is purple and appears only as the small nav mark.
+- No purple. The app icon (a ribbon "P" on a dark tile) is the small nav mark.
 - Orange is the one accent. Red and green appear only in the diff.
 - The screenshot of the main window (`media/main-home.webp`) is a real capture of the dark theme, so the page and the app match.
 
