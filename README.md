@@ -196,7 +196,6 @@ A typical rewrite uses about 1,200 input tokens, most of which is the cached sys
 - API keys are encrypted with Windows DPAPI for your Windows account (`%APPDATA%\Phrasor\secrets.dat`).
 - Nothing is saved automatically. A draft and its rewrite are kept only when you press **Save to History** (review window or Try it). They go to `%LOCALAPPDATA%\Phrasor\History\history.dat` on this PC, encrypted with Windows DPAPI for your Windows account: up to 500 items, each side cut at 20,000 characters. The History page can delete one item, delete all, or remove items after 30 or 90 days (off by default). Delete all data in Settings removes them too.
 - Logs (`%APPDATA%\Phrasor\logs`, kept 7 days) contain events and timings only: never prompt text, transcripts or keys.
-- "Report bad rewrite" opens a pre-filled GitHub issue form in your browser. Your draft and the rewrite go into the link only if you answer Yes, never if they look like a key, and nothing is sent until you submit the form.
 - Text Phrasor puts on the clipboard is marked to stay out of Windows clipboard history and cloud sync.
 - The main window is a web page that loads only files inside Phrasor (including its fonts); the page can make no network requests, and it uses the Microsoft Edge WebView2 runtime that ships with Windows. Font licences are in [THIRD-PARTY.md](THIRD-PARTY.md).
 
