@@ -28,6 +28,7 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 - Voice: recordings with only typing, clicks, breathing or room noise are no longer sent for transcription, so they stop turning into words like "Thank you."; a small speech model now checks that someone actually spoke (#66). Very quiet or whispered words may be treated as no speech.
 
 ### Changed
+- The README and the website now describe the main window (Home, Try it, History, Quality check, Settings) with real screenshots, and the website uses the app's warm black, cream and orange colours. They also correct the exe size (about 83 MB), the number of test drafts (128) and where the judge is set (the Quality check page) (#214).
 - The tray menu's **Developer** submenu is gone: the quality check now lives on the main window's Quality check page. The classic Settings window no longer has a quality check button or judge settings, so on a PC without the browser engine the quality check is available only as `Phrasor.exe --eval` (#212).
 - The README, SECURITY.md, the website, the uninstall prompts and the classic Settings window now say what is true: a rewrite is saved only if you press Save to History, it is stored encrypted for your Windows account in Local app data, and Delete all data and uninstall can remove it (#208).
 - The review, settings, update and status windows now use Phrasor's warm dark or light colours, following Windows (or the `Ui.Theme` setting). Layout and shortcuts are unchanged; combo boxes, buttons and tab headers only partly follow the theme (#179).
