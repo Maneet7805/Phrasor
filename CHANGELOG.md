@@ -11,6 +11,7 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 - **New main window** (Home, Try it, History, Quality check, Settings, first run). Open it from the tray. Nothing is saved to History unless you press Save.
 - **The window needs the Microsoft Edge WebView2 runtime.** It is part of Windows 11 and of most Windows 10 PCs. If it is missing, the window says so and offers **Install now** (after your click it downloads Microsoft's installer, checks that Microsoft signed it, and runs it without admin rights). The shortcuts, the review window and voice dictation never depend on it.
 - **Size:** the exe is about 83 MB (1.6.0 was 76.1 MB).
+- **Rewriting quality: no clear change.** The rewriting rules only had the old app name replaced. The quality check ran before (2026-11-16) and after (2026-11-17), and the provider stopped both runs early on its daily limit. Runs that finished passed 258/326 (79%) before and 205/249 (82%) after. Of 107 cases compared, 6 were better, 3 worse, 21 noise, and 17 could not be compared because of rate-limit errors. We don't claim the new prompt is better.
 - The exe is still not code-signed, so SmartScreen may warn on a manual download.
 
 ### Added
