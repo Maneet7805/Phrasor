@@ -64,7 +64,7 @@ jobs:
           ### Install or update
           1. Download **Phrasor.exe** below and double-click it. If SmartScreen appears: **More info → Run anyway** (the exe isn't code-signed).
           2. Choose **Yes** to install, or to update an existing copy (settings and keys are kept).
-          3. Paste a free key from https://console.groq.com/keys in Settings → Model → **Test connection** → **Save**.
+          3. Phrasor opens its window on three steps: get a free key from https://console.groq.com/keys, paste it, test it. The window needs the Microsoft Edge WebView2 runtime (included in Windows 11 and most Windows 10; if missing, the window offers to install it).
 
           The zip contains the same exe plus ``uninstall.cmd``. Verify the download against ``SHA256SUMS.txt``.
           "@
