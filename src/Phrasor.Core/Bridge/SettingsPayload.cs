@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Phrasor.Core.Llm;
 using Phrasor.Core.Optimization;
+using Phrasor.Core.Settings;
 using Phrasor.Core.Theme;
 
 namespace Phrasor.Core.Bridge;
@@ -27,10 +28,11 @@ public static partial class SettingsPayload
         try
         {
             if (payload is not { ValueKind: JsonValueKind.Object } root) return Outcome.Bad;
-            var top = Exact(root, "general", "model", "keys", "shortcuts", "voice", "requirements");
+            var top = Exact(root, "general", "model", "review", "keys", "shortcuts", "voice", "requirements");
             var g = Exact(top["general"], "theme", "defaultMode", "reviewBeforeReplace", "startWithWindows", "sendAppHint",
                 "repairDroppedDetails", "checkForUpdates", "personalContext");
-            var m = Exact(top["model"], "primary", "fallback");
+            var models = Models(top["model"]);
+            var review = Review(top["review"]);
             var k = Exact(top["keys"], "set", "remove");
             var sc = Exact(top["shortcuts"], "optimize", "optimizeSelection", "voice");
             var v = Exact(top["voice"], "enabled", "provider", "model", "language", "autoOptimize", "maxSeconds");
@@ -54,7 +56,7 @@ public static partial class SettingsPayload
             if (k["set"].ValueKind != JsonValueKind.Object) return Outcome.Bad;
             foreach (var p in k["set"].EnumerateObject())
             {
-                if (!SettingsPage.KeyProviders.Contains(p.Name)) return Outcome.Bad;
+                if (!IsKeyId(p.Name, models)) return Outcome.Bad;
                 var key = Str(p.Value, 1, MaxKeyChars).Trim();
                 if (key.Length == 0 || key.Any(char.IsControl)) return Outcome.Bad;
                 typed[p.Name] = key;
@@ -63,8 +65,8 @@ public static partial class SettingsPayload
             var remove = new HashSet<string>();
             foreach (var item in k["remove"].EnumerateArray())
             {
-                var id = Str(item, 1, 16);
-                if (!SettingsPage.KeyProviders.Contains(id) || typed.ContainsKey(id)) return Outcome.Bad;
+                var id = Str(item, 1, 20);
+                if (!IsKeyId(id, models) || typed.ContainsKey(id)) return Outcome.Bad;
                 remove.Add(id);
             }
 
@@ -80,7 +82,7 @@ public static partial class SettingsPayload
                 ReviewBeforeReplace: Bool(g["reviewBeforeReplace"]), StartWithWindows: Bool(g["startWithWindows"]),
                 SendAppHint: Bool(g["sendAppHint"]), RepairDroppedDetails: Bool(g["repairDroppedDetails"]),
                 CheckForUpdates: Bool(g["checkForUpdates"]), PersonalContext: context,
-                Primary: Endpoint(m["primary"], primary: true), Fallback: Endpoint(m["fallback"], primary: false),
+                Models: models, Review: review,
                 Shortcuts: new ShortcutsDraft(Chord(sc["optimize"]), Chord(sc["optimizeSelection"]), Chord(sc["voice"])),
                 Voice: voice, Requirements: requirements,
                 NewKeys: typed, RemoveKeys: remove);
@@ -114,18 +116,61 @@ public static partial class SettingsPayload
     [GeneratedRegex("^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})?$")]
     private static partial Regex LanguageCode();
 
-    private static EndpointDraft Endpoint(JsonElement e, bool primary)
+    // A provider key, or the own key of a model that is saved here with its own key.
+    private static bool IsKeyId(string id, ModelsDraft models) =>
+        SettingsPage.KeyProviders.Contains(id) ||
+        (ModelList.IsKeyIdOfModel(id) && models.Saved.Any(m => m.SeparateKey && ModelList.KeyIdFor(m.Id) == id));
+
+    private static ModelsDraft Models(JsonElement e)
     {
-        var o = primary ? Exact(e, "provider", "model", "baseUrl") : Exact(e, "enabled", "provider", "model", "baseUrl");
-        var provider = OneOf(Str(o["provider"], 1, 16), ProviderPresets.All.Select(p => p.Id));
-        var model = Str(o["model"], primary ? 1 : 0, MaxModelChars).Trim();
-        if ((primary && model.Length == 0) || model.Any(char.IsControl)) throw new FormatException();
-        var url = Str(o["baseUrl"], 0, MaxUrlChars).Trim();
-        if (url.Length > 0 && !(Uri.TryCreate(url, UriKind.Absolute, out var u) && u.Scheme is "http" or "https" && u.UserInfo.Length == 0))
-            throw new FormatException();
-        // Only custom and local providers use an address; any other provider keeps its preset's.
-        var keepUrl = url.Length > 0 && SettingsPage.IsUrlProvider(provider);
-        return new EndpointDraft(provider, model, keepUrl ? url : null, primary || Bool(o["enabled"]));
+        var o = Exact(e, "saved", "default", "backups");
+        if (o["saved"].ValueKind != JsonValueKind.Array || o["backups"].ValueKind != JsonValueKind.Array) throw new FormatException();
+        var saved = new List<ModelDraft>();
+        foreach (var item in o["saved"].EnumerateArray())
+        {
+            var m = Exact(item, "id", "provider", "model", "baseUrl", "separateKey");
+            var id = Str(m["id"], 1, 12);
+            if (!ModelList.IsValidId(id) || saved.Any(x => x.Id == id)) throw new FormatException();
+            var provider = OneOf(Str(m["provider"], 1, 16), ProviderPresets.All.Select(p => p.Id));
+            var model = Str(m["model"], 1, MaxModelChars).Trim();
+            if (model.Length == 0 || model.Any(char.IsControl)) throw new FormatException();
+            var url = Str(m["baseUrl"], 0, MaxUrlChars).Trim();
+            if (url.Length > 0 && !(Uri.TryCreate(url, UriKind.Absolute, out var u) && u.Scheme is "http" or "https" && u.UserInfo.Length == 0))
+                throw new FormatException();
+            // Only custom and local providers use an address; any other provider keeps its preset's.
+            var keepUrl = url.Length > 0 && SettingsPage.IsUrlProvider(provider);
+            saved.Add(new ModelDraft(id, provider, model, keepUrl ? url : null, Bool(m["separateKey"])));
+        }
+        if (saved.Count is 0 or > ModelList.MaxSavedModels) throw new FormatException();
+        var def = Str(o["default"], 1, 12);
+        if (saved.All(m => m.Id != def)) throw new FormatException();
+        var backups = new List<string>();
+        foreach (var item in o["backups"].EnumerateArray())
+        {
+            var id = Str(item, 1, 12);
+            if (id == def || backups.Contains(id) || saved.All(m => m.Id != id)) throw new FormatException();
+            backups.Add(id);
+        }
+        return new ModelsDraft(saved, def, backups);
+    }
+
+    private static ReviewDraft Review(JsonElement e)
+    {
+        var o = Exact(e, "taskOrder", "barCount", "defaultTask", "highlightChanges", "rememberLastChoice", "prefetchOtherModes");
+        if (o["taskOrder"].ValueKind != JsonValueKind.Array) throw new FormatException();
+        var tasks = Enum.GetNames<TaskType>().Where(n => n != nameof(TaskType.Auto)).ToList();
+        var order = new List<string>();
+        foreach (var item in o["taskOrder"].EnumerateArray())
+        {
+            var name = OneOf(Str(item, 1, 16), tasks);
+            if (order.Contains(name)) throw new FormatException();
+            order.Add(name);
+        }
+        if (order.Count != tasks.Count) throw new FormatException();
+        if (o["barCount"].ValueKind != JsonValueKind.Number || !o["barCount"].TryGetInt32(out var bar)
+            || bar is < ReviewWindowSettings.MinBarCount or > ReviewWindowSettings.MaxBarCount) throw new FormatException();
+        return new ReviewDraft(order, bar, OneOf(Str(o["defaultTask"], 1, 16), Enum.GetNames<TaskType>()),
+            Bool(o["highlightChanges"]), Bool(o["rememberLastChoice"]), Bool(o["prefetchOtherModes"]));
     }
 
     private static Dictionary<string, JsonElement> Exact(JsonElement e, params string[] names)

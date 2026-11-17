@@ -207,6 +207,8 @@ internal sealed class MainBridge : IMainWindowApi
         foreach (var (id, key) in draft.NewKeys) _services.Secrets.Set(id, key);
         foreach (var id in draft.RemoveKeys) _services.Secrets.Set(id, null);
         SettingsStore.Save(AppPaths.SettingsFile, next);
+        // A model that was removed, or went back to the provider's key, leaves no key behind.
+        foreach (var orphan in ModelList.OrphanedKeyIds(_services.Settings, next)) _services.Secrets.Set(orphan, null);
         _services.Settings = next;
         try { StartupRegistration.Set(draft.StartWithWindows); }
         catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException or IOException)

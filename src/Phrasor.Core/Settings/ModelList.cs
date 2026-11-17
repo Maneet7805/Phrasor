@@ -125,11 +125,12 @@ public static class ModelList
         return m;
     }
 
+    // Numbered, so a saved list reads the same every time it is repaired.
     private static string NewId(HashSet<string> taken)
     {
-        string id;
-        do id = "m" + Guid.NewGuid().ToString("N")[..8];
-        while (taken.Contains(id));
-        return id;
+        for (var i = 1; ; i++)
+        {
+            if (!taken.Contains("m" + i)) return "m" + i;
+        }
     }
 }

@@ -6,6 +6,11 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 
 ### Added
 - **Video task type.** You can pick Video as the task for a rewrite, and add requirements for it in Settings. Auto does not choose it yet.
+- **Saved models and per-model keys.** Settings now has a Models group: save up to 10 models, pick a default and an ordered list of backups, and give any model its own API key or keep using the provider's key. Old settings and keys load unchanged.
+- **Review window settings.** A new Settings group for the task order, how many tasks show before More, the default task and mode, highlighting changes, remembering your last choice, and preparing the other modes in the background. The review window itself does not use them yet.
+
+### Changed
+- The setting "Show the review window before replacing text" is now called "Ask before replacing text". It works the same.
 
 ## [2.0.0] - 2026-11-17
 

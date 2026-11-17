@@ -7,7 +7,15 @@ using Phrasor.Core.Theme;
 
 namespace Phrasor.Core.Bridge;
 
-public sealed record EndpointDraft(string Provider, string Model, string? BaseUrl, bool Enabled);
+/// <summary>One saved model as the page sends it. <see cref="Id"/> is chosen by the page for a new model.</summary>
+public sealed record ModelDraft(string Id, string Provider, string Model, string? BaseUrl, bool SeparateKey);
+
+/// <summary>The saved models, which one is the default, and the backup order (ids, default not included).</summary>
+public sealed record ModelsDraft(IReadOnlyList<ModelDraft> Saved, string Default, IReadOnlyList<string> Backups);
+
+/// <summary>Review window choices. <see cref="TaskOrder"/> lists every task except Auto, once each.</summary>
+public sealed record ReviewDraft(IReadOnlyList<string> TaskOrder, int BarCount, string DefaultTask, bool HighlightChanges,
+    bool RememberLastChoice, bool PrefetchOtherModes);
 
 /// <summary>The three chords as the recorder wrote them. An empty string means no shortcut.</summary>
 public sealed record ShortcutsDraft(string Optimize, string OptimizeSelection, string Voice);
@@ -21,14 +29,20 @@ public sealed record VoiceDraft(bool Enabled, string Provider, string Model, str
 public sealed record SettingsDraft(
     ThemeMode Theme, OptimizeMode DefaultMode, bool ReviewBeforeReplace, bool StartWithWindows, bool SendAppHint,
     bool RepairDroppedDetails, bool CheckForUpdates, string PersonalContext,
-    EndpointDraft Primary, EndpointDraft Fallback, ShortcutsDraft Shortcuts, VoiceDraft Voice,
+    ModelsDraft Models, ReviewDraft Review, ShortcutsDraft Shortcuts, VoiceDraft Voice,
     IReadOnlyDictionary<string, string> Requirements,
     IReadOnlyDictionary<string, string> NewKeys, IReadOnlySet<string> RemoveKeys);
 
 public sealed record GeneralView(string Theme, string DefaultMode, bool ReviewBeforeReplace, bool StartWithWindows, bool SendAppHint,
     bool RepairDroppedDetails, bool CheckForUpdates, string PersonalContext);
 
-public sealed record EndpointView(string Provider, string Model, string BaseUrl, bool Enabled);
+/// <summary>One saved model. <see cref="KeySet"/> is whether its own key is saved; only meaningful when <see cref="SeparateKey"/>.</summary>
+public sealed record ModelView(string Id, string Provider, string Model, string BaseUrl, bool SeparateKey, bool KeySet, bool Local);
+
+public sealed record ModelsView(IReadOnlyList<ModelView> Saved, string Default, IReadOnlyList<string> Backups, int Max);
+
+public sealed record ReviewView(IReadOnlyList<string> TaskOrder, int BarCount, int MinBar, int MaxBar, string DefaultTask,
+    bool HighlightChanges, bool RememberLastChoice, bool PrefetchOtherModes);
 
 /// <summary>One API key row. <see cref="Set"/> is all the page ever learns about a key.</summary>
 public sealed record KeyView(string Id, string Name, bool Set, string? LinkId);
@@ -44,7 +58,7 @@ public sealed record NamedOption(string Id, string Name);
 /// <summary>One standing-requirements box: the text for a kind of task (or for all tasks).</summary>
 public sealed record RequirementView(string Id, string Label, string Text);
 
-public sealed record SettingsView(GeneralView General, EndpointView Primary, EndpointView Fallback,
+public sealed record SettingsView(GeneralView General, ModelsView Models, ReviewView Review,
     IReadOnlyList<KeyView> Keys, IReadOnlyList<ProviderView> Providers, IReadOnlyList<string> Modes,
     ShortcutsView Shortcuts, VoiceView Voice, IReadOnlyList<NamedOption> VoiceProviders,
     IReadOnlyList<RequirementView> Requirements, int RequirementsMax);
@@ -69,10 +83,21 @@ public static class SettingsPage
 
     private static readonly Dictionary<string, string> KeyLinks = new() { ["groq"] = "groq-keys", ["gemini"] = "gemini-keys" };
 
-    public static SettingsView BuildView(AppSettings s, ISecretStore secrets, bool startWithWindows) => new(
+    public static SettingsView BuildView(AppSettings s, ISecretStore secrets, bool startWithWindows)
+    {
+        ModelList.Normalise(s);
+        return BuildViewOf(s, secrets, startWithWindows);
+    }
+
+    private static SettingsView BuildViewOf(AppSettings s, ISecretStore secrets, bool startWithWindows) => new(
         new GeneralView(s.Ui.Theme.ToString().ToLowerInvariant(), s.DefaultMode.ToString(), s.ReviewBeforeReplace, startWithWindows,
             s.SendAppHint, s.RepairDroppedDetails, s.CheckForUpdates, s.PersonalContext),
-        EndpointOf(s.Primary), EndpointOf(s.Fallback),
+        new ModelsView(
+            [.. s.SavedModels.Select(m => new ModelView(m.Id, m.Provider, m.Model, m.BaseUrl ?? "", m.SeparateKey,
+                m.SeparateKey && !string.IsNullOrWhiteSpace(secrets.Get(ModelList.KeyIdFor(m.Id))), m.IsLocal))],
+            s.DefaultModelId, [.. s.BackupModelIds], ModelList.MaxSavedModels),
+        new ReviewView([.. s.ReviewWindow.TaskOrder], s.ReviewWindow.BarCount, ReviewWindowSettings.MinBarCount, ReviewWindowSettings.MaxBarCount,
+            s.ReviewWindow.DefaultTask, s.ReviewWindow.HighlightChanges, s.ReviewWindow.RememberLastChoice, s.ReviewWindow.PrefetchOtherModes),
         [.. KeyProviders.Select(id =>
         {
             var p = ProviderPresets.Get(id);
@@ -99,8 +124,6 @@ public static class SettingsPage
 
     internal static bool IsUrlProvider(string id) => id is "custom" or "ollama";
 
-    private static EndpointView EndpointOf(EndpointSettings e) => new(ProviderPresets.Get(e.Provider).Id, e.Model, e.BaseUrl ?? "", e.Enabled);
-
     /// <summary>Writes the page's choices onto <paramref name="s"/>. Keys are not touched here; the app stores them.</summary>
     public static void Apply(AppSettings s, SettingsDraft d)
     {
@@ -111,8 +134,25 @@ public static class SettingsPage
         s.RepairDroppedDetails = d.RepairDroppedDetails;
         s.CheckForUpdates = d.CheckForUpdates;
         s.PersonalContext = d.PersonalContext;
-        s.Primary = new EndpointSettings { Provider = d.Primary.Provider, Model = d.Primary.Model, BaseUrl = d.Primary.BaseUrl };
-        s.Fallback = new EndpointSettings { Provider = d.Fallback.Provider, Model = d.Fallback.Model, BaseUrl = d.Fallback.BaseUrl, Enabled = d.Fallback.Enabled };
+        s.SavedModels = [.. d.Models.Saved.Select(m => new SavedModel { Id = m.Id, Provider = m.Provider, Model = m.Model, BaseUrl = m.BaseUrl, SeparateKey = m.SeparateKey })];
+        s.DefaultModelId = d.Models.Default;
+        s.BackupModelIds = [.. d.Models.Backups];
+        // Primary and Fallback mirror the default and the first backup, so they agree with the list before it is repaired.
+        var main = s.SavedModels.First(m => m.Id == d.Models.Default);
+        s.Primary = new EndpointSettings { Provider = main.Provider, Model = main.Model, BaseUrl = main.BaseUrl, KeyId = main.KeyId };
+        var backup = d.Models.Backups.Count > 0 ? s.SavedModels.First(m => m.Id == d.Models.Backups[0]) : null;
+        s.Fallback = backup is null
+            ? new EndpointSettings { Provider = s.Fallback.Provider, Model = s.Fallback.Model, BaseUrl = s.Fallback.BaseUrl, Enabled = false }
+            : new EndpointSettings { Provider = backup.Provider, Model = backup.Model, BaseUrl = backup.BaseUrl, KeyId = backup.KeyId, Enabled = true };
+        ModelList.Normalise(s);
+        var r = s.ReviewWindow;
+        r.TaskOrder = [.. d.Review.TaskOrder];
+        r.BarCount = d.Review.BarCount;
+        r.DefaultTask = d.Review.DefaultTask;
+        r.HighlightChanges = d.Review.HighlightChanges;
+        r.RememberLastChoice = d.Review.RememberLastChoice;
+        r.PrefetchOtherModes = d.Review.PrefetchOtherModes;
+        r.Normalise();
         s.Hotkeys = new HotkeySettings
         {
             Optimize = Canonical(d.Shortcuts.Optimize), OptimizeSelection = Canonical(d.Shortcuts.OptimizeSelection), Voice = Canonical(d.Shortcuts.Voice),
@@ -121,7 +161,7 @@ public static class SettingsPage
         s.Voice = new VoiceSettings
         {
             Enabled = d.Voice.Enabled, Provider = d.Voice.Provider, Model = d.Voice.Model, Language = d.Voice.Language,
-            BaseUrl = d.Voice.Provider == "custom" ? d.Primary.BaseUrl : null, AutoOptimize = d.Voice.AutoOptimize, MaxSeconds = d.Voice.MaxSeconds,
+            BaseUrl = d.Voice.Provider == "custom" ? main.BaseUrl : null, AutoOptimize = d.Voice.AutoOptimize, MaxSeconds = d.Voice.MaxSeconds,
         };
         s.StandingRequirements = d.Requirements.Where(kv => kv.Value.Length > 0).ToDictionary(kv => kv.Key, kv => kv.Value);
         s.FirstRunComplete = true;

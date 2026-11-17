@@ -139,6 +139,11 @@ label.sr { cursor: pointer; }
 .fields label { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--muted); }
 .fields .wide { grid-column: 1 / -1; }
 .fields select { width: 100%; }
+.mhead { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+.mkey { display: flex; flex-direction: column; gap: 8px; }
+.mkey .txt { max-width: 360px; }
+.orow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 0; }
+.orow.cut { border-bottom: 2px dashed var(--line2); }
 .h3 { font: 600 13px/18px var(--font); color: var(--muted); margin: 0; }
 .sr.key { align-items: flex-start; }
 .ktools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; flex: 1; min-width: 0; }
@@ -207,3 +212,4 @@ label.sr { cursor: pointer; }
 #q-judge-state[data-tone="ok"], #q-cost[data-tone="ok"] { color: var(--ok); }
 #q-judge-state[data-tone="bad"], #q-cost[data-tone="bad"] { color: var(--bad); }
 #q-cost[data-tone="warn"] { color: var(--warn); }
+#rv-count { width: 5em; }

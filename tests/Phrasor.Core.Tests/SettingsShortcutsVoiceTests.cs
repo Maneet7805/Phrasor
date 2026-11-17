@@ -16,8 +16,8 @@ public class SettingsShortcutsVoiceTests
     private static JsonObject Draft() => JsonNode.Parse("""
         {"general":{"theme":"light","defaultMode":"Detailed","reviewBeforeReplace":false,"startWithWindows":true,"sendAppHint":false,
           "repairDroppedDetails":false,"checkForUpdates":false,"personalContext":"x"},
-         "model":{"primary":{"provider":"custom","model":"m","baseUrl":"https://example.test/v1"},
-                  "fallback":{"enabled":false,"provider":"groq","model":"","baseUrl":""}},
+         "model":{"saved":[{"id":"m1","provider":"custom","model":"m","baseUrl":"https://example.test/v1","separateKey":false}],"default":"m1","backups":[]},
+         "review":{"taskOrder":["Coding","Writing","Research","Image","Video","Debugging","Study","Planning","General"],"barCount":6,"defaultTask":"Auto","highlightChanges":false,"rememberLastChoice":false,"prefetchOtherModes":false},
          "keys":{"set":{},"remove":[]},
          "shortcuts":{"optimize":"ctrl+alt+O","optimizeSelection":"Ctrl+Alt+Shift+O","voice":""},
          "voice":{"enabled":true,"provider":"custom","model":" whisper-x ","language":"ms","autoOptimize":true,"maxSeconds":60},

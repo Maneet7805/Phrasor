@@ -1,4 +1,4 @@
-// Settings page: General, Model, Shortcuts, Voice and Requirements. Edits are a draft: nothing is stored until Save, and Discard puts back what the app has.
+// Settings page: General, Models, Review window, Shortcuts, Voice and Requirements. Edits are a draft: nothing is stored until Save, and Discard puts back what the app has.
 // The app never sends a key to this page, only "set or not set". A key typed here is sent once, in Save or Test connection.
 // All text from the app goes in with textContent. The rules (limits, allowed values) live in the app; this only mirrors them for convenience.
 (function () {
@@ -7,8 +7,13 @@
   var $ = function (id) { return document.getElementById(id); };
   var view = null;          // what the app last said
   var baseline = "";        // the draft that matches it
-  var typed = {};           // keys typed this session, by provider id
-  var removed = {};         // saved keys the user marked for removal
+  var typed = {};           // keys typed this session, by key id: a provider id, or "model:<id>" for a model with its own key
+  var removed = {};         // saved provider keys the user marked for removal
+  var models = [];          // the draft model list: default first, then backups, then the rest
+  var defaultId = "";
+  var backupOn = {};        // model id -> true when it is a backup
+  var order = [];           // draft task order (every task but Auto)
+  var modelRows = {};       // model id -> { status, model }
   var keyRows = {};         // provider id -> { status, input, remove }
   var testing = false, currentTest = null, saving = false, loading = false;
   var themeRadios = document.querySelectorAll("input[name=theme]");
@@ -46,25 +51,184 @@
     return view.providers.some(function (p) { return p.defaultModel === model || p.defaultFallbackModel === model; });
   }
 
-  // Shows the address box only for providers that take one, and the provider's note under the main model.
-  function syncProvider(prefix) {
-    var p = providerOf($(prefix + "-provider").value);
-    $(prefix + "-url-row").hidden = !p.urlEditable;
-    if (prefix === "p") $("p-notes").textContent = p.notes;
+  function keyIdOf(m) { return "model:" + m.id; }
+
+  // New models get an id made here; the app checks it (1 to 12 lowercase letters and digits).
+  function newId() {
+    var chars = "abcdefghijklmnopqrstuvwxyz0123456789", id;
+    do {
+      id = "n";
+      for (var i = 0; i < 6; i++) id += chars.charAt(Math.floor(Math.random() * chars.length));
+    } while (models.some(function (m) { return m.id === id; }));
+    return id;
   }
 
-  function onProviderChange(prefix) {
-    var p = providerOf($(prefix + "-provider").value);
-    var model = $(prefix + "-model");
-    var fallback = prefix === "f";
-    if (model.value.trim() === "" || isKnownDefault(model.value.trim())) model.value = fallback ? p.defaultFallbackModel : p.defaultModel;
-    syncProvider(prefix);
-    update();
+  // Mirrors the app's rule for "runs on this PC": Ollama, or a custom address that points at this machine.
+  function isLocal(m) {
+    if (m.provider === "ollama") return true;
+    if (m.provider !== "custom") return false;
+    return /^https?:\/\/(localhost|127\.\d+\.\d+\.\d+|\[::1\])([:\/]|$)/i.test(m.baseUrl.trim());
   }
 
-  function syncFallback() {
-    var on = $("f-on").checked;
-    ["f-provider", "f-model", "f-url"].forEach(function (id) { $(id).disabled = !on; });
+  function backupList() {
+    return models.filter(function (m) { return m.id !== defaultId && backupOn[m.id]; }).map(function (m) { return m.id; });
+  }
+
+  function move(list, index, by) {
+    var to = index + by;
+    if (to < 0 || to >= list.length) return;
+    var item = list.splice(index, 1)[0];
+    list.splice(to, 0, item);
+  }
+
+  function sortModels(list, def, backups) {
+    var rank = function (m) { return m.id === def ? 0 : backups.indexOf(m.id) >= 0 ? 1 + backups.indexOf(m.id) : 100; };
+    return list.map(function (m, i) { return { m: m, i: i }; })
+      .sort(function (a, b) { return rank(a.m) - rank(b.m) || a.i - b.i; })
+      .map(function (x) { return x.m; });
+  }
+
+  function renderModels() {
+    var box = $("models");
+    box.replaceChildren();
+    modelRows = {};
+    models.forEach(function (m, index) {
+      var isDef = m.id === defaultId;
+      var row = el("div", "sr col model");
+      var head = el("div", "mhead");
+      var title = el("span", "st", isDef ? "Default model" : backupOn[m.id] ? "Backup model" : "Saved model");
+      var chip = el("small", "", isLocal(m) ? "Runs on this PC. Not tested here." : "");
+      title.appendChild(chip);
+      head.appendChild(title);
+      var tools = el("div", "rtools");
+      var btn = function (text, label, onClick, disabled) {
+        var b = el("button", "btn", text);
+        b.type = "button";
+        b.setAttribute("aria-label", label);
+        b.disabled = !!disabled;
+        b.addEventListener("click", onClick);
+        tools.appendChild(b);
+      };
+      if (!isDef) btn("Make default", "Make this model the default", function () { defaultId = m.id; backupOn[m.id] = false; refreshModels(); });
+      if (!isDef) btn(backupOn[m.id] ? "Not a backup" : "Use as backup", backupOn[m.id] ? "Stop using this model as a backup" : "Use this model as a backup", function () { backupOn[m.id] = !backupOn[m.id]; refreshModels(); });
+      btn("Up", "Move this model up", function () { move(models, index, -1); refreshModels(); }, index === 0);
+      btn("Down", "Move this model down", function () { move(models, index, 1); refreshModels(); }, index === models.length - 1);
+      btn("Remove", "Remove this model", function () {
+        models = models.filter(function (x) { return x.id !== m.id; });
+        delete typed[keyIdOf(m)];
+        refreshModels();
+      }, isDef || models.length <= 1);
+      head.appendChild(tools);
+      row.appendChild(head);
+
+      var fields = el("div", "fields");
+      var pLabel = el("label", "", "Provider");
+      var pSel = el("select");
+      view.providers.forEach(function (p) { var o = el("option", "", p.name); o.value = p.id; pSel.appendChild(o); });
+      pSel.value = m.provider;
+      pLabel.appendChild(pSel);
+      var mLabel = el("label", "", "Model");
+      var mIn = el("input", "txt");
+      mIn.type = "text"; mIn.maxLength = 100; mIn.value = m.model;
+      mIn.setAttribute("spellcheck", "false"); mIn.setAttribute("autocomplete", "off");
+      mLabel.appendChild(mIn);
+      var uLabel = el("label", "wide", "Address");
+      var uIn = el("input", "txt");
+      uIn.type = "text"; uIn.maxLength = 200; uIn.value = m.baseUrl;
+      uIn.placeholder = "Address of the API (custom and local only)";
+      uIn.setAttribute("spellcheck", "false"); uIn.setAttribute("autocomplete", "off");
+      uLabel.appendChild(uIn);
+      uLabel.hidden = !providerOf(m.provider).urlEditable;
+      fields.appendChild(pLabel); fields.appendChild(mLabel); fields.appendChild(uLabel);
+      row.appendChild(fields);
+      var note = el("small", "mute", providerOf(m.provider).notes);
+      row.appendChild(note);
+
+      pSel.addEventListener("change", function () {
+        var p = providerOf(pSel.value);
+        var cur = mIn.value.trim();
+        m.provider = p.id;
+        if (cur === "" || isKnownDefault(cur)) { mIn.value = isDef ? p.defaultModel : p.defaultFallbackModel || p.defaultModel; m.model = mIn.value; }
+        uLabel.hidden = !p.urlEditable;
+        note.textContent = p.notes;
+        chip.textContent = isLocal(m) ? "Runs on this PC. Not tested here." : "";
+        update();
+      });
+      mIn.addEventListener("input", function () { m.model = mIn.value.trim(); update(); });
+      uIn.addEventListener("input", function () { m.baseUrl = uIn.value.trim(); chip.textContent = isLocal(m) ? "Runs on this PC. Not tested here." : ""; update(); });
+
+      // Key choice: reuse the provider's key, or give this model its own. A saved key is never shown.
+      var keyBox = el("div", "mkey");
+      var keyLabel = el("label", "inl");
+      var sep = el("input", "chk");
+      sep.type = "checkbox"; sep.checked = m.separateKey;
+      keyLabel.appendChild(sep);
+      keyLabel.appendChild(el("span", "st", "Use a separate key for this model"));
+      keyBox.appendChild(keyLabel);
+      var kIn = el("input", "txt");
+      kIn.type = "password"; kIn.maxLength = 500; kIn.hidden = !m.separateKey;
+      kIn.setAttribute("autocomplete", "new-password"); kIn.setAttribute("spellcheck", "false");
+      kIn.setAttribute("aria-label", "API key for this model");
+      kIn.placeholder = m.keySet ? "Saved. Type to replace." : "Paste the key for this model";
+      var status = el("small", "");
+      keyBox.appendChild(kIn);
+      keyBox.appendChild(status);
+      row.appendChild(keyBox);
+      sep.addEventListener("change", function () {
+        m.separateKey = sep.checked;
+        kIn.hidden = !sep.checked;
+        if (!sep.checked) { delete typed[keyIdOf(m)]; kIn.value = ""; }
+        update();
+      });
+      kIn.addEventListener("input", function () {
+        var value = kIn.value.trim();
+        if (value) typed[keyIdOf(m)] = value; else delete typed[keyIdOf(m)];
+        update();
+      });
+      modelRows[m.id] = { status: status, model: m };
+      box.appendChild(row);
+    });
+    $("m-add").disabled = models.length >= view.models.max;
+    $("m-limit").textContent = models.length >= view.models.max ? "You have reached the limit of " + view.models.max + " models." : "";
+  }
+
+  function syncModels() {
+    Object.keys(modelRows).forEach(function (id) {
+      var r = modelRows[id], m = r.model;
+      var text = !m.separateKey ? "Uses the " + providerOf(m.provider).name + " key below." : typed[keyIdOf(m)] ? "New key, not saved yet." : m.keySet ? "Saved." : "No key yet.";
+      r.status.textContent = text;
+      r.status.setAttribute("data-tone", m.separateKey && !typed[keyIdOf(m)] && !m.keySet ? "warn" : m.separateKey ? "ok" : "");
+    });
+  }
+
+  function refreshModels() { renderModels(); update(); }
+
+  // ---- Review window: the order of the task bar ----
+  function readCount() {
+    var n = parseInt($("rv-count").value, 10);
+    return isNaN(n) ? 0 : n;
+  }
+
+  function renderOrder() {
+    var box = $("rv-order");
+    box.replaceChildren();
+    var count = readCount();
+    order.forEach(function (task, index) {
+      // The bar holds Auto plus (count - 1) tasks; the dashed line sits under the last one that fits.
+      var row = el("div", "orow" + (index === count - 2 ? " cut" : ""));
+      row.appendChild(el("span", "", task));
+      var tools = el("div", "rtools");
+      [["Up", -1], ["Down", 1]].forEach(function (d) {
+        var b = el("button", "btn", d[0]);
+        b.type = "button";
+        b.setAttribute("aria-label", "Move " + task + " " + d[0].toLowerCase());
+        b.disabled = d[1] < 0 ? index === 0 : index === order.length - 1;
+        b.addEventListener("click", function () { move(order, index, d[1]); renderOrder(); update(); });
+        tools.appendChild(b);
+      });
+      row.appendChild(tools);
+      box.appendChild(row);
+    });
   }
 
   // ---- Shortcuts: a recorder per chord. The app releases the global shortcuts while one is recording, so the keys reach this page. ----
@@ -227,17 +391,23 @@
     $("set-updates").checked = g.checkForUpdates;
     $("set-about").value = g.personalContext;
 
-    var providers = v.providers.map(function (p) { return { value: p.id, label: p.name }; });
-    fillSelect($("p-provider"), providers, v.primary.provider);
-    $("p-model").value = v.primary.model;
-    $("p-url").value = v.primary.baseUrl;
-    fillSelect($("f-provider"), providers, v.fallback.provider);
-    $("f-model").value = v.fallback.model;
-    $("f-url").value = v.fallback.baseUrl;
-    $("f-on").checked = v.fallback.enabled;
-    syncProvider("p");
-    syncProvider("f");
-    syncFallback();
+    models = sortModels(v.models.saved.map(function (m) {
+      return { id: m.id, provider: m.provider, model: m.model, baseUrl: m.baseUrl, separateKey: m.separateKey, keySet: m.keySet };
+    }), v.models.default, v.models.backups);
+    defaultId = v.models.default;
+    backupOn = {};
+    v.models.backups.forEach(function (id) { backupOn[id] = true; });
+    renderModels();
+    var rv = v.review;
+    fillSelect($("rv-task"), ["Auto"].concat(rv.taskOrder).map(function (x) { return { value: x, label: x }; }), rv.defaultTask);
+    $("rv-count").min = String(rv.minBar);
+    $("rv-count").max = String(rv.maxBar);
+    $("rv-count").value = String(rv.barCount);
+    order = rv.taskOrder.slice();
+    renderOrder();
+    $("rv-highlight").checked = rv.highlightChanges;
+    $("rv-remember").checked = rv.rememberLastChoice;
+    $("rv-prefetch").checked = rv.prefetchOtherModes;
     renderKeys();
     stopRecording();
     notes = {};
@@ -318,12 +488,6 @@
     });
   }
 
-  function endpoint(prefix, withEnabled) {
-    var o = { provider: $(prefix + "-provider").value, model: $(prefix + "-model").value.trim(), baseUrl: $(prefix + "-url").value.trim() };
-    if (withEnabled) o.enabled = $("f-on").checked;
-    return o;
-  }
-
   function readDraft() {
     var theme = "system";
     themeRadios.forEach(function (r) { if (r.checked) theme = r.value; });
@@ -338,7 +502,21 @@
         checkForUpdates: $("set-updates").checked,
         personalContext: $("set-about").value
       },
-      model: { primary: endpoint("p", false), fallback: endpoint("f", true) },
+      model: {
+        saved: models.map(function (m) {
+          return { id: m.id, provider: m.provider, model: m.model, baseUrl: providerOf(m.provider).urlEditable ? m.baseUrl : "", separateKey: m.separateKey };
+        }),
+        default: defaultId,
+        backups: backupList()
+      },
+      review: {
+        taskOrder: order.slice(),
+        barCount: readCount(),
+        defaultTask: $("rv-task").value,
+        highlightChanges: $("rv-highlight").checked,
+        rememberLastChoice: $("rv-remember").checked,
+        prefetchOtherModes: $("rv-prefetch").checked
+      },
       keys: { set: typed, remove: Object.keys(removed) },
       shortcuts: { optimize: chords.optimize, optimizeSelection: chords.optimizeSelection, voice: chords.voice },
       voice: readVoice(),
@@ -347,7 +525,9 @@
   }
 
   function problem(draft) {
-    if (draft.model.primary.model === "") return "Enter a model name for the main model.";
+    if (draft.model.saved.some(function (m) { return m.model === ""; })) return "Enter a name for every saved model.";
+    if (models.some(function (m) { return m.separateKey && !m.keySet && !typed[keyIdOf(m)]; })) return "A model with its own key needs that key, or switch it back to the provider key.";
+    if (draft.review.barCount < view.review.minBar || draft.review.barCount > view.review.maxBar) return "The task bar can show " + view.review.minBar + " to " + view.review.maxBar + " tasks.";
     if (draft.voice.enabled && draft.voice.model === "") return "Enter a model name for voice, or turn voice off.";
     if (draft.voice.maxSeconds < 10 || draft.voice.maxSeconds > 600) return "Voice can stop after 10 to 600 seconds.";
     if (view && Object.keys(draft.requirements).some(function (id) { return draft.requirements[id].trim().length > view.requirementsMax; })) return "A requirements text is too long.";
@@ -356,7 +536,7 @@
 
   function update() {
     syncKeys();
-    syncFallback();
+    syncModels();
     if (view) { syncVoice(); syncCount(); }
     var dirty = view !== null && JSON.stringify(readDraft()) !== baseline;
     var bad = view ? problem(readDraft()) : "";
@@ -444,14 +624,18 @@
     update();
   });
 
-  $("f-on").addEventListener("change", update);
+  $("m-add").addEventListener("click", function () {
+    if (!view || models.length >= view.models.max) return;
+    var p = providerOf(models[0] ? models[0].provider : "groq");
+    models.push({ id: newId(), provider: p.id, model: p.defaultFallbackModel || p.defaultModel, baseUrl: "", separateKey: false, keySet: false });
+    refreshModels();
+  });
+  $("rv-count").addEventListener("input", renderOrder);
   $("r-task").addEventListener("change", showRequirement);
   $("r-text").addEventListener("input", function () { reqs[$("r-task").value] = $("r-text").value; });
   // Leaving the page or the window must put the app's shortcuts back.
   window.addEventListener("blur", stopRecording);
   document.querySelectorAll("[data-nav]").forEach(function (button) { button.addEventListener("click", stopRecording); });
-  $("p-provider").addEventListener("change", function () { onProviderChange("p"); });
-  $("f-provider").addEventListener("change", function () { onProviderChange("f"); });
   document.querySelector("[data-page=settings]").addEventListener("input", function (event) {
     if (event.target.type !== "password") { $("set-test-result").textContent = ""; update(); }
   });
