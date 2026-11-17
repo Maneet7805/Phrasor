@@ -93,6 +93,56 @@
       </section>
     </div>
 
+    <!-- First run: shown over Home while no usable API key is set. Three steps; Skip for now leaves for Home. -->
+    <div class="page" data-page="firstrun" hidden>
+      <h1 tabindex="-1">Welcome to Phrasor</h1>
+      <p class="sub" id="fr-step" role="status">Step 1 of 3: get a free key</p>
+
+      <section class="sec" id="fr-1" aria-labelledby="fr-1h">
+        <h2 id="fr-1h">Get a free API key</h2>
+        <p class="sm mute">Phrasor sends your draft to an AI model to rewrite it, so it needs a key from a provider. Groq and Google Gemini both have a free plan, and neither asks for a card.</p>
+        <div class="grp">
+          <div class="sr"><span class="st">Groq (suggested)<small>Fast, and the model Phrasor is tuned for.</small></span><button class="btn pri" type="button" data-fr-link="groq-keys">Get a Groq key</button></div>
+          <div class="sr"><span class="st">Google Gemini<small>Also free. Choose it if Groq is not available to you.</small></span><button class="btn" type="button" data-fr-link="gemini-keys">Get a Gemini key</button></div>
+        </div>
+        <p class="sm mute">The links open in your browser. Copy the key, then come back here.</p>
+        <div class="row">
+          <button class="btn pri" type="button" id="fr-next-1">I have a key</button>
+          <button class="btn link" type="button" data-fr-skip>Skip for now</button>
+        </div>
+      </section>
+
+      <section class="sec" id="fr-2" aria-labelledby="fr-2h" hidden>
+        <h2 id="fr-2h">Paste and test your key</h2>
+        <div class="grp">
+          <div class="sr col">
+            <div class="fields">
+              <label>Provider<select id="fr-provider"><option value="groq">Groq</option><option value="gemini">Google Gemini</option></select></label>
+              <label class="wide">API key<input class="txt" type="password" id="fr-key" maxlength="500" autocomplete="new-password" spellcheck="false" placeholder="Paste your key"></label>
+            </div>
+            <small class="mute">The key is stored encrypted for your Windows account and is never shown again. Using another provider? Skip this and use Settings, Model.</small>
+          </div>
+        </div>
+        <p class="sm" id="fr-result" role="status" data-tone=""></p>
+        <div class="row">
+          <button class="btn" type="button" id="fr-test" disabled>Test key</button>
+          <button class="btn pri" type="button" id="fr-continue" disabled>Save and continue</button>
+          <button class="btn link" type="button" id="fr-back">Back</button>
+          <button class="btn link" type="button" data-fr-skip>Skip for now</button>
+        </div>
+      </section>
+
+      <section class="sec" id="fr-3" aria-labelledby="fr-3h" hidden>
+        <h2 id="fr-3h">You are ready</h2>
+        <p class="sm mute">Select text in any app and press the shortcut. You see the rewrite first, and nothing is pasted until you accept it.</p>
+        <div class="grp" id="fr-shortcuts"></div>
+        <div class="row">
+          <button class="btn pri" type="button" id="fr-try">Try it now</button>
+          <button class="btn link" type="button" id="fr-done">Go to Home</button>
+        </div>
+      </section>
+    </div>
+
     <div class="page" data-page="history" hidden>
       <h1 tabindex="-1">History</h1>
       <p class="sub">Rewrites you chose to save, kept on this PC and encrypted for your Windows account. Nothing is saved unless you press Save.</p>
@@ -130,7 +180,43 @@
 
     <div class="page" data-page="quality" hidden>
       <h1 tabindex="-1">Quality check</h1>
-      <div class="empty"><b>Coming soon</b><span>Run the built-in quality check and read the results here.</span></div>
+      <p class="sub">Measures how well Phrasor rewrites a set of test drafts. It uses your own API key and the free allowance.</p>
+
+      <section class="sec" aria-labelledby="q-judge-h">
+        <h2 id="q-judge-h">Judge</h2>
+        <p class="sm mute">A second model that grades each rewrite. Choose a different provider from your main model so it does not grade its own family. Save that provider's key on the Settings page.</p>
+        <div class="grp">
+          <div class="sr col">
+            <div class="fields">
+              <label>Provider<select id="q-provider"><option value="gemini">Google Gemini</option><option value="groq">Groq</option></select></label>
+              <label>Model<input class="txt" type="text" id="q-model" maxlength="100" spellcheck="false" autocomplete="off"></label>
+            </div>
+            <small class="mute" id="q-judge-note"></small>
+          </div>
+        </div>
+        <div class="row">
+          <button class="btn" type="button" id="q-judge-save" disabled>Save judge</button>
+          <span class="sm" id="q-judge-state" role="status" data-tone=""></span>
+        </div>
+      </section>
+
+      <section class="sec" aria-labelledby="q-run-h">
+        <h2 id="q-run-h">Run</h2>
+        <div class="grp">
+          <div class="sr"><span class="st">Test set<small id="q-cases">None chosen. Pick the repo's eval/cases.json.</small></span><button class="btn" type="button" id="q-choose">Choose…</button></div>
+          <label class="sr"><span class="st">Runs per case<small>More runs tell real changes from noise, and use more of your allowance.</small></span><select id="q-repeat"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option></select></label>
+          <label class="sr"><span class="st">Grade with the judge<small>Doubles the requests.</small></span><input class="chk" type="checkbox" id="q-judge" checked></label>
+          <label class="sr"><span class="st">Include held-out cases<small>Only for a final check. Do not tune the rules against them.</small></span><input class="chk" type="checkbox" id="q-held"></label>
+        </div>
+        <p class="sm" id="q-cost" role="status" data-tone=""></p>
+        <div class="row">
+          <button class="btn pri" type="button" id="q-start" disabled>Start quality check</button>
+          <button class="btn" type="button" id="q-cancel" hidden>Cancel</button>
+          <button class="btn link" type="button" id="q-open" hidden>Open results folder</button>
+        </div>
+        <progress id="q-bar" max="1" value="0" hidden aria-label="Quality check progress"></progress>
+        <p class="sm qstate" id="q-state" role="status" data-tone=""></p>
+      </section>
     </div>
 
     <div class="page" data-page="settings" hidden>
@@ -263,8 +349,6 @@
         <p class="sm" id="d-state" role="status" data-tone=""></p>
       </section>
 
-      <p class="sm mute">Quality check settings are still in the classic Settings window (tray menu).</p>
-
       <div class="bar" role="group" aria-label="Save settings">
         <span class="sm mute grow" id="set-state" role="status">No changes.</span>
         <button class="btn" type="button" id="set-discard" disabled>Discard</button>
@@ -279,5 +363,7 @@
 <script src="/settings.js"></script>
 <script src="/data.js"></script>
 <script src="/history.js"></script>
+<script src="/firstrun.js"></script>
+<script src="/quality.js"></script>
 </body>
 </html>

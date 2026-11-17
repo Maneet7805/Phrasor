@@ -70,6 +70,15 @@ public interface IMainWindowApi
     /// </summary>
     int? StartConnectionTest(SettingsDraft draft);
 
+    /// <summary>
+    /// First run: tests the typed key with the provider's default model without saving anything. Returns a run number, or null when a
+    /// test is going. The result is pushed like <see cref="StartConnectionTest"/>'s.
+    /// </summary>
+    int? StartFirstRunTest(FirstRunKey key);
+
+    /// <summary>First run: stores the key and makes the provider the main model. Throws if the settings could not be written.</summary>
+    void SaveFirstRunKey(FirstRunKey key);
+
     /// <summary>Saved items for the History page (limit 0 = all) or Home's Recent list. Removes items past the retention first.</summary>
     HistoryListView ListHistory(string query, int limit);
 
@@ -101,4 +110,27 @@ public interface IMainWindowApi
     /// Returns false (and keeps running) when something could not be deleted. The page asks the user to confirm first.
     /// </summary>
     bool DeleteAllData();
+
+    /// <summary>Quality check page: the judge settings, the chosen test set and whether a run is going. Never a key or a path.</summary>
+    QualityView GetQuality();
+
+    /// <summary>Stores the judge's provider and model (the key is saved on the Settings page).</summary>
+    void SetQualityJudge(string provider, string model);
+
+    /// <summary>Opens the file dialog for a test set and reads it. Null when the user cancels. Throws <see cref="QualityNotReadyException"/> when the file is not a test set.</summary>
+    QualityCasesView? ChooseQualityCases();
+
+    /// <summary>What a run with these options would cost. Throws <see cref="QualityNotReadyException"/> when no test set is chosen.</summary>
+    QualityPlanView PlanQuality(QualityRunOptions options);
+
+    /// <summary>
+    /// Starts a run with the chosen test set and returns its run number, or null when one is going. Progress and the end are pushed
+    /// (<see cref="BridgeEvents"/>). Throws <see cref="QualityNotReadyException"/> with no test set or no key. Only called after a click.
+    /// </summary>
+    int? StartQualityRun(QualityRunOptions options);
+
+    void CancelQualityRun();
+
+    /// <summary>Opens the folder of the last finished run. False when there is none.</summary>
+    bool OpenQualityResults();
 }

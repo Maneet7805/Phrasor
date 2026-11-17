@@ -154,6 +154,11 @@ label.sr { cursor: pointer; }
 #set-test-result[data-tone="warn"] { color: var(--warn); }
 #set-test-result[data-tone="bad"] { color: var(--bad); }
 
+/* First run and Quality check: a status line under a group of controls */
+#fr-result[data-tone="ok"], .qstate[data-tone="ok"] { color: var(--ok); }
+#fr-result[data-tone="warn"], .qstate[data-tone="warn"] { color: var(--warn); }
+#fr-result[data-tone="bad"], .qstate[data-tone="bad"] { color: var(--bad); }
+
 /* Data group: the destructive button and its question */
 .btn.danger { border-color: var(--bad); color: var(--bad); font-weight: 600; }
 .btn.danger:hover { background: color-mix(in srgb, var(--bad) 12%, transparent); }
@@ -198,3 +203,7 @@ label.sr { cursor: pointer; }
   .fields { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+#q-bar { width: 100%; height: 8px; accent-color: var(--accent); }
+#q-judge-state[data-tone="ok"], #q-cost[data-tone="ok"] { color: var(--ok); }
+#q-judge-state[data-tone="bad"], #q-cost[data-tone="bad"] { color: var(--bad); }
+#q-cost[data-tone="warn"] { color: var(--warn); }

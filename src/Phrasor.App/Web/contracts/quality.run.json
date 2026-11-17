@@ -1,0 +1,19 @@
+{
+  "request": {
+    "id": "c40",
+    "type": "quality.run",
+    "payload": {
+      "repeat": 3,
+      "judge": true,
+      "heldOut": false,
+      "confirm": true
+    }
+  },
+  "reply": {
+    "id": "c40",
+    "ok": true,
+    "payload": {
+      "run": 5
+    }
+  }
+}

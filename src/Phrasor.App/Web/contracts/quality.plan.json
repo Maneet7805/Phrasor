@@ -1,0 +1,23 @@
+{
+  "request": {
+    "id": "c40",
+    "type": "quality.plan",
+    "payload": {
+      "repeat": 3,
+      "judge": true,
+      "heldOut": false
+    }
+  },
+  "reply": {
+    "id": "c40",
+    "ok": true,
+    "payload": {
+      "cases": 30,
+      "runs": 90,
+      "calls": 180,
+      "minutes": 15,
+      "freeDailyCalls": 1000,
+      "overAllowance": false
+    }
+  }
+}

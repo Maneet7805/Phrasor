@@ -1,0 +1,17 @@
+{
+  "request": {
+    "id": "c31",
+    "type": "firstrun.save",
+    "payload": {
+      "provider": "gemini",
+      "key": "example-not-a-real-key"
+    }
+  },
+  "reply": {
+    "id": "c31",
+    "ok": true,
+    "payload": {
+      "saved": true
+    }
+  }
+}

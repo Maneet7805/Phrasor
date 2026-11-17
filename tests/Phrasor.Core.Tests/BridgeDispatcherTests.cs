@@ -53,6 +53,22 @@ public class BridgeDispatcherTests
         public bool DeleteAllData() { Wipes++; return WipeWorks; }
 
         public const string SomeId = "0123456789abcdef0123456789abcdef";
+        public List<FirstRunKey> FirstRunTested = [], FirstRunSaved = [];
+        public int? StartFirstRunTest(FirstRunKey key) { if (NextTest is not null) FirstRunTested.Add(key); return NextTest; }
+        public void SaveFirstRunKey(FirstRunKey key) { if (Throw is not null) throw Throw; FirstRunSaved.Add(key); }
+
+        public List<string> QualityCalls = [];
+        public QualityCasesView? ChosenCases = new("cases.json", 40, 10);
+        public int? NextQualityRun = 5;
+        public bool QualityReady = true;
+        public QualityView GetQuality() => new("gemini", "gemini-3.5-flash-lite", true, false, ChosenCases, false, true, new Dictionary<string, string> { ["gemini"] = "gemini-3.5-flash-lite", ["groq"] = "openai/gpt-oss-120b" });
+        public void SetQualityJudge(string provider, string model) => QualityCalls.Add($"judge:{provider}:{model}");
+        public QualityCasesView? ChooseQualityCases() { QualityCalls.Add("choose"); return ChosenCases; }
+        public QualityPlanView PlanQuality(QualityRunOptions o) { QualityCalls.Add($"plan:{o}"); return QualityReady ? new(30, 90, 180, 15, 1000, false) : throw new QualityNotReadyException(); }
+        public int? StartQualityRun(QualityRunOptions o) { if (!QualityReady) throw new QualityNotReadyException(); if (NextQualityRun is not null) QualityCalls.Add($"run:{o}"); return NextQualityRun; }
+        public void CancelQualityRun() => QualityCalls.Add("cancel");
+        public bool OpenQualityResults() { QualityCalls.Add("open"); return true; }
+
         public List<string> HistoryCalls = [];
         public HistorySaveResult SaveResult = HistorySaveResult.Saved;
         public bool HistoryBroken;
@@ -230,7 +246,7 @@ public class BridgeDispatcherTests
     [Fact]
     public void Unknown_command_gets_an_error_reply_with_its_id()
     {
-        var reply = Make().Handle(Origin, true, Msg("quality.run"));
+        var reply = Make().Handle(Origin, true, Msg("nope.run"));
         Assert.Equal((false, BridgeError.UnknownCommand, "a1"), Parse(reply));
     }
 

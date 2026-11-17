@@ -44,8 +44,6 @@ internal sealed class SettingsForm : Form
     private readonly TextBox _fallbackUrl = new() { Width = 360, PlaceholderText = "Base URL (custom/Ollama only)" };
     private readonly Dictionary<string, TextBox> _keys = [];
     // Hosted providers only: there's no base-URL box for the judge. A custom or local judge can still be set in settings.json.
-    private readonly ComboBox _judgeProvider = Combo([ProviderPresets.Gemini.Id, ProviderPresets.Groq.Id]);
-    private readonly TextBox _judgeModel = new() { Width = 260 };
     private readonly Label _testResult = new() { AutoSize = true, MaximumSize = new Size(680, 0) };
     private readonly Label _providerNotes = new() { AutoSize = true, MaximumSize = new Size(680, 0), Tag = "muted" };
 
@@ -62,11 +60,8 @@ internal sealed class SettingsForm : Form
     private readonly CheckBox _voiceAuto = new() { Text = "After dictating, send the text to the optimiser and review it (instead of typing it in)", AutoSize = true };
     private readonly NumericUpDown _voiceMax = new() { Minimum = 10, Maximum = 600, Width = 70 };
 
-    private readonly Action? _runQualityCheck;
-
-    public SettingsForm(AppSettings current, ISecretStore secrets, HotkeyManager hotkeys, ILlmClient client, string? initialTab = null, Action? runQualityCheck = null)
+    public SettingsForm(AppSettings current, ISecretStore secrets, HotkeyManager hotkeys, ILlmClient client, string? initialTab = null)
     {
-        _runQualityCheck = runQualityCheck;
         _s = JsonSerializer.Deserialize<AppSettings>(JsonSerializer.Serialize(current, SettingsStore.JsonOptions), SettingsStore.JsonOptions)!;
         _secrets = secrets;
         _hotkeys = hotkeys;
@@ -215,20 +210,9 @@ internal sealed class SettingsForm : Form
             try { if (Directory.Exists(AppPaths.HistoryDir)) Directory.Delete(AppPaths.HistoryDir, recursive: true); } catch (IOException) { }
             Application.Exit();
         };
-        var quality = new Button { Text = "Run quality check on a test set…", AutoSize = true, Enabled = _runQualityCheck is not null };
-        quality.Click += (_, _) => _runQualityCheck?.Invoke();
-        _judgeProvider.SelectedIndexChanged += (_, _) =>
-        {
-            var preset = ProviderPresets.Get((string?)_judgeProvider.SelectedItem);
-            var known = ProviderPresets.All.SelectMany(p => new[] { p.DefaultModel, p.DefaultFallbackModel }).ToHashSet();
-            if (string.IsNullOrWhiteSpace(_judgeModel.Text) || known.Contains(_judgeModel.Text)) _judgeModel.Text = preset.DefaultModel;
-        };
         return Stack(
             Heading("Quality check"),
-            Hint("Runs the optimiser over a set of test prompts (the repo's eval\\cases.json) with your saved key and writes a report next to it. Each prompt runs 3 times, so a full run takes about an hour on the free tier."),
-            Row(Label("Judge"), _judgeProvider, Label("Model"), _judgeModel),
-            Hint("Grades each rewrite. Pick a different provider from the main model, so it isn't grading its own model family, and save that provider's key in the Model tab. Without a key, the main model's fallback grades instead and the report says it isn't independent."),
-            quality,
+            Hint("The quality check, with its judge model, is on the Quality check page of the main window."),
             Heading("What Phrasor stores"),
             Hint("Settings: %APPDATA%\\Phrasor\\settings.json. API keys: secrets.dat, encrypted for your Windows account."),
             Hint("Logs: events, timings and error types for 7 days. Never prompt text, transcripts or keys."),
@@ -261,8 +245,6 @@ internal sealed class SettingsForm : Form
         _fallbackModel.Text = _s.Fallback.Model;
         _fallbackUrl.Text = _s.Fallback.BaseUrl ?? "";
         foreach (var (id, box) in _keys) box.PlaceholderText = _secrets.Get(id) is null ? "not set" : "saved (type to replace)";
-        _judgeProvider.SelectedItem = _s.Judge.Provider is "gemini" or "groq" ? _s.Judge.Provider : ProviderPresets.Gemini.Id;
-        _judgeModel.Text = _s.Judge.Model;
         UpdateUrlBoxes();
 
         _hkOptimize.Text = _s.Hotkeys.Optimize;
@@ -306,11 +288,6 @@ internal sealed class SettingsForm : Form
         _s.StandingRequirements = _reqEdits.Where(kv => kv.Value.Length > 0).ToDictionary(kv => kv.Key, kv => kv.Value);
         _s.Primary = new EndpointSettings { Provider = (string)_primaryProvider.SelectedItem!, Model = _primaryModel.Text.Trim(), BaseUrl = NullIfEmpty(_primaryUrl.Text) };
         _s.Fallback = new EndpointSettings { Provider = (string)_fallbackProvider.SelectedItem!, Model = _fallbackModel.Text.Trim(), BaseUrl = NullIfEmpty(_fallbackUrl.Text), Enabled = _fallbackOn.Checked };
-        _s.Judge = new EndpointSettings
-        {
-            Provider = (string)_judgeProvider.SelectedItem!,
-            Model = _judgeModel.Text.Trim(),
-        };
         _s.Hotkeys = new HotkeySettings { Optimize = _hkOptimize.Text, OptimizeSelection = _hkSelection.Text, Voice = _hkVoice.Text };
         _s.Voice = new VoiceSettings
         {

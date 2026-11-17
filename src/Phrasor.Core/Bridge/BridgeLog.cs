@@ -13,10 +13,11 @@ public static class BridgeError
     public const string Dropped = "dropped";
     public const string HistoryUnavailable = "history_unavailable";
     public const string NothingToSave = "nothing_to_save";
+    public const string NotReady = "not_ready";
 
     public static readonly IReadOnlySet<string> All = new HashSet<string>
     {
-        BadJson, TooLarge, RateLimited, UnknownCommand, BadRequest, Failed, Dropped, Busy, HistoryUnavailable, NothingToSave,
+        BadJson, TooLarge, RateLimited, UnknownCommand, BadRequest, Failed, Dropped, Busy, HistoryUnavailable, NothingToSave, NotReady,
     };
 }
 
