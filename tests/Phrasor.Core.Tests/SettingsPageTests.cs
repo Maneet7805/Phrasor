@@ -21,12 +21,12 @@ public class SettingsPageTests
     private static JsonObject Draft() => JsonNode.Parse("""
         {"general":{"theme":"light","defaultMode":"Detailed","reviewBeforeReplace":false,"startWithWindows":true,"sendAppHint":false,
           "repairDroppedDetails":false,"checkForUpdates":false,"personalContext":"  Year 3 CS student.  "},
-         "model":{"primary":{"provider":"custom","model":" my-model ","baseUrl":"https://example.test/v1"},
-                  "fallback":{"enabled":false,"provider":"groq","model":"","baseUrl":"https://ignored.test"}},
+         "model":{"saved":[{"id":"m1","provider":"custom","model":" my-model ","baseUrl":"https://example.test/v1","separateKey":false}],"default":"m1","backups":[]},
+         "review":{"taskOrder":["Coding","Writing","Research","Image","Video","Debugging","Study","Planning","General"],"barCount":6,"defaultTask":"Auto","highlightChanges":false,"rememberLastChoice":false,"prefetchOtherModes":false},
          "keys":{"set":{"custom":"  FAKE-KEY-MARKER-123  "},"remove":["gemini"]},
          "shortcuts":{"optimize":"ctrl+alt+O","optimizeSelection":"Ctrl+Alt+Shift+O","voice":""},
          "voice":{"enabled":true,"provider":"custom","model":" whisper-x ","language":"ms","autoOptimize":true,"maxSeconds":60},
-         "requirements":{"All":"  Be brief.\r\n","Coding":"Find the root cause.","Debugging":"","Research":"","Study":"","Writing":"","Planning":"","General":"","Image":""}}
+         "requirements":{"All":"  Be brief.\r\n","Coding":"Find the root cause.","Debugging":"","Research":"","Study":"","Writing":"","Planning":"","General":"","Image":"","Video":""}}
         """)!.AsObject();
 
     private string? Send(string type, JsonNode? payload, string id = "s1") =>
@@ -45,8 +45,11 @@ public class SettingsPageTests
         Assert.False(d.ReviewBeforeReplace);
         Assert.True(d.StartWithWindows);
         Assert.Equal("Year 3 CS student.", d.PersonalContext);
-        Assert.Equal(new EndpointDraft("custom", "my-model", "https://example.test/v1", true), d.Primary);
-        Assert.Equal(new EndpointDraft("groq", "", null, false), d.Fallback); // a preset provider ignores a typed address
+        Assert.Equal(new ModelDraft("m1", "custom", "my-model", "https://example.test/v1", false), Assert.Single(d.Models.Saved));
+        Assert.Equal("m1", d.Models.Default);
+        Assert.Empty(d.Models.Backups);
+        Assert.Equal(6, d.Review.BarCount);
+        Assert.Equal(9, d.Review.TaskOrder.Count);
         Assert.Equal(FakeKey, d.NewKeys["custom"]);
         Assert.Equal(["gemini"], d.RemoveKeys);
     }
@@ -68,6 +71,8 @@ public class SettingsPageTests
         Assert.Null(_api.Tested);
     }
 
+    private static JsonObject Saved0(JsonObject d) => d["model"]!["saved"]![0]!.AsObject();
+
     public static IEnumerable<object[]> BadDrafts()
     {
         var cases = new List<object[]>();
@@ -78,13 +83,26 @@ public class SettingsPageTests
         Case("theme not listed", d => d["general"]!["theme"] = "purple");
         Case("mode is a number", d => d["general"]!["defaultMode"] = 1);
         Case("flag is a string", d => d["general"]!["reviewBeforeReplace"] = "yes");
-        Case("provider not listed", d => d["model"]!["primary"]!["provider"] = "evil");
-        Case("primary model blank", d => d["model"]!["primary"]!["model"] = "  ");
-        Case("model has control character", d => d["model"]!["primary"]!["model"] = "a\u0007b");
-        Case("model too long", d => d["model"]!["primary"]!["model"] = new string('m', 101));
-        Case("address is not http", d => d["model"]!["primary"]!["baseUrl"] = "file:///c:/x");
-        Case("address has a password", d => d["model"]!["primary"]!["baseUrl"] = "https://u:p@example.test");
-        Case("primary has an enabled flag", d => d["model"]!["primary"]!["enabled"] = true);
+        Case("provider not listed", d => Saved0(d)!["provider"] = "evil");
+        Case("primary model blank", d => Saved0(d)!["model"] = "  ");
+        Case("model has control character", d => Saved0(d)!["model"] = "a\u0007b");
+        Case("model too long", d => Saved0(d)!["model"] = new string('m', 101));
+        Case("address is not http", d => Saved0(d)!["baseUrl"] = "file:///c:/x");
+        Case("address has a password", d => Saved0(d)!["baseUrl"] = "https://u:p@example.test");
+        Case("model has an enabled flag", d => Saved0(d)!["enabled"] = true);
+        Case("no saved models", d => d["model"]!["saved"] = new JsonArray());
+        Case("default not saved", d => d["model"]!["default"] = "zz");
+        Case("backup not saved", d => d["model"]!["backups"] = new JsonArray("zz"));
+        Case("backup is the default", d => d["model"]!["backups"] = new JsonArray("m1"));
+        Case("bad model id", d => Saved0(d)["id"] = "BAD ID");
+        Case("separate key is a string", d => Saved0(d)["separateKey"] = "yes");
+        Case("review missing", d => d.Remove("review"));
+        Case("bar count too small", d => d["review"]!["barCount"] = 3);
+        Case("bar count too big", d => d["review"]!["barCount"] = 11);
+        Case("task order short", d => d["review"]!["taskOrder"] = new JsonArray("Coding"));
+        Case("task order has Auto", d => d["review"]!["taskOrder"]!.AsArray()[0] = "Auto");
+        Case("default task unknown", d => d["review"]!["defaultTask"] = "Nope");
+        Case("key for another model's id", d => d["keys"]!["set"]!["model:m1"] = "k");
         Case("key for an unknown provider", d => d["keys"]!["set"]!["ollama"] = "k");
         Case("blank key", d => d["keys"]!["set"]!["groq"] = "   ");
         Case("key with control character", d => d["keys"]!["set"]!["groq"] = "a\nb");
@@ -124,6 +142,24 @@ public class SettingsPageTests
         Assert.Null(_api.Saved);
         Assert.Null(_api.Tested);
         Assert.False(string.IsNullOrEmpty(name));
+    }
+
+    [Fact]
+    public void A_model_with_its_own_key_may_set_and_remove_that_key_and_the_key_never_comes_back()
+    {
+        var d = Draft();
+        Saved0(d)["separateKey"] = true;
+        d["keys"]!["set"]!["model:m1"] = "  " + FakeKey + "  ";
+        Assert.Null(ErrorOf(Send("settings.save", d)));
+        Assert.Equal(FakeKey, _api.Saved!.NewKeys["model:m1"]);
+
+        var secrets = new SettingsTests.MemorySecrets();
+        secrets.Set("model:m1", FakeKey);
+        var s = new AppSettings();
+        SettingsPage.Apply(s, _api.Saved!);
+        var view = SettingsPage.BuildView(s, secrets, false);
+        Assert.True(view.Models.Saved.Single().KeySet);
+        Assert.DoesNotContain(FakeKey, JsonSerializer.Serialize(view));
     }
 
     [Fact]
@@ -207,6 +243,8 @@ public class SettingsPageTests
         Assert.Equal("custom", s.Primary.Provider);
         Assert.Equal("https://example.test/v1", s.Primary.BaseUrl);
         Assert.False(s.Fallback.Enabled);
+        Assert.Equal("m1", s.DefaultModelId);
+        Assert.Equal(6, s.ReviewWindow.BarCount);
         Assert.True(s.FirstRunComplete);
         Assert.Equal(99, s.TimeoutSeconds);
         Assert.Equal("Ctrl+Alt+O", s.Hotkeys.Optimize); // shortcuts are now part of the draft
@@ -297,7 +335,7 @@ public class SettingsPageTests
         Send("settings.save", d);
         Send("settings.testConnection", d);
         var bad = Draft();
-        bad["model"]!["primary"]!["provider"] = FakeKey;
+        Saved0(bad)["provider"] = FakeKey;
         Send("settings.save", bad);
         Assert.NotEmpty(_log);
         Assert.All(_log, l =>
@@ -311,7 +349,7 @@ public class SettingsPageTests
     public void An_error_reply_carries_no_payload_text()
     {
         var bad = Draft();
-        bad["model"]!["primary"]!["provider"] = FakeKey;
+        Saved0(bad)["provider"] = FakeKey;
         Assert.DoesNotContain(FakeKey, Send("settings.save", bad));
     }
 }

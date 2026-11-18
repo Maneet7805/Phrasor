@@ -234,11 +234,7 @@
               <label><input type="radio" name="theme" value="dark">Dark</label>
             </div>
           </div>
-          <div class="sr">
-            <label class="st" for="set-mode">Default mode<small>Light changes the least. Detailed adds the most structure.</small></label>
-            <select id="set-mode"></select>
-          </div>
-          <label class="sr"><span class="st">Show the review window before replacing text<small>Recommended. Nothing is replaced until you accept.</small></span><input class="chk" type="checkbox" id="set-review"></label>
+          <label class="sr"><span class="st">Ask before replacing text<small>Recommended. Shows the review window first; nothing is replaced until you accept.</small></span><input class="chk" type="checkbox" id="set-review"></label>
           <label class="sr"><span class="st">Start Phrasor when Windows starts</span><input class="chk" type="checkbox" id="set-startup"></label>
           <label class="sr"><span class="st">Tell the model what kind of app I am typing in<small>For example "Claude (browser)". Only the app type is sent.</small></span><input class="chk" type="checkbox" id="set-apphint"></label>
           <label class="sr"><span class="st">Fix dropped details<small>If paths, numbers or names get lost, the model is asked once more (one extra call).</small></span><input class="chk" type="checkbox" id="set-repair"></label>
@@ -251,26 +247,10 @@
       </section>
 
       <section class="sec" aria-labelledby="set-model">
-        <h2 id="set-model">Model</h2>
-        <div class="grp">
-          <div class="sr col">
-            <span class="st" id="main-label">Main model</span>
-            <div class="fields" role="group" aria-labelledby="main-label">
-              <label>Provider<select id="p-provider"></select></label>
-              <label>Model<input class="txt" type="text" id="p-model" maxlength="100" spellcheck="false" autocomplete="off"></label>
-              <label class="wide" id="p-url-row">Address<input class="txt" type="text" id="p-url" maxlength="200" spellcheck="false" autocomplete="off" placeholder="Address of the API (custom and local only)"></label>
-            </div>
-            <small class="mute" id="p-notes"></small>
-          </div>
-          <div class="sr col">
-            <label class="inl"><input class="chk" type="checkbox" id="f-on"><span class="st" id="fall-label">Use a fallback when the main model is rate-limited or down</span></label>
-            <div class="fields" role="group" aria-labelledby="fall-label" id="f-fields">
-              <label>Provider<select id="f-provider"></select></label>
-              <label>Model<input class="txt" type="text" id="f-model" maxlength="100" spellcheck="false" autocomplete="off"></label>
-              <label class="wide" id="f-url-row">Address<input class="txt" type="text" id="f-url" maxlength="200" spellcheck="false" autocomplete="off" placeholder="Address of the API (custom and local only)"></label>
-            </div>
-          </div>
-        </div>
+        <h2 id="set-model">Models</h2>
+        <p class="sm mute">Save up to 10 models. The default is tried first; backups are tried in the order shown if it is rate-limited or down. A model on this PC runs locally.</p>
+        <div class="grp" id="models" role="group" aria-labelledby="set-model"></div>
+        <div class="row"><button class="btn" type="button" id="m-add">Add a model</button><span class="sm mute" id="m-limit"></span></div>
 
         <div class="sech"><h3 class="h3" id="keys-h">API keys</h3></div>
         <p class="sm mute">Stored encrypted for your Windows account. A saved key is never shown again, here or anywhere else.</p>
@@ -279,6 +259,31 @@
         <div class="row">
           <button class="btn" type="button" id="set-test">Test connection</button>
           <span class="sm" id="set-test-result" role="status" data-tone=""></span>
+        </div>
+      </section>
+
+      <section class="sec" aria-labelledby="set-review-h">
+        <h2 id="set-review-h">Review window</h2>
+        <div class="grp">
+          <div class="sr">
+            <label class="st" for="set-mode">Default mode<small>Light changes the least. Detailed adds the most structure.</small></label>
+            <select id="set-mode"></select>
+          </div>
+          <div class="sr">
+            <label class="st" for="rv-task">Default task<small>Auto picks the task for you.</small></label>
+            <select id="rv-task"></select>
+          </div>
+          <div class="sr">
+            <label class="st" for="rv-count">Tasks shown in the bar<small>The rest go under More. Counts Auto.</small></label>
+            <input class="txt" type="number" id="rv-count" step="1">
+          </div>
+          <div class="sr col">
+            <span class="st" id="rv-order-h">Task order<small>Move tasks up or down. The dashed line marks where the bar ends and More begins.</small></span>
+            <div id="rv-order" role="group" aria-labelledby="rv-order-h"></div>
+          </div>
+          <label class="sr"><span class="st">Highlight what changed<small>Marks the words the rewrite added or changed.</small></span><input class="chk" type="checkbox" id="rv-highlight"></label>
+          <label class="sr"><span class="st">Remember my last task and mode<small>Only those two choices are kept, never any text.</small></span><input class="chk" type="checkbox" id="rv-remember"></label>
+          <label class="sr"><span class="st">Prepare the other modes in the background<small>Makes switching modes instant, but sends three times as many requests.</small></span><input class="chk" type="checkbox" id="rv-prefetch"></label>
         </div>
       </section>
 

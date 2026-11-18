@@ -21,6 +21,7 @@ public enum TaskType
     Planning,
     General,
     Image,
+    Video,
 }
 
 /// <summary>What the model judged it needed to do to the draft.</summary>
@@ -78,6 +79,10 @@ public sealed record OptimizeResult
     public IReadOnlyList<string> Warnings { get; init; } = [];
 
     public required string Model { get; init; }
+
+    /// <summary>True when a backup model answered because the first one could not. <see cref="PrimaryModel"/> is the one that did not.</summary>
+    public bool UsedBackup { get; init; }
+    public string PrimaryModel { get; init; } = "";
     public TimeSpan Elapsed { get; init; }
     public int PromptTokens { get; init; }
     public int CompletionTokens { get; init; }

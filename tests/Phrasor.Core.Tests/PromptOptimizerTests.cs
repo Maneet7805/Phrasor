@@ -242,6 +242,8 @@ public class PromptOptimizerTests
         Assert.Contains("backup model (small-model (groq))", warning);
         Assert.Contains("big-model (groq)", warning);
         Assert.Contains("Ctrl+R", warning);
+        Assert.True(result.UsedBackup);
+        Assert.Equal("big-model (groq)", result.PrimaryModel);
     }
 
     [Fact]

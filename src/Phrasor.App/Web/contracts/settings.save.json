@@ -14,17 +14,44 @@
         "personalContext": "Year 3 CS student."
       },
       "model": {
-        "primary": {
-          "provider": "groq",
-          "model": "openai/gpt-oss-120b",
-          "baseUrl": ""
-        },
-        "fallback": {
-          "enabled": true,
-          "provider": "groq",
-          "model": "openai/gpt-oss-20b",
-          "baseUrl": ""
-        }
+        "saved": [
+          {
+            "id": "m1",
+            "provider": "groq",
+            "model": "openai/gpt-oss-120b",
+            "baseUrl": "",
+            "separateKey": false
+          },
+          {
+            "id": "m2",
+            "provider": "groq",
+            "model": "openai/gpt-oss-20b",
+            "baseUrl": "",
+            "separateKey": false
+          }
+        ],
+        "default": "m1",
+        "backups": [
+          "m2"
+        ]
+      },
+      "review": {
+        "taskOrder": [
+          "Coding",
+          "Writing",
+          "Research",
+          "Image",
+          "Video",
+          "Debugging",
+          "Study",
+          "Planning",
+          "General"
+        ],
+        "barCount": 6,
+        "defaultTask": "Auto",
+        "highlightChanges": false,
+        "rememberLastChoice": false,
+        "prefetchOtherModes": false
       },
       "keys": {
         "set": {
@@ -54,7 +81,8 @@
         "Writing": "",
         "Planning": "",
         "General": "",
-        "Image": ""
+        "Image": "",
+        "Video": ""
       }
     }
   },
@@ -74,17 +102,52 @@
           "checkForUpdates": true,
           "personalContext": ""
         },
-        "primary": {
-          "provider": "groq",
-          "model": "openai/gpt-oss-120b",
-          "baseUrl": "",
-          "enabled": true
+        "models": {
+          "saved": [
+            {
+              "id": "m1",
+              "provider": "groq",
+              "model": "openai/gpt-oss-120b",
+              "baseUrl": "",
+              "separateKey": false,
+              "keySet": false,
+              "local": false
+            },
+            {
+              "id": "m2",
+              "provider": "groq",
+              "model": "openai/gpt-oss-20b",
+              "baseUrl": "",
+              "separateKey": false,
+              "keySet": false,
+              "local": false
+            }
+          ],
+          "default": "m1",
+          "backups": [
+            "m2"
+          ],
+          "max": 10
         },
-        "fallback": {
-          "provider": "groq",
-          "model": "openai/gpt-oss-20b",
-          "baseUrl": "",
-          "enabled": true
+        "review": {
+          "taskOrder": [
+            "Coding",
+            "Writing",
+            "Research",
+            "Image",
+            "Video",
+            "Debugging",
+            "Study",
+            "Planning",
+            "General"
+          ],
+          "barCount": 6,
+          "minBar": 4,
+          "maxBar": 10,
+          "defaultTask": "Auto",
+          "highlightChanges": false,
+          "rememberLastChoice": false,
+          "prefetchOtherModes": false
         },
         "keys": [
           {
@@ -215,6 +278,11 @@
           {
             "id": "Image",
             "label": "Image",
+            "text": ""
+          },
+          {
+            "id": "Video",
+            "label": "Video",
             "text": ""
           }
         ],

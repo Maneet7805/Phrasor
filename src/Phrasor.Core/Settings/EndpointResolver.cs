@@ -18,16 +18,18 @@ public sealed class MissingKeyException(string providerName, string? keyUrl)
 
 public static class EndpointResolver
 {
-    /// <summary>Primary first, then the fallback if it's enabled and different. Endpoints without a needed key are skipped.</summary>
-    public static IReadOnlyList<LlmEndpoint> Resolve(AppSettings settings, ISecretStore secrets)
+    /// <summary>
+    /// The default model first, then the backups in order. <paramref name="activeModelId"/> is a temporary choice (the tray's model switch)
+    /// and goes in front. Models without a needed key are skipped; if none can be used the first key problem is thrown.
+    /// </summary>
+    public static IReadOnlyList<LlmEndpoint> Resolve(AppSettings settings, ISecretStore secrets, string? activeModelId = null)
     {
         var list = new List<LlmEndpoint>();
         MissingKeyException? missing = null;
 
-        foreach (var cfg in new[] { settings.Primary, settings.Fallback })
+        foreach (var model in ModelList.Chain(settings, activeModelId))
         {
-            if (cfg is null || !cfg.Enabled || string.IsNullOrWhiteSpace(cfg.Model)) continue;
-            var endpoint = Build(cfg.Provider, cfg.Model, cfg.BaseUrl, secrets, out var keyProblem);
+            var endpoint = Build(model.Provider, model.Model, model.BaseUrl, secrets, out var keyProblem, model.KeyId);
             if (endpoint is null)
             {
                 missing ??= keyProblem;
@@ -66,13 +68,14 @@ public static class EndpointResolver
     public static LlmEndpoint? ResolveVoice(AppSettings settings, ISecretStore secrets) =>
         Build(settings.Voice.Provider, settings.Voice.Model, settings.Voice.BaseUrl, secrets, out _);
 
-    public static LlmEndpoint? Build(string providerId, string model, string? baseUrl, ISecretStore secrets, out MissingKeyException? keyProblem)
+    /// <param name="keyId">A key kept just for this model; null uses the provider's key.</param>
+    public static LlmEndpoint? Build(string providerId, string model, string? baseUrl, ISecretStore secrets, out MissingKeyException? keyProblem, string? keyId = null)
     {
         keyProblem = null;
         var preset = ProviderPresets.Get(providerId);
         var url = string.IsNullOrWhiteSpace(baseUrl) || preset.Id is not ("custom" or "ollama") ? preset.BaseUrl : baseUrl.Trim();
         if (string.IsNullOrWhiteSpace(url)) return null;
-        var key = secrets.Get(preset.Id);
+        var key = secrets.Get(keyId ?? preset.Id);
         if (preset.RequiresKey && string.IsNullOrWhiteSpace(key))
         {
             keyProblem = new MissingKeyException(preset.DisplayName, preset.KeyUrl);
