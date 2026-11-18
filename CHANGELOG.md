@@ -13,6 +13,7 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 - **Size:** the exe is about 83 MB (1.6.0 was 76.1 MB).
 - **Rewriting quality: no clear change.** The rewriting rules only had the old app name replaced. The quality check ran before (2026-11-16) and after (2026-11-17), and the provider stopped both runs early on its daily limit. Runs that finished passed 258/326 (79%) before and 205/249 (82%) after. Of 107 cases compared, 6 were better, 3 worse, 21 noise, and 17 could not be compared because of rate-limit errors. We don't claim the new prompt is better.
 - The exe is still not code-signed, so SmartScreen may warn on a manual download.
+- **The WebView2 "Install now" button was not tested on a PC that lacks the runtime** (no such PC was available). Only code checks cover it. A clean-PC test is planned for 2.0.1.
 
 ### Added
 - **Quality check page.** The main window's Quality check page replaces the tray's Developer menu: choose a test set, set the judge model, pick runs per case, and see what the run will cost in requests and minutes (with a warning if it is more than a day of the free allowance) before you press **Start**. It never starts on its own. It shows progress, **Cancel** (a cancelled check saves nothing) and **Open results folder**, and asks before you close the window mid-run. Results go to `%APPDATA%\Phrasor\quality\`; logs hold only counts. The judge setting moved here from the classic Settings window (#212).
@@ -41,7 +42,7 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 - The tray menu's **Developer** submenu is gone: the quality check now lives on the main window's Quality check page. The classic Settings window no longer has a quality check button or judge settings, so on a PC without the browser engine the quality check is available only as `Phrasor.exe --eval` (#212).
 - The README, SECURITY.md, the website, the uninstall prompts and the classic Settings window now say what is true: a rewrite is saved only if you press Save to History, it is stored encrypted for your Windows account in Local app data, and Delete all data and uninstall can remove it (#208).
 - The review, settings, update and status windows now use Phrasor's warm dark or light colours, following Windows (or the `Ui.Theme` setting). Layout and shortcuts are unchanged; combo boxes, buttons and tab headers only partly follow the theme (#179).
-- The app has a new name: Phrasor. The program, install folder, Start menu entry and tray name changed. Earlier installed copies don't offer this update: install once by hand and enter your API keys again (#171).
+- The app has a new name: Phrasor. The program, install folder, Start menu entry and tray name changed. Earlier installed copies don't offer this update: install once by hand; on first start your settings and API keys are carried over (#171, #201).
 - Rewrites now keep the parts of a draft that report what happened (what worked, what failed), not only the final request (#164).
 - Setup shows a small "Installing Phrasor" window with a moving bar while it copies files and restarts the app (#146).
 - After "Update now" in the update card, setup no longer asks a second time (#141). This takes effect from the update after 1.6.0, because 1.6.0's updater doesn't pass the new flag.
