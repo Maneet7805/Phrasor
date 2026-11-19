@@ -68,15 +68,15 @@ public partial class SystemPromptTests
     }
 
     [Fact]
-    public void An_open_ended_draft_gets_suggestions_not_a_role_line_or_requirements()
+    public void An_open_ended_draft_gets_no_role_line_or_requirements()
     {
         Assert.Contains("Do not add a role line (\"act as my tutor\"), a \"Requirements\" list", Text);
     }
 
     [Fact]
-    public void Proposals_are_labelled_so_they_stay_the_users_to_remove()
+    public void The_prompt_has_no_suggested_approach_block()
     {
-        Assert.Contains("Suggested approach (keep, change or remove any of these):", Text);
+        Assert.DoesNotContain("Suggested approach", Text);
     }
 
     [Fact]
