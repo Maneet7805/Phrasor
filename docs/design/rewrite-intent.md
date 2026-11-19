@@ -15,6 +15,10 @@ One test separates the two: **every line the rewrite adds must serve a goal the 
 
 Added knowledge must also **change the result**. The receiving AI already knows how to do a code review, so a generic checklist it would follow anyway is padding. What's worth adding is what carries a decision: which checks matter for this goal, what form the answer takes, and choices the user may not know exist (shown as suggestions they can remove, see Q4).
 
+A second test decides how much to add: **does the draft say what a good answer must cover, beyond naming the task or topic?** If it does, it is enough: fix the wording and stop. If it only names the task or a topic, it is thin: add one line for what the answer should cover and one for its form, written from your knowledge of the task, never from guesses about the user's situation.
+
+Two kinds of line are never added, however sensible: **facts about the user's world** (their stack, files, data, audience, numbers) and **extra deliverables** (a summary, a report, tests, notes the draft did not ask for). Do not leave a thin draft thin either.
+
 (Changed 2026-10-16: the test was "traces to something the user wrote". The user pointed out that people who aren't good prompters don't know the terms; the AI does.)
 
 ## Why questions, not categories
@@ -51,16 +55,18 @@ The action (fix, set up, explain, plan), every separate request, and whether it'
 
 The task itself is a goal too: "do a code review", "fix this issue", "write a README for a private repo".
 
-- **Changes:** each goal becomes the concrete steps, checks or criteria it requires, using the AI's own knowledge of the task, not only the user's words. "Make sure nothing breaks" becomes: propose a plan, wait for approval, work in small batches, keep a log, check the result. "Do a code review" becomes: what to check (correctness, edge cases, error handling, security) and the form of each finding (where, what, why, severity, fix). This is where most of the real value is.
+- **Changes:** each goal becomes the concrete steps, checks or criteria it requires, using the AI's own knowledge of the task, not only the user's words. One line per goal, in the order the work happens. "Make sure nothing breaks" for a plain chat becomes one line: check that the existing behaviour still works after the change. The fuller plan, approval, batches, log and check applies only when the receiver can act (Q6). "Do a code review" becomes: what to check (correctness, edge cases, error handling, security) and the form of each finding (where, what, why, severity, fix). This is where most of the real value is.
 - **Only what changes the result:** checks that decide what the answer covers or how it's given. Not general advice the receiver follows anyway.
 - **May add what to check, never what's true.** "Check whether secrets are committed" is fine; "the repo uses Docker" is invented.
 - **Never:** add a goal or limit the user didn't state. Every step must serve a stated goal; the D1 trace names which one.
+- **Never:** add a check, test run, summary or report that no stated goal asks for, or name a number or threshold the draft did not give.
 
 ### 4. What open choices would change the result?
 
 Choices the draft leaves open that would change the answer a lot: which drive, which audience, how deep.
 
 - **Changes:**
+  - **A thin draft is not made complete by questions alone.** Questions are for what only the user knows; what the task itself needs is written in (Q3).
   - **A few choices:** ask them in the review window. #19 sends the answers back into the rewrite.
   - **Many choices, and the draft asks the AI to design something** ("teach me every day, you decide"): propose a structure in the rewrite, clearly labelled as a proposal the user can change or remove.
   - **Choices the user may not know exist** ("only the changed lines, or the whole file?", "should style issues count?"): add the few that matter most as **Suggested (keep or remove)**, never as if the user chose them.
@@ -100,7 +106,7 @@ Whatever the answers:
 
 - **Keep the draft's language**, including mixed-language drafts (a Russian instruction with English code stays that way). Never translate the instruction or the material.
 - **The user's own words stay**, including role lines, emphasis, odd demands and template slots they wrote (`{keywords}`, `[Brand]`). "Never add" is about Phrasor's additions; it's not a licence to remove the user's.
-- **Every exact detail stays exactly as written:** names, numbers, paths, code, errors, quotes. The checker enforces numbers, paths, code and quotes, and (#130) capitalised words such as names, months and places; it cannot see a name typed in lowercase.
+- **Every exact detail stays exactly as written:** names, numbers, paths, code, errors, quotes. Currency names, units and the user's reasons for a rule stay too. The checker enforces numbers, paths, code and quotes, and (#130) capitalised words such as names, months and places; it cannot see a name typed in lowercase.
 
 ## How deep a rewrite goes
 
@@ -199,7 +205,10 @@ Review-window questions: which PR or code; anything the user is especially worri
 - "If you need more details, ask me first" lines, or any other fallback the user didn't write.
 - Role lines ("Act as an expert…").
 - Generic best-practice blocks that serve no stated goal or change nothing ("be thorough", "follow best practices", "use clean code").
-- Deliverables, formats, counts or lengths the draft didn't imply.
+- Extra deliverables (a summary, a report, tests, notes) the draft didn't ask for. Counts, lengths and numbers the draft didn't give.
+- Example lists, "etc." and technology suggestions that name things the draft didn't.
+
+Allowed: the scope and form of the answer for the task the user named (what to cover, the shape of a good answer).
 - Placeholders, or product names the draft didn't use.
 - Answering the draft, or writing it as the AI's reply.
 

@@ -4,6 +4,8 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+- Rewriting rules: a thin draft gets one line for what the answer should cover; a draft that already says it stays near its wording; no invented facts, names, pages, summaries or checks (#219). Not yet measured.
+
 ## [2.0.0] - 2026-11-17
 
 **Read this first.**
