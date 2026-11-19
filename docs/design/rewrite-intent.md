@@ -68,8 +68,8 @@ Choices the draft leaves open that would change the answer a lot: which drive, w
 - **Changes:**
   - **A thin draft is not made complete by questions alone.** Questions are for what only the user knows; what the task itself needs is written in (Q3).
   - **A few choices:** ask them in the review window. #19 sends the answers back into the rewrite.
-  - **Many choices, and the draft asks the AI to design something** ("teach me every day, you decide"): propose a structure in the rewrite, clearly labelled as a proposal the user can change or remove.
-  - **Choices the user may not know exist** ("only the changed lines, or the whole file?", "should style issues count?"): add the few that matter most as **Suggested (keep or remove)**, never as if the user chose them.
+  - **Many choices, and the draft asks the AI to design something** ("teach me every day, you decide"): keep the user's words and add no plan of your own; the choices go in the review window. (Changed 2026-11-19: the labelled "Suggested approach" block is dropped. In the first outcome test (#224) the answering model followed it, and one answer asked the user questions instead of answering.)
+  - **Choices the user may not know exist** ("only the changed lines, or the whole file?", "should style issues count?"): ask them in the review window, never as if the user chose them.
 - **Never:** present a choice as if the user made it, or invent the answer to a question only the user can answer.
 
 ### 5. What does it point to that the rewrite doesn't contain?
@@ -147,6 +147,8 @@ Every line traces back: steps 1, 3 and 5 come from "make sure nothing breaks", s
 The user asked an AI to teach them software engineering every day (concepts, tools, how famous systems were built, when to use each approach and when not to), and to decide what to teach and in what structure.
 
 Answers: asks for something ongoing (Q2). It states goals: from vibe coder to engineer, apply things rather than just learn them, real examples and analogies (Q3). It explicitly hands the design to the AI, and many choices would change the result (Q4).
+
+(Superseded 2026-11-19: the Suggested approach block below is no longer written; see Q4.)
 
 Expected rewrite: the user's goals and topic list, written out clearly, followed by:
 
