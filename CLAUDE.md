@@ -34,7 +34,7 @@ publish\Phrasor.exe --portable                # try a build without touching the
 - Never push to `main`, create tags, or change repo settings or rulesets. Only the owner merges and releases.
 - A change to the system prompt or optimiser behaviour is not done until the quality check has measured it before and after (`eval/README.md`). Don't tune the rules against `heldOut` cases.
 - Build only things that hold in every situation and belong in the product. No one-off fix for a single reported draft: prefer general rules over phrase lists.
-- Keep the user's detail exactly: don't invent facts, numbers or requirements in rewrites.
+- Keep the user's detail exactly: don't invent facts, numbers, names, files or requirements the user did not state. Scope and steps serving a stated goal are allowed.
 
 ## Working rules
 
