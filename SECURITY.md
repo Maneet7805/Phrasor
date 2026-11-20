@@ -19,7 +19,11 @@ This is useful context for judging a report:
 - **History** holds only what you press Save on, in `%LOCALAPPDATA%\Phrasor\History\history.dat`, encrypted with Windows DPAPI (`CurrentUser` scope). That keeps it from other Windows accounts and from a copied file, not from software running as you. Up to 500 items; each side is cut at 20,000 characters.
 - **Logs** (`%APPDATA%\Phrasor\logs`, kept 7 days) record events and timings only.
 - **Keystrokes:** Phrasor sends <kbd>Ctrl</kbd>+<kbd>A</kbd>/<kbd>C</kbd>/<kbd>V</kbd> to the focused app. It refuses password fields, never sends keys to terminals, and never presses Enter or submits anything.
-- **Network:** the only connections are the HTTPS calls to your configured model and voice providers. There's no telemetry, update check or server of our own.
+- **Quality check results** (when you run one) are saved as plain, unencrypted text under `%APPDATA%\Phrasor\quality`. They can include the test cases' prompts and the rewrites. Delete all data removes them.
+- **Network:** Phrasor connects to your configured model and voice providers over HTTPS. The Custom and Ollama providers also accept `http://` addresses, so a local server works. Besides that:
+  - **Update check:** once a day Phrasor asks `api.github.com` for the latest release. It sends no prompt text, settings or keys. It is on by default; turn it off with **Check for updates once a day** in Settings. If you choose to update, it downloads the exe from GitHub and checks it against the release's `SHA256SUMS.txt` before installing.
+  - **WebView2:** only if the runtime is missing and you press **Install now**, Phrasor downloads Microsoft's installer from `go.microsoft.com`.
+  - There's no telemetry and no server of our own.
 
 ## Unsigned executable
 

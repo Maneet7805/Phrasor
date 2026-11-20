@@ -81,7 +81,10 @@ internal static class RuntimeInstaller
                 }
                 await using var source = await response.Content.ReadAsStreamAsync(cancel);
                 await using var target = new FileStream(file, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-                if (!await CopyCappedAsync(source, target, cancel))
+                // HttpClient.Timeout covers only the headers here, so the body gets its own limit; the catch below maps it to Offline.
+                using var bodyLimit = CancellationTokenSource.CreateLinkedTokenSource(cancel);
+                bodyLimit.CancelAfter(TimeSpan.FromSeconds(DownloadTimeoutSeconds));
+                if (!await CopyCappedAsync(source, target, bodyLimit.Token))
                 {
                     Log.Warn("webview2 download too large");
                     return new InstallResult(InstallOutcome.Failed);
