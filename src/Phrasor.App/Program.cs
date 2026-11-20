@@ -4,9 +4,6 @@ namespace Phrasor.App;
 
 internal static class Program
 {
-    private const string MutexName = @"Local\Phrasor.SingleInstance";
-    private const string ShowSettingsEventName = @"Local\Phrasor.ShowSettings";
-
     [STAThread]
     private static int Main(string[] args)
     {
@@ -17,6 +14,12 @@ internal static class Program
         Application.SetColorMode(SystemColorMode.System);
 #pragma warning restore WFO5001
 
+        if (AppPaths.StartupError is { } startupError)
+        {
+            MessageBox.Show(startupError, "Phrasor", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return 2;
+        }
+
         if (args.Length > 0 && args[0] == "--eval")
             return EvalCommand.Run(args[1..]);
         if (args.Length > 0 && args[0] == "--eval-compare")
@@ -25,19 +28,25 @@ internal static class Program
             return EvalCommand.Rejudge(args[1..]);
 
         if (args.Length > 0 && args[0] == "--uninstall")
-            return SelfInstaller.Uninstall();
+        {
+            if (!AppPaths.IsOverridden) return SelfInstaller.Uninstall();
+            // The installed exe would remove the real install while the user thinks it only clears test data.
+            MessageBox.Show("--uninstall cannot be combined with --data-dir.", "Phrasor", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return 2;
+        }
 
         // A copy run from anywhere else (e.g. the dist folder) offers to install or update itself.
         // A plain build (Phrasor.dll beside the exe) can't be installed by copying the exe, so it is never offered.
-        if (!SelfInstaller.IsRunningFromInstallDir && !args.Contains("--portable")
+        // --data-dir is for test copies: never offer to install over the real copy.
+        if (!AppPaths.IsOverridden && !SelfInstaller.IsRunningFromInstallDir && !args.Contains("--portable")
             && Phrasor.Core.Install.InstallPaths.CanInstallFrom(AppPaths.ExePath) && SelfInstaller.OfferInstall(args.Contains(Phrasor.Core.Install.InstallPaths.FromUpdaterFlag)))
             return 0;
 
-        using var mutex = new Mutex(initiallyOwned: false, MutexName);
+        using var mutex = new Mutex(initiallyOwned: false, AppPaths.Root.MutexName);
         if (!TryAcquire(mutex, TimeSpan.Zero))
         {
             // Already running: let that copy take the foreground, ask it to show Settings, and quit.
-            if (EventWaitHandle.TryOpenExisting(ShowSettingsEventName, out var existing))
+            if (EventWaitHandle.TryOpenExisting(AppPaths.Root.ShowSettingsEventName, out var existing))
             {
                 Native.Win32.AllowSetForegroundWindow(Native.Win32.ASFW_ANY);
                 existing.Set();
@@ -48,6 +57,7 @@ internal static class Program
             if (!TryAcquire(mutex, TimeSpan.FromSeconds(3))) return 0;
         }
 
+        if (AppPaths.IsOverridden) Log.Info("data root overridden");
         if (args.Contains("--simulate-no-webview2")) UI.Main.EngineCheck.Simulate(); // Debug builds only; ignored in Release
         _ = Task.Run(UI.Main.EngineCheck.LogStartup);
 
@@ -55,8 +65,8 @@ internal static class Program
         AppDomain.CurrentDomain.UnhandledException += (_, e) => Log.Error("unhandled exception", e.ExceptionObject as Exception);
 
         var background = args.Contains("--background");
-        using var showSettings = new EventWaitHandle(false, EventResetMode.AutoReset, ShowSettingsEventName);
-        using var exitRequested = new EventWaitHandle(false, EventResetMode.AutoReset, SelfInstaller.ExitEventName);
+        using var showSettings = new EventWaitHandle(false, EventResetMode.AutoReset, AppPaths.Root.ShowSettingsEventName);
+        using var exitRequested = new EventWaitHandle(false, EventResetMode.AutoReset, AppPaths.Root.ExitEventName);
         var uiContext = new WindowsFormsSynchronizationContext();
         SynchronizationContext.SetSynchronizationContext(uiContext);
         var context = new TrayContext(background);

@@ -4,6 +4,7 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+- **Added:** `--data-dir <folder>` starts a test copy with its own settings, keys, History and logs, so you can try a build while your installed copy keeps running. It never offers to install, never updates and never touches Start with Windows (#244).
 - **Changed:** If the text you select looks like it contains an API key or token, Phrasor no longer sends it to the provider and tells you instead (#245).
 - **Fixed:** Save to History no longer cuts a long draft or rewrite quietly. When a side is over 20,000 characters, the button says "Saved. Cut to 20,000 characters." (#227)
 - **Fixed:** If saving settings failed (for example a full disk), your API keys could still change. The settings file is now saved first, so a failed save leaves your keys as they were.
