@@ -4,6 +4,9 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+### Fixed
+- A damaged `secrets.dat` is now copied to `secrets.dat.bad` before the next key save, so saving one key no longer silently removes the others (#228).
+
 ## [2.0.0] - 2026-11-17
 
 **Read this first.**
