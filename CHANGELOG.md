@@ -4,6 +4,8 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+- **Fixed:** If saving settings failed (for example a full disk), your API keys could still change. The settings file is now saved first, so a failed save leaves your keys as they were.
+
 ## [2.0.0] - 2026-11-17
 
 **Read this first.**
