@@ -31,7 +31,7 @@ public static partial class SecretScanner
         @"|\bAKIA(?![0-9A-Z]*EXAMPLE)[0-9A-Z]{16}\b" +
         @"|\bxox[abprs]-[A-Za-z0-9-]{10,}" +
         @"|\bAIza[0-9A-Za-z_-]{30,}" +
-        @"|-----BEGIN [A-Z ]*PRIVATE KEY-----(?:\s|\\[nr]|[A-Za-z-]+:[ \t]*[^\s\\:][^\r\n\\:]*)*[A-Za-z0-9+/=]{20,}" +
+        @"|-----BEGIN [A-Z ]*PRIVATE KEY-----(?>(?:\s|\\[nr]|[A-Za-z-]+:[^\r\n\\]*)*)[A-Za-z0-9+/=]{20,}" +
         @"|\bBearer\s+(?=[A-Za-z0-9._~+/=-]*[0-9A-Z])[A-Za-z0-9._~+/=-]{20,}" +
         @"|\beyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}")]
     private static partial Regex KnownTokenRegex();
