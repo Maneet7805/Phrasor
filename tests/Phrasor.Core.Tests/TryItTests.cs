@@ -187,6 +187,7 @@ public class TryItTests
         [new OptimizeException(OptimizeFailure.Model, "m", new LlmException(LlmErrorKind.RateLimit, "m")), TryItErrors.RateLimit],
         [new OptimizeException(OptimizeFailure.Model, "m", new LlmException(LlmErrorKind.Network, "m")), TryItErrors.Offline],
         [new OptimizeException(OptimizeFailure.Model, "m", new LlmException(LlmErrorKind.Timeout, "m")), TryItErrors.Timeout],
+        [new OptimizeException(OptimizeFailure.Model, "m", new LlmException(LlmErrorKind.TooLarge, "m")), TryItErrors.TooLong],
         [new OptimizeException(OptimizeFailure.Model, "m", new LlmException(LlmErrorKind.Server, "m")), TryItErrors.ProviderError],
         [new OptimizeException(OptimizeFailure.Model, "m", new LlmException(LlmErrorKind.BadRequest, "m")), TryItErrors.ProviderError],
         [new OptimizeException(OptimizeFailure.Model, "m", new LlmException(LlmErrorKind.Cancelled, "m")), TryItErrors.Cancelled],
