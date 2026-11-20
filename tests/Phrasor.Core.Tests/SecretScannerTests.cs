@@ -6,19 +6,19 @@ public class SecretScannerTests
 {
     // All fake: built from repeated characters, never a real key.
     [Theory]
-    [InlineData("use sk-abcdefghijklmnopqrstuvwx for the call")]
+    [InlineData("use sk-abcdefghijklmnopqrstuv12 for the call")]
     [InlineData("sk-ant-api03-abcdefghijklmnopqrstuvwxyz012345")]
     [InlineData("GROQ=gsk_abcdefghijklmnopqrstuvwxyz")]
     [InlineData("ghp_abcdefghijklmnopqrstuvwxyz0123456789")]
     [InlineData("github_pat_abcdefghijklmnopqrstuvwxyz")]
     [InlineData("key AKIAABCDEFGHIJKLMNOP here")]
     [InlineData("xoxb-1234567890-abcdefghij")]
-    [InlineData("-----BEGIN RSA PRIVATE KEY-----\nMIIE")]
+    [InlineData("-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAabcdefghijklmnop")]
     [InlineData("Authorization: Bearer abcdefghijklmnopqrstuvwxyz0123")]
     [InlineData("eyJhbGciOiJIUzI1.eyJzdWIiOiIxMjM0.abcdefghijkl")]
     [InlineData("password = hunter2hunter2")]
     [InlineData("{\"api_key\": \"abcdef123456\"}")]
-    [InlineData("TOKEN: abcdefghij")]
+    [InlineData("TOKEN: abcdefghij12")]
     public void Credential_shapes_are_flagged(string text) =>
         Assert.True(SecretScanner.LooksLikeSecret(text));
 
@@ -31,6 +31,18 @@ public class SecretScannerTests
     [InlineData("var user = GetUser(id); if (user.IsActive) { Save(user); }")]
     [InlineData("git commit -m \"fix: handle skip-list ask-for-help case\"")]
     [InlineData("Set the secret to rotate every 90 days; the token = short")]
+    [InlineData("def login(user: str, password: Optional[str] = None)")]
+    [InlineData("function f(token: CancellationToken) {}")]
+    [InlineData("var token = GenerateToken(user); return token;")]
+    [InlineData("Password: required. Username: optional.")]
+    [InlineData("Create a k8s secret: my-app-credentials and mount it")]
+    [InlineData("?api_key=YOUR_API_KEY")]
+    [InlineData("API_KEY=<your-key-here>")]
+    [InlineData("Rename branch pk-migration-for-user-table")]
+    [InlineData("see sk-learn-pipeline-tutorial-for-beginners")]
+    [InlineData("Explain what Bearer authentication-scheme-description does")]
+    [InlineData("the header is -----BEGIN PRIVATE KEY-----")]
+    [InlineData("AWS docs use AKIAIOSFODNN7EXAMPLE as a sample id")]
     [InlineData("")]
     public void Ordinary_text_is_not_flagged(string text) =>
         Assert.False(SecretScanner.LooksLikeSecret(text));
