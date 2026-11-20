@@ -45,8 +45,26 @@ public class SecretScannerTests
     [InlineData("see sk-learn-pipeline-tutorial-for-beginners")]
     [InlineData("Explain what Bearer authentication-scheme-description does")]
     [InlineData("the header is -----BEGIN PRIVATE KEY-----")]
+    [InlineData("-----BEGIN PRIVATE KEY----- a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: !")]
     [InlineData("AWS docs use AKIAIOSFODNN7EXAMPLE as a sample id")]
     [InlineData("")]
     public void Ordinary_text_is_not_flagged(string text) =>
         Assert.False(SecretScanner.LooksLikeSecret(text));
+
+    // The header-line loop once backtracked without end on text like this; a hang here would freeze the hotkey.
+    [Theory]
+    [InlineData(" a: a")]
+    [InlineData(" aaa:x")]
+    [InlineData(" ab:c d e f")]
+    public void Long_header_like_text_is_checked_quickly(string unit)
+    {
+        var text = "-----BEGIN PRIVATE KEY-----" + string.Concat(Enumerable.Repeat(unit, 400)) + "!";
+        var task = Task.Run(() => SecretScanner.LooksLikeSecret(text));
+        Assert.True(task.Wait(TimeSpan.FromSeconds(5)), "the check did not finish in 5 seconds");
+        Assert.False(task.Result);
+    }
+
+    [Fact]
+    public void A_private_key_with_a_header_line_that_has_no_value_is_flagged() =>
+        Assert.True(SecretScanner.LooksLikeSecret("-----BEGIN PRIVATE KEY-----\nProc-Type:\nAAAAAAAAAAAAAAAAAAAAAAAA"));
 }
