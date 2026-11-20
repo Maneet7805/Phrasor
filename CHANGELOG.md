@@ -1,4 +1,4 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to Phrasor are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
@@ -9,9 +9,10 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 - **Changed:** If the text you select looks like it contains an API key or token, Phrasor no longer sends it to the provider and tells you instead (#245).
 - **Fixed:** The review window's Save to History now also says "Saved. Cut to 20,000 characters." when a side was cut (#256).
 - **Fixed:** The key-or-token check no longer stops ordinary code and docs drafts (for example `password: Optional[str]`, `?api_key=YOUR_API_KEY` or a mention of a private key header). Real-looking keys are still stopped (#254).
+- **Fixed:** The key-or-token check again stops a private key pasted with `\n` line breaks or `Proc-Type:`/`DEK-Info:` header lines (#261).
 - **Fixed:** Save to History no longer cuts a long draft or rewrite quietly. When a side is over 20,000 characters, the button says "Saved. Cut to 20,000 characters." (#227)
 - **Fixed:** If saving settings failed (for example a full disk), your API keys could still change. The settings file is now saved first, so a failed save leaves your keys as they were.
-- **Fixed:** If a connection test or quality check hit an unexpected error, the window kept saying "Testing…" or "running" until you restarted. It now ends the run and reports a failure.
+- **Fixed:** If a connection test or quality check hit an unexpected error, the window kept saying "Testingâ€¦" or "running" until you restarted. It now ends the run and reports a failure.
 - **Fixed:** Delete all data now also removes the old `PromptForge` data folder, so your old settings and API keys no longer come back on the next start.
 - **Fixed:** When saving settings fails, the Settings page now says the settings could not be saved, instead of "The app did not answer in time" (#242).
 - **Fixed:** A failed settings save no longer leaves a `settings.json.tmp` file in the data folder, and the next save removes a stale one (#243).
@@ -24,7 +25,7 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 ## [2.0.0] - 2026-11-17
 
 **Read this first.**
-- **New name: Phrasor (was PromptForge).** Earlier installed copies don't offer this update. Download `Phrasor.exe` once by hand and choose **Yes**. On first start it copies your settings and re-saves your API keys from the old `PromptForge` data folder (the old folder is left untouched). An old PromptForge install is not removed: uninstall it in Settings → Apps.
+- **New name: Phrasor (was PromptForge).** Earlier installed copies don't offer this update. Download `Phrasor.exe` once by hand and choose **Yes**. On first start it copies your settings and re-saves your API keys from the old `PromptForge` data folder (the old folder is left untouched). An old PromptForge install is not removed: uninstall it in Settings â†’ Apps.
 - **New main window** (Home, Try it, History, Quality check, Settings, first run). Open it from the tray. Nothing is saved to History unless you press Save.
 - **The window needs the Microsoft Edge WebView2 runtime.** It is part of Windows 11 and of most Windows 10 PCs. If it is missing, the window says so and offers **Install now** (after your click it downloads Microsoft's installer, checks that Microsoft signed it, and runs it without admin rights). The shortcuts, the review window and voice dictation never depend on it.
 - **Size:** the exe is about 83 MB (1.6.0 was 76.1 MB).
@@ -76,7 +77,7 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 ## [1.5.0] - 2026-11-07
 
 ### Added
-- Settings → Requirements: a new "All tasks" entry. Its text is added word for word to the end of every rewrite, after the text for that kind of task, and never twice (#118).
+- Settings â†’ Requirements: a new "All tasks" entry. Its text is added word for word to the end of every rewrite, after the text for that kind of task, and never twice (#118).
 
 ### Fixed
 - The repair step no longer appends a dropped detail as a bare fragment (a lone number on its own line, or stuck on after a full stop). Such a repair is now rejected and the first rewrite is kept with the "check these details" warning. The repair request also asks for the detail inside a full sentence (#124).
@@ -90,7 +91,7 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 ## [1.4.0] - 2026-11-05
 
 ### Added
-- Settings → Requirements: write your own standing requirements for each kind of task (for example, Coding: "find the root cause, follow existing conventions, no workarounds"). They are added word for word to the end of every rewrite of that kind, are never sent to the model, and are skipped when a rewrite comes back unchanged (#36).
+- Settings â†’ Requirements: write your own standing requirements for each kind of task (for example, Coding: "find the root cause, follow existing conventions, no workarounds"). They are added word for word to the end of every rewrite of that kind, are never sent to the model, and are skipped when a rewrite comes back unchanged (#36).
 
 ### Changed
 - The log now records why a rewrite failed: the error kind, the provider's token limit and requested size when it reports them, the mode and the draft length. Never the prompt or the provider's message. This is so "too long for the free-tier limit" errors can be diagnosed (#101).
@@ -108,7 +109,7 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 - The running version now shows in the tray menu ("Phrasor 1.2.0") and at the bottom of the Settings window (#84).
 - Quality check: three long synthetic drafts (about 1,600, 3,800 and 7,400 characters, 11 to 13 points each), each in Standard and Detailed, so dropped points and shrinking on long input can be measured (#76).
 - Quality check: a per-case `minLengthRatio` (set to 0.5 on the long cases) fails a rewrite that shrinks below it. The README now says the judge can't be trusted to see dropped points on long drafts (#90).
-- Phrasor now appears in Settings → Apps → Installed apps with an Uninstall button. Uninstall removes the app, its Start menu shortcut and its start-with-Windows entry, and asks before deleting your settings and API keys (default: keep). The entry is added when you install or update (#86).
+- Phrasor now appears in Settings â†’ Apps â†’ Installed apps with an Uninstall button. Uninstall removes the app, its Start menu shortcut and its start-with-Windows entry, and asks before deleting your settings and API keys (default: keep). The entry is added when you install or update (#86).
 
 ### Fixed
 - When the model's reply isn't valid JSON (Groq: "Failed to validate JSON", seen on long drafts in Detailed mode), Phrasor now retries once and then tries the fallback model, instead of stopping with an error (#88).
@@ -119,13 +120,13 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 ### Added
 - Quality check: a new case for a short bug report with a "don't break anything" limit, taken from real use (#74).
 - Quality check: each case runs 3 times by default (`--repeat N` to change), and the report shows the pass rate per case, lowest first, plus how many cases passed every run, failed every run, or were mixed.
-- Quality check: a judge model set separately in Settings → Data (Gemini by default, using the Gemini key from the Model tab). Without its key, the main model's fallback grades and the report says the judge isn't independent.
+- Quality check: a judge model set separately in Settings â†’ Data (Gemini by default, using the Gemini key from the Model tab). Without its key, the main model's fallback grades and the report says the judge isn't independent.
 - Quality check: the judge also flags rewrites written as the AI's reply and requests the draft didn't make (extra deliverables, answer formats, "ask me first" steps), and its intent check covers statements, answers and standing instructions.
 - `--system-prompt <file>` runs the quality check with another version of the rewriting rules, such as `eval/prompts/v1.0.0.txt`, without a new build.
 - `--eval-compare before\results.json after\results.json compare.md` compares two runs case by case and separates real changes from run-to-run noise.
-- Eval cases can carry the app hint (`writtenIn`), and 8 new cases cover the rewrites reported in #16, #17, #18 and #25–#28.
+- Eval cases can carry the app hint (`writtenIn`), and 8 new cases cover the rewrites reported in #16, #17, #18 and #25â€“#28.
 - Quality check: cases say how deep the ideal rewrite goes (`expect`) and what it must cover (`mustCover`), and a third of the new cases are held out (`--include-held-out`) for final measurements. 36 new cases cover agent tasks, mid-chat messages, the gaps found in real prompts and open-ended requests; `cases-write.json` holds briefs for the coming write mode.
-- Quality check: the judge grades by intent (#34). Spelling out a stated goal ("make sure nothing breaks" → plan, approve, verify) no longer counts as an added request; a new "under-delivered" check fails rewrites that only fix the wording when the draft's goals needed spelling out, or that miss a case's `mustCover` item. The judge now reads each case's `expect` and `mustCover`.
+- Quality check: the judge grades by intent (#34). Spelling out a stated goal ("make sure nothing breaks" â†’ plan, approve, verify) no longer counts as an added request; a new "under-delivered" check fails rewrites that only fix the wording when the draft's goals needed spelling out, or that miss a case's `mustCover` item. The judge now reads each case's `expect` and `mustCover`.
 - `--rejudge <results.json> <cases.json> <folder>` grades a saved run again with the current judge, without calling the optimiser, so an old baseline can be graded by the same judge as a new run. With `--grades <file.csv>` it also reports how often the judge agrees with your own grades.
 
 ### Changed
@@ -156,7 +157,7 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 ## [1.1.0] - 2026-10-15
 
 ### Added
-- **Update check.** Once a day (and from **Check for updates** in the tray menu), Phrasor asks GitHub for the latest release. If it's newer, a notification offers to update: the exe is downloaded, verified against `SHA256SUMS.txt`, and installed through the usual **Yes** prompt. It can be turned off in Settings → General and sends no prompt text, settings or keys.
+- **Update check.** Once a day (and from **Check for updates** in the tray menu), Phrasor asks GitHub for the latest release. If it's newer, a notification offers to update: the exe is downloaded, verified against `SHA256SUMS.txt`, and installed through the usual **Yes** prompt. It can be turned off in Settings â†’ General and sends no prompt text, settings or keys.
 - **Image** task type: image-generation prompts (comma-separated descriptors, `--ar` style parameters) keep their form and only get typo fixes, instead of being rewritten into sentences.
 - The user's own template slots, like `[Brand]`, `{{first_name}}` and `${Role:default}`, are now protected details and are checked after every rewrite.
 - System prompt examples now include drafts that should come back unchanged.
@@ -171,7 +172,7 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 
 ### Fixed
 - Voice: a silent recording (microphone muted or turned off in Windows, or nothing said) was sent for transcription, and Whisper typed text it invented from the silence, usually "Thank you.". Silent recordings are now caught before sending, and a notification says whether the mic recorded nothing at all or just no speech.
-- The repair pass for dropped details could make the model add an instruction like "Ensure the explanation includes the exact phrases…". It now asks for the details to be put back where they were, without meta-instructions.
+- The repair pass for dropped details could make the model add an instruction like "Ensure the explanation includes the exact phrasesâ€¦". It now asks for the details to be put back where they were, without meta-instructions.
 - Rewrites could come back in the assistant's voice ("Once I have this information, I can..."). The system prompt now says the rewrite is always the user's request to the AI.
 - Standard mode now puts any background the user gave before the request.
 
