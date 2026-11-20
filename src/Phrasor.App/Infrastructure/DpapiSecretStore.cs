@@ -59,18 +59,7 @@ internal sealed class DpapiSecretStore(string path, string entropy = "Phrasor.v1
         }
     }
 
-    private Dictionary<string, string> Read()
-    {
-        if (!File.Exists(path)) return [];
-        try
-        {
-            return JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(path)) ?? [];
-        }
-        catch (JsonException)
-        {
-            return [];
-        }
-    }
+    private Dictionary<string, string> Read() => SecretMapFile.Read(path, Log.Warn);
 
     private void Write(Dictionary<string, string> all)
     {
