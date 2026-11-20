@@ -50,7 +50,11 @@ internal static class EngineCheck
     {
         try
         {
+#if DEBUG
             var source = EngineSource.FromSetting(Environment.GetEnvironmentVariable(FolderVariable));
+#else
+            var source = EngineSource.Shared; // the folder variable is a developer switch: Release ignores it
+#endif
             if (source.BrowserFolder is { } folder && new DriveInfo(Path.GetPathRoot(folder)!).DriveType == DriveType.Network)
                 throw new ArgumentException("network drive");
             return source;
