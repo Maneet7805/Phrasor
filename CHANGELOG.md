@@ -4,6 +4,7 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+- **Fixed:** Save to History no longer cuts a long draft or rewrite quietly. When a side is over 20,000 characters, the button says "Saved. Cut to 20,000 characters." (#227)
 - **Fixed:** If saving settings failed (for example a full disk), your API keys could still change. The settings file is now saved first, so a failed save leaves your keys as they were.
 - **Fixed:** If a connection test or quality check hit an unexpected error, the window kept saying "Testing…" or "running" until you restarted. It now ends the run and reports a failure.
 - **Fixed:** Delete all data now also removes the old `PromptForge` data folder, so your old settings and API keys no longer come back on the next start.

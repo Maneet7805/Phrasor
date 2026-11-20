@@ -216,7 +216,7 @@ public sealed class BridgeDispatcher
             case "history.save":
                 NoPayload(payload);
                 var result = _api.SaveHistory();
-                return result == HistorySaveResult.NothingToSave ? throw new NothingToSaveException() : new { already = result == HistorySaveResult.AlreadySaved };
+                return result == HistorySaveResult.NothingToSave ? throw new NothingToSaveException() : new { already = result == HistorySaveResult.AlreadySaved, cut = result == HistorySaveResult.SavedCut };
             case "history.copy":
                 var copy = Exact(payload, "id", "part");
                 if (copy[0].ValueKind != JsonValueKind.String || copy[1].ValueKind != JsonValueKind.String) throw new BadPayloadException();

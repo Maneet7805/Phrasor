@@ -230,7 +230,7 @@
   saveBtn.addEventListener("click", function () {
     saveBtn.disabled = true;
     window.phrasor.historySave().then(function (reply) {
-      saveBtn.textContent = reply.already ? "Already saved" : "Saved";
+      saveBtn.textContent = reply.already ? "Already saved" : reply.cut ? "Saved. Cut to 20,000 characters." : "Saved";
       window.dispatchEvent(new Event("phrasor:history-changed"));
     }, function (error) {
       saveBtn.textContent = SAVE_ERROR[error.message] || "Couldn't save";
