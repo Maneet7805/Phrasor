@@ -4,6 +4,9 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+### Fixed
+- First run: editing the key while a test is running no longer lets the old key's result enable Continue for the new key (#226).
+
 ## [2.0.0] - 2026-11-17
 
 **Read this first.**
