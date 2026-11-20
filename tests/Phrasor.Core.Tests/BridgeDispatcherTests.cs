@@ -342,7 +342,7 @@ public class BridgeDispatcherTests
     {
         _api.Throw = new InvalidOperationException("SECRETWORD in the message");
         var reply = Make().Handle(Origin, true, Msg("state.get"));
-        Assert.Equal((false, BridgeError.Failed, (string?)null), Parse(reply));
+        Assert.Equal((false, BridgeError.Failed, (string?)"a1"), Parse(reply)); // the id lets the page match the reply to its call
         Assert.Contains("InvalidOperationException", _log.Single());
         Assert.DoesNotContain("SECRETWORD", _log.Single());
         Assert.DoesNotContain("SECRETWORD", reply);
