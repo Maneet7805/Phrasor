@@ -278,9 +278,18 @@ internal sealed class MainBridge : IMainWindowApi
     private async Task RunTestAsync(int number, AppSettings settings, ISecretStore secrets, CancellationTokenSource cts)
     {
         await Task.Yield(); // the "started" reply must reach the page before the result does
-        var result = await SettingsPage.TestAsync(_services.Client, settings, secrets, cts.Token);
-        cts.Dispose();
-        _test = null;
+        ConnectionResult result;
+        try { result = await SettingsPage.TestAsync(_services.Client, settings, secrets, cts.Token); }
+        catch (Exception ex) // TestAsync maps the expected failures itself; anything else must still end the run
+        {
+            Log.Warn($"settings test crashed type={ex.GetType().Name}");
+            result = new(false, null, 0, TryItErrors.Failed);
+        }
+        finally
+        {
+            cts.Dispose();
+            _test = null;
+        }
         Log.Info($"settings test outcome={result.Error ?? BridgeLog.Ok} ms={result.Milliseconds}");
         Post(result.Ok ? BridgeEvents.SettingsTestDone(number, result) : BridgeEvents.SettingsTestFailed(number, result.Error!));
     }
@@ -369,12 +378,16 @@ internal sealed class MainBridge : IMainWindowApi
                 _resultsDir = dir;
             }
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
+        catch (Exception ex)
         {
-            state = QualityState.Failed;
+            Log.Warn($"quality check crashed type={ex.GetType().Name}");
+            state = cts.IsCancellationRequested ? QualityState.Cancelled : QualityState.Failed;
         }
-        cts.Dispose();
-        _quality = null;
+        finally
+        {
+            cts.Dispose();
+            _quality = null; // always cleared, or the window-close prompt and "busy" replies stick until restart
+        }
         // Counts and a state from a fixed list: no case text, rewrite or path reaches the log or the page.
         Log.Info($"quality check state={state} passed={counts.Passed} errored={counts.Errored} total={counts.Total}");
         Post(BridgeEvents.QualityFinished(number, state, counts.Passed, counts.Errored, counts.Total));

@@ -4,6 +4,8 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+- **Fixed:** If a connection test or quality check hit an unexpected error, the window kept saying "Testing…" or "running" until you restarted. It now ends the run and reports a failure.
+
 ## [2.0.0] - 2026-11-17
 
 **Read this first.**
