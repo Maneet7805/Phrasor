@@ -8,6 +8,7 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 - **Fixed:** If saving settings failed (for example a full disk), your API keys could still change. The settings file is now saved first, so a failed save leaves your keys as they were.
 - **Fixed:** If a connection test or quality check hit an unexpected error, the window kept saying "Testing…" or "running" until you restarted. It now ends the run and reports a failure.
 - **Fixed:** Delete all data now also removes the old `PromptForge` data folder, so your old settings and API keys no longer come back on the next start.
+- **Fixed:** A failed settings save no longer leaves a `settings.json.tmp` file in the data folder, and the next save removes a stale one (#243).
 ### Fixed
 - First run: editing the key while a test is running no longer lets the old key's result enable Continue for the new key (#226).
 - The WebView2 installer download now gives up after 60 seconds if it stalls mid-download, and reports "offline" instead of waiting forever. (#230)
