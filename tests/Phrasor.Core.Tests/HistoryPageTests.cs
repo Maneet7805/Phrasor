@@ -198,6 +198,24 @@ public class HistoryPageTests
     }
 
     [Fact]
+    public void Save_reports_when_a_side_was_cut_and_not_otherwise()
+    {
+        _api.SaveResult = HistorySaveResult.SavedCut;
+        Assert.Contains("\"cut\":true", Send("history.save"));
+        _api.SaveResult = HistorySaveResult.Saved;
+        Assert.Contains("\"cut\":false", Send("history.save"));
+    }
+
+    [Fact]
+    public void WouldCut_is_true_only_past_the_limit_on_either_side()
+    {
+        var max = new string('a', HistoryStore.MaxFieldChars);
+        Assert.False(HistoryStore.WouldCut(max, max));
+        Assert.True(HistoryStore.WouldCut(max + "a", "x"));
+        Assert.True(HistoryStore.WouldCut("x", max + "a"));
+    }
+
+    [Fact]
     public void Save_reports_already_saved_and_nothing_to_save()
     {
         _api.SaveResult = HistorySaveResult.AlreadySaved;
