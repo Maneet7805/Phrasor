@@ -4,6 +4,7 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+- **Changed:** If the text you select looks like it contains an API key or token, Phrasor no longer sends it to the provider and tells you instead (#245).
 - **Fixed:** If saving settings failed (for example a full disk), your API keys could still change. The settings file is now saved first, so a failed save leaves your keys as they were.
 - **Fixed:** If a connection test or quality check hit an unexpected error, the window kept saying "Testing…" or "running" until you restarted. It now ends the run and reports a failure.
 - **Fixed:** Delete all data now also removes the old `PromptForge` data folder, so your old settings and API keys no longer come back on the next start.

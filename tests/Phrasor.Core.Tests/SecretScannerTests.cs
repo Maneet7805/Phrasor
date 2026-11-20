@@ -27,6 +27,10 @@ public class SecretScannerTests
     [InlineData("my token count is high and the secret menu is empty")]
     [InlineData("the sk-learn tutorial is short")]
     [InlineData("token: none")]
+    [InlineData("Write a function that checks the password length and returns a bool.")]
+    [InlineData("var user = GetUser(id); if (user.IsActive) { Save(user); }")]
+    [InlineData("git commit -m \"fix: handle skip-list ask-for-help case\"")]
+    [InlineData("Set the secret to rotate every 90 days; the token = short")]
     [InlineData("")]
     public void Ordinary_text_is_not_flagged(string text) =>
         Assert.False(SecretScanner.LooksLikeSecret(text));
