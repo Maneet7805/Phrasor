@@ -4,6 +4,9 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+### Fixed
+- The WebView2 installer download now gives up after 60 seconds if it stalls mid-download, and reports "offline" instead of waiting forever. (#230)
+
 ## [2.0.0] - 2026-11-17
 
 **Read this first.**
