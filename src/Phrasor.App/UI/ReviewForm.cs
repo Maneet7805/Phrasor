@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using Phrasor.App.TextAccess;
 using Phrasor.Core.Diffing;
+using Phrasor.Core.History;
 using Phrasor.Core.Optimization;
 using Phrasor.Core.Settings;
 
@@ -343,8 +344,9 @@ internal sealed class ReviewForm : Form
     private void SaveToHistory()
     {
         if (_ctx.Save is null || _result is null) return;
-        var saved = _ctx.Save(_ctx.Original, FromWindowsNewlines(_improved.Text, _ctx.Original));
-        _save.Text = saved ? "Saved" : "Couldn't save";
+        var improved = FromWindowsNewlines(_improved.Text, _ctx.Original);
+        var saved = _ctx.Save(_ctx.Original, improved);
+        _save.Text = !saved ? "Couldn't save" : HistoryStore.WouldCut(_ctx.Original, improved) ? "Saved. Cut to 20,000 characters." : "Saved";
         _save.Enabled = !saved;
     }
 
