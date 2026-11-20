@@ -18,6 +18,7 @@ public class SecretScannerTests
     [InlineData("-----BEGIN RSA PRIVATE KEY-----\nProc-Type: 4,ENCRYPTED\nDEK-Info: AES-128-CBC,AAAA0000AAAA0000\n\nAAAAAAAAAAAAAAAAAAAAAAAA")]
     [InlineData("-----BEGIN RSA PRIVATE KEY-----\\nProc-Type: 4,ENCRYPTED\\nDEK-Info: AES-128-CBC,AAAA0000\\n\\nAAAAAAAAAAAAAAAAAAAAAAAA")]
     [InlineData("-----BEGIN RSA PRIVATE KEY-----\nComment: a:b: c\nX-Empty:\n\nAAAAAAAAAAAAAAAAAAAAAAAA")]
+    [InlineData("-----BEGIN RSA PRIVATE KEY-----\\r\\nProc-Type: 4,ENCRYPTED\\r\\nDEK-Info: AES-128-CBC,AAAA0000\\r\\n\\r\\nAAAAAAAAAAAAAAAAAAAAAAAA")]
     [InlineData("Authorization: Bearer abcdefghijklmnopqrstuvwxyz0123")]
     [InlineData("eyJhbGciOiJIUzI1.eyJzdWIiOiIxMjM0.abcdefghijkl")]
     [InlineData("password = hunter2hunter2")]
