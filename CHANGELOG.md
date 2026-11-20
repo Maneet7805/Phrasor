@@ -5,6 +5,7 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 ## [Unreleased]
 
 - **Added:** `--data-dir <folder>` starts a test copy with its own settings, keys, History and logs, so you can try a build while your installed copy keeps running. It never offers to install, never updates and never touches Start with Windows (#244).
+- **Fixed:** A bad `--data-dir` value (such as one ending in a quote from PowerShell, or a device name like `CON`) now shows an error and exits instead of crashing at start-up (#255).
 - **Changed:** If the text you select looks like it contains an API key or token, Phrasor no longer sends it to the provider and tells you instead (#245).
 - **Fixed:** The key-or-token check no longer stops ordinary code and docs drafts (for example `password: Optional[str]`, `?api_key=YOUR_API_KEY` or a mention of a private key header). Real-looking keys are still stopped (#254).
 - **Fixed:** Save to History no longer cuts a long draft or rewrite quietly. When a side is over 20,000 characters, the button says "Saved. Cut to 20,000 characters." (#227)
