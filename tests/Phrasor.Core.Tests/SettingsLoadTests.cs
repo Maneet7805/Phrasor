@@ -123,4 +123,24 @@ public class SettingsLoadTests
             File.Delete(path);
         }
     }
+
+    [Fact]
+    public void A_failed_save_leaves_no_temp_file_and_a_later_save_removes_a_stale_one()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        var path = Path.Combine(dir, "settings.json");
+        Directory.CreateDirectory(path); // a folder where the file belongs makes the final move fail
+        try
+        {
+            Assert.ThrowsAny<Exception>(() => SettingsStore.Save(path, new AppSettings()));
+            Assert.False(File.Exists(path + ".tmp"));
+
+            Directory.Delete(path);
+            File.WriteAllText(path + ".tmp", "stale");
+            SettingsStore.Save(path, new AppSettings());
+            Assert.False(File.Exists(path + ".tmp"));
+            Assert.True(File.Exists(path));
+        }
+        finally { Directory.Delete(dir, true); }
+    }
 }

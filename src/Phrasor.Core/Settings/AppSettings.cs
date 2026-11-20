@@ -158,7 +158,16 @@ public static class SettingsStore
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         var temp = path + ".tmp";
-        File.WriteAllText(temp, JsonSerializer.Serialize(settings, JsonOptions));
-        File.Move(temp, path, overwrite: true);
+        File.Delete(temp); // a stale one from an earlier failed save
+        try
+        {
+            File.WriteAllText(temp, JsonSerializer.Serialize(settings, JsonOptions));
+            File.Move(temp, path, overwrite: true);
+        }
+        catch
+        {
+            try { File.Delete(temp); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+            throw;
+        }
     }
 }

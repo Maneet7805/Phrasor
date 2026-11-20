@@ -9,7 +9,7 @@ public enum WindowAction { Minimize, ToggleMaximize, Close }
 /// <summary>The two folders the Data group may open. The page never names a path.</summary>
 public enum DataFolder { Data, Logs }
 
-public enum HistorySaveResult { Saved, AlreadySaved, NothingToSave }
+public enum HistorySaveResult { Saved, AlreadySaved, NothingToSave, SavedCut }
 
 /// <summary>History could not be read or written (the file is locked, damaged or from a newer Phrasor). Carries no text.</summary>
 public sealed class HistoryUnavailableException : Exception;
