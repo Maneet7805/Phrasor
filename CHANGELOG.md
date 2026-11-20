@@ -4,6 +4,7 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+- **Fixed:** If a connection test or quality check hit an unexpected error, the window kept saying "Testing…" or "running" until you restarted. It now ends the run and reports a failure.
 - **Fixed:** Delete all data now also removes the old `PromptForge` data folder, so your old settings and API keys no longer come back on the next start.
 ### Fixed
 - First run: editing the key while a test is running no longer lets the old key's result enable Continue for the new key (#226).
