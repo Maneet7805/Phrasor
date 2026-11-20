@@ -20,6 +20,20 @@ internal static class Program
             return 2;
         }
 
+        if (AppPaths.IsOverridden)
+        {
+            try
+            {
+                Directory.CreateDirectory(AppPaths.DataDir);
+                Directory.CreateDirectory(AppPaths.HistoryDir);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or ArgumentException)
+            {
+                MessageBox.Show("Phrasor could not create the --data-dir folder. Choose a folder you can write to.", "Phrasor", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return 2;
+            }
+        }
+
         if (args.Length > 0 && args[0] == "--eval")
             return EvalCommand.Run(args[1..]);
         if (args.Length > 0 && args[0] == "--eval-compare")
