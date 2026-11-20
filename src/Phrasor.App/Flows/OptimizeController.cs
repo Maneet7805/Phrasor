@@ -1,6 +1,7 @@
 using Phrasor.App.Native;
 using Phrasor.App.TextAccess;
 using Phrasor.App.UI;
+using Phrasor.Core.Feedback;
 using Phrasor.Core.Llm;
 using Phrasor.Core.Optimization;
 using Phrasor.Core.Settings;
@@ -70,6 +71,13 @@ internal sealed class OptimizeController(AppServices services)
             return;
         }
         var text = capture.Text!;
+        if (SecretScanner.LooksLikeSecret(text))
+        {
+            // Event only: never log or keep the text. Nothing has been sent or stored at this point.
+            Log.Info($"blocked: draft looks like a key or token app={target.ProcessName}");
+            services.Notify("This looks like it contains a key or token, so Phrasor didn't send it. Remove it and try again.", ToolTipIcon.Warning);
+            return;
+        }
         Log.Info($"captured mode={mode} app={target.ProcessName} chars={text.Length} terminal={target.IsTerminal}");
 
         var decision = await ReviewAsync(text, mode, target.Hwnd, target.AppLabel);
