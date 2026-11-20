@@ -100,6 +100,9 @@ public sealed class HistoryStore
         }
     }
 
+    /// <summary>True when saving these would cut either side to <see cref="MaxFieldChars"/>.</summary>
+    public static bool WouldCut(string? original, string? rewrite) => (original?.Length ?? 0) > MaxFieldChars || (rewrite?.Length ?? 0) > MaxFieldChars;
+
     /// <summary>Cuts to <see cref="MaxFieldChars"/> without leaving half of a surrogate pair.</summary>
     internal static string Limit(string? text)
     {

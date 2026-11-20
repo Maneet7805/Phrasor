@@ -156,7 +156,7 @@ internal sealed class MainBridge : IMainWindowApi
         if (_lastSaved) return HistorySaveResult.AlreadySaved;
         Guarded(() => { _services.SaveToHistory(_lastOriginal, _lastRewrite); return true; });
         _lastSaved = true;
-        return HistorySaveResult.Saved;
+        return HistoryStore.WouldCut(_lastOriginal, _lastRewrite) ? HistorySaveResult.SavedCut : HistorySaveResult.Saved;
     }
 
     public bool CopyHistory(string id, bool original)

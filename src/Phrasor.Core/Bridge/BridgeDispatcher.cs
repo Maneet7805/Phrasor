@@ -56,6 +56,7 @@ public sealed class BridgeDispatcher
 
     private bool _limitLogged;
     private string? _command; // set once the command is known, only so the log line can name it
+    private string? _id;      // the call's id once parsed, so even an unexpected failure is answered to the right call
 
     public BridgeDispatcher(IMainWindowApi api, Action<string> log, Func<long>? nowMs = null)
     {
@@ -73,6 +74,7 @@ public sealed class BridgeDispatcher
         var start = _nowMs();
         var bytes = message is null ? 0 : Encoding.UTF8.GetByteCount(message);
         _command = null;
+        _id = null;
         if (!isTopFrame || !WebSecurityPolicy.IsAllowedUrl(sourceUrl))
         {
             DroppedCount++;
@@ -87,7 +89,7 @@ public sealed class BridgeDispatcher
         catch (Exception ex)
         {
             _log($"{BridgeLog.Describe(_command, bytes, _nowMs() - start, BridgeError.Failed)} type={ex.GetType().Name}");
-            return Error(null, BridgeError.Failed);
+            return Error(_id, BridgeError.Failed); // with the id, or the page never matches the reply and shows its timeout text
         }
     }
 
@@ -133,6 +135,7 @@ public sealed class BridgeDispatcher
             if (!CommandNames.Contains(type)) return Fail(id, BridgeError.UnknownCommand);
 
             _command = type;
+            _id = id;
             if (bytes > LimitFor(type)) return Fail(id, BridgeError.TooLarge);
             object result;
             try { result = Run(type, payload); }
@@ -216,7 +219,7 @@ public sealed class BridgeDispatcher
             case "history.save":
                 NoPayload(payload);
                 var result = _api.SaveHistory();
-                return result == HistorySaveResult.NothingToSave ? throw new NothingToSaveException() : new { already = result == HistorySaveResult.AlreadySaved };
+                return result == HistorySaveResult.NothingToSave ? throw new NothingToSaveException() : new { already = result == HistorySaveResult.AlreadySaved, cut = result == HistorySaveResult.SavedCut };
             case "history.copy":
                 var copy = Exact(payload, "id", "part");
                 if (copy[0].ValueKind != JsonValueKind.String || copy[1].ValueKind != JsonValueKind.String) throw new BadPayloadException();
