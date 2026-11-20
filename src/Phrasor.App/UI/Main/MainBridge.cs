@@ -200,14 +200,16 @@ internal sealed class MainBridge : IMainWindowApi
         var problems = SettingsPage.CheckShortcuts(draft.Shortcuts, draft.Voice.Enabled, _hooks.ProbeShortcut);
         if (problems.Count > 0) return new SaveOutcome(false, GetSettings(), problems, []);
 
-        // Check and apply on a copy; the live settings change only after keys and file are written.
-        // A throw here reaches the page as the bridge's plain "failed" reply (no text), and the live settings stay as they were.
+        // Check and apply on a copy. Ordering rule: the settings file first, then the keys (no key rollback needed).
+        // If the file write throws, nothing has changed: the keys and the live settings stay as they were.
+        // If a key write throws, the new settings are already saved and live, the keys are old or partly new, and the page
+        // sees the bridge's plain "failed" reply (no text) and can send the keys again.
         var next = SettingsStore.Clone(_services.Settings);
         SettingsPage.Apply(next, draft);
-        foreach (var (id, key) in draft.NewKeys) _services.Secrets.Set(id, key);
-        foreach (var id in draft.RemoveKeys) _services.Secrets.Set(id, null);
         SettingsStore.Save(AppPaths.SettingsFile, next);
         _services.Settings = next;
+        foreach (var (id, key) in draft.NewKeys) _services.Secrets.Set(id, key);
+        foreach (var id in draft.RemoveKeys) _services.Secrets.Set(id, null);
         try { StartupRegistration.Set(draft.StartWithWindows); }
         catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException or IOException)
         {
@@ -266,12 +268,12 @@ internal sealed class MainBridge : IMainWindowApi
 
     public void SaveFirstRunKey(FirstRunKey key)
     {
-        // As in SaveSettings: check and apply on a copy, write the key and the file, then switch the live settings.
+        // Same ordering as SaveSettings: the settings file first, then the key.
         var next = SettingsStore.Clone(_services.Settings);
         FirstRun.Apply(next, key.Provider);
-        _services.Secrets.Set(key.Provider, key.Key);
         SettingsStore.Save(AppPaths.SettingsFile, next);
         _services.Settings = next;
+        _services.Secrets.Set(key.Provider, key.Key);
         Log.Info($"first run key saved provider={key.Provider}");
     }
 
