@@ -458,7 +458,8 @@ internal sealed class MainBridge : IMainWindowApi
             complete = false;
             Log.Warn($"delete all data: keys or startup entry failed type={ex.GetType().Name}");
         }
-        foreach (var dir in new[] { AppPaths.DataDir, AppPaths.HistoryDir })
+        // The old PromptForge folder too: otherwise the next start would migrate its settings and keys back.
+        foreach (var dir in new[] { AppPaths.DataDir, AppPaths.HistoryDir, AppPaths.LegacyDataDir })
         {
             try { if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true); }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)

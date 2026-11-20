@@ -5,6 +5,12 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 ## [Unreleased]
 
 - **Fixed:** If a connection test or quality check hit an unexpected error, the window kept saying "Testing…" or "running" until you restarted. It now ends the run and reports a failure.
+- **Fixed:** Delete all data now also removes the old `PromptForge` data folder, so your old settings and API keys no longer come back on the next start.
+### Fixed
+- First run: editing the key while a test is running no longer lets the old key's result enable Continue for the new key (#226).
+- The WebView2 installer download now gives up after 60 seconds if it stalls mid-download, and reports "offline" instead of waiting forever. (#230)
+- A damaged `secrets.dat` is now copied to `secrets.dat.bad` before the next key save, so saving one key no longer silently removes the others (#228).
+- Try it and Test connection now tell you to try a shorter draft when the provider says the request is too large, instead of the generic provider error (#233).
 
 ## [2.0.0] - 2026-11-17
 
