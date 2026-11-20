@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
+using Phrasor.App.Infrastructure;
 using Phrasor.Core.Web;
 
 namespace Phrasor.App.UI.Main;
@@ -13,7 +14,7 @@ namespace Phrasor.App.UI.Main;
 /// </summary>
 internal sealed class WebHost : Panel
 {
-    private const string FolderName = "Phrasor-web";
+    private static string FolderName => AppPaths.Root.WebFolderName;
     private const int DeleteAttempts = 10, DeleteRetryMs = 500;
 
     private readonly WebView2 _view = new() { Dock = DockStyle.Fill, Visible = false };

@@ -35,6 +35,8 @@ publish\Phrasor.exe --portable
 
 Quit the installed Phrasor first, because only one copy can run at a time.
 
+To test with throwaway data while your installed copy keeps running, add `--data-dir <full path of a fresh folder>` (for example `publish\Phrasor.exe --data-dir D:\scratch`). Settings, keys, History, logs and the browser's temp files all go under that folder. This copy does not offer to install, does not check for updates and does not touch Start with Windows. `--portable` is different: it keeps using your real data. Use a new empty folder, not one that links to your real data.
+
 ### Where things live
 
 | Area | Location |

@@ -8,7 +8,8 @@ internal static class StartupRegistration
     private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string ValueName = "Phrasor";
 
-    public static bool IsEnabled() => IsEnabledFor(AppPaths.ExePath);
+    // Under --data-dir a test copy must not touch the real Run key.
+    public static bool IsEnabled() => !AppPaths.IsOverridden && IsEnabledFor(AppPaths.ExePath);
 
     public static bool IsEnabledFor(string exePath)
     {
@@ -16,7 +17,10 @@ internal static class StartupRegistration
         return key?.GetValue(ValueName) is string value && value.Contains(exePath, StringComparison.OrdinalIgnoreCase);
     }
 
-    public static void Set(bool enabled) => SetFor(AppPaths.ExePath, enabled);
+    public static void Set(bool enabled)
+    {
+        if (!AppPaths.IsOverridden) SetFor(AppPaths.ExePath, enabled);
+    }
 
     public static void SetFor(string exePath, bool enabled)
     {

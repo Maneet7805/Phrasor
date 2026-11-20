@@ -51,7 +51,7 @@ internal sealed class UpdateController : IDisposable
     public async Task CheckAsync(bool manual)
     {
         var settings = _services.Settings;
-        if (_busy) return;
+        if (_busy || AppPaths.IsOverridden) return; // a test copy must never download or launch an installer
         if (!manual)
         {
             if (!settings.CheckForUpdates) return;
