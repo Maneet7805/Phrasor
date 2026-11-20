@@ -4,6 +4,9 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+### Fixed
+- Try it and Test connection now tell you to try a shorter draft when the provider says the request is too large, instead of the generic provider error (#233).
+
 ## [2.0.0] - 2026-11-17
 
 **Read this first.**
