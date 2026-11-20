@@ -4,7 +4,7 @@
   "use strict";
 
   var $ = function (id) { return document.getElementById(id); };
-  var skipped = false, testing = false, saving = false, currentTest = null, passed = false;
+  var skipped = false, testing = false, saving = false, currentTest = null, tested = "", passed = false;
   var steps = ["fr-1", "fr-2", "fr-3"];
   var ERROR_TEXT = {
     bad_request: "That key can't be used. Check that it is one line with nothing else.",
@@ -68,6 +68,7 @@
     testing = true;
     passed = false;
     currentTest = null;
+    tested = $("fr-provider").value + "|" + $("fr-key").value.trim();
     say("Testing…");
     sync();
     window.phrasor.firstRunTest($("fr-provider").value, $("fr-key").value.trim()).then(function (reply) { currentTest = reply.run; }, function (error) {
@@ -80,6 +81,7 @@
   window.phrasor.onSettingsTest(function (event) {
     if (event.run !== currentTest) return; // a result for another page's test
     testing = false;
+    if (tested !== $("fr-provider").value + "|" + $("fr-key").value.trim()) { say(""); sync(); return; } // the field changed while the test ran
     passed = event.ok;
     if (event.ok) say("The key works: connected to " + event.label + " in " + event.ms + " ms.", "ok");
     else say(event.message, "bad");
