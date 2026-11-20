@@ -64,6 +64,7 @@ public static class TryItErrors
         LlmErrorKind.RateLimit => RateLimit,
         LlmErrorKind.Network => Offline,
         LlmErrorKind.Timeout => Timeout,
+        LlmErrorKind.TooLarge => TooLong,
         LlmErrorKind.Cancelled => Cancelled,
         LlmErrorKind.InvalidJsonOutput or LlmErrorKind.Truncated => BadResponse,
         _ => ProviderError,
