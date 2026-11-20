@@ -45,6 +45,7 @@ public class SecretScannerTests
     [InlineData("see sk-learn-pipeline-tutorial-for-beginners")]
     [InlineData("Explain what Bearer authentication-scheme-description does")]
     [InlineData("the header is -----BEGIN PRIVATE KEY-----")]
+    [InlineData("-----BEGIN PRIVATE KEY----- a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: a: !")]
     [InlineData("AWS docs use AKIAIOSFODNN7EXAMPLE as a sample id")]
     [InlineData("")]
     public void Ordinary_text_is_not_flagged(string text) =>
