@@ -4,6 +4,7 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+- **Fixed:** The private-key check could freeze on a very long run of text that looks like key header lines. It now finishes straight away (#263).
 - **Added:** `--data-dir <folder>` starts a test copy with its own settings, keys, History and logs, so you can try a build while your installed copy keeps running. It never offers to install, never updates and never touches Start with Windows (#244).
 - **Fixed:** A bad `--data-dir` value (such as one ending in a quote from PowerShell, or a device name like `CON`) now shows an error and exits instead of crashing at start-up (#255).
 - **Changed:** If the text you select looks like it contains an API key or token, Phrasor no longer sends it to the provider and tells you instead (#245).
