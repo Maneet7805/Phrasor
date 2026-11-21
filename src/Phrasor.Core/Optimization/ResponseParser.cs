@@ -2,7 +2,8 @@ using System.Text.Json;
 
 namespace Phrasor.Core.Optimization;
 
-public sealed record ParsedResponse(TaskType TaskType, Verdict Verdict, string Prompt, IReadOnlyList<string> Changes, IReadOnlyList<string> Questions);
+public sealed record ParsedResponse(TaskType TaskType, Verdict Verdict, string Prompt, IReadOnlyList<string> Changes, IReadOnlyList<string> Questions,
+    IReadOnlyList<SlotReport>? Slots = null);
 
 public sealed class ResponseFormatException(string message) : Exception(message);
 
@@ -54,7 +55,8 @@ public static class ResponseParser
                 verdict,
                 prompt,
                 GetStringArray(root, "changes", max: 4),
-                GetStringArray(root, "questions", max: 3));
+                GetStringArray(root, "questions", max: 3),
+                GetSlots(root));
         }
     }
 
@@ -76,6 +78,25 @@ public static class ResponseParser
         "light_edit" or "light" or "minor" or "minor_edit" => Verdict.LightEdit,
         _ => Verdict.Rewritten,
     };
+
+    /// <summary>One entry per known id, first one wins. Null when there is no array: the model did not report slots.</summary>
+    private static IReadOnlyList<SlotReport>? GetSlots(JsonElement root)
+    {
+        if (!root.TryGetProperty("slots", out var el) || el.ValueKind != JsonValueKind.Array) return null;
+        var slots = new List<SlotReport>();
+        foreach (var item in el.EnumerateArray().Take(MaxSlotEntries))
+        {
+            var id = item.ValueKind == JsonValueKind.Object ? GetString(item, "id")?.Trim().ToLowerInvariant() : null;
+            if (id is null || !SlotCatalog.IsKnownId(id) || slots.Any(s => s.Id == id)) continue;
+            var quote = GetString(item, "quote")?.Trim();
+            var filled = string.Equals(GetString(item, "status")?.Trim(), "filled", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(quote);
+            slots.Add(new SlotReport(id, filled ? SlotStatus.Filled : SlotStatus.Missing, filled ? quote : null));
+        }
+        return slots;
+    }
+
+    /// <summary>More entries than any slot list has: the rest is noise.</summary>
+    private const int MaxSlotEntries = 12;
 
     private static string? GetString(JsonElement root, string name) =>
         root.TryGetProperty(name, out var el) && el.ValueKind == JsonValueKind.String ? el.GetString() : null;

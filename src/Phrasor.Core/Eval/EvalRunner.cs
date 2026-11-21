@@ -60,6 +60,9 @@ public sealed record EvalCase
     /// <summary>What the ideal rewrite must cover, in plain words, for the judge (#34). Not checked by code.</summary>
     public IReadOnlyList<string> MustCover { get; init; } = [];
 
+    /// <summary>The level the owner would give this draft. Checked against the slot report; a case without it is never graded on the level.</summary>
+    public Readiness? ExpectReadiness { get; init; }
+
     /// <summary>Kept out of runs unless asked for, so the rules aren't tuned to it; used for the final measurement.</summary>
     public bool HeldOut { get; init; }
 
@@ -352,6 +355,10 @@ public sealed partial class EvalRunner(PromptOptimizer optimizer, ILlmClient cli
         if (evalCase.Expect == Expectation.Keep && (result.Verdict == Verdict.Rewritten || ratio > 1.6))
             failures.Add($"should keep the draft as it is, but rewrote it ({ratio:0.0}x length)");
 
+        // Amber is reported, not graded: no slot counts for amber until the structure study says one should (#266).
+        if (evalCase.ExpectReadiness is { } expected && expected != Readiness.Amber && result.Readiness != expected)
+            failures.Add($"readiness: expected {expected}, got {result.Readiness?.ToString() ?? "no slot report"}");
+
         return failures;
     }
 
@@ -543,6 +550,7 @@ public sealed partial class EvalRunner(PromptOptimizer optimizer, ILlmClient cli
                 if (res.Questions.Count > 0) sb.AppendLine("\nQuestions: " + string.Join(" | ", res.Questions));
                 if (res.Changes.Count > 0) sb.AppendLine("\nChanges: " + string.Join(" | ", res.Changes));
                 if (res.Warnings.Count > 0) sb.AppendLine("\nWarnings: " + string.Join(" | ", res.Warnings));
+                if (res.Readiness is not null) sb.AppendLine("\n" + ReadinessRule.LogSummary(res.Readiness, res.Slots));
                 if (r.Judge is { } j) sb.AppendLine(inv, $"\nJudge: clearer={j.ClearerThanOriginal}, length ok={j.AppropriateLength}, invented={j.InventedDetails} {j.InventedExamples}, answered={j.AnsweredInsteadOfRewriting}, dropped={j.DroppedRequirements} {j.DroppedExamples}, changed intent={j.ChangedIntent}, reply voice={j.WrittenAsReply}, added={j.AddedRequests} {j.AddedExamples}, under-delivered={j.UnderDelivered} {j.UnderDeliveredExamples}. {j.Comment}");
             }
             else

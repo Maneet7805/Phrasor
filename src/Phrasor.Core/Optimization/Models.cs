@@ -31,6 +31,28 @@ public enum Verdict
     Rewritten,
 }
 
+/// <summary>
+/// How complete the draft is, from the slots it fills. Separate from <see cref="Verdict"/> (how much the model edited).
+/// Worked out by code from the model's slot report, never sent by the model.
+/// </summary>
+public enum Readiness
+{
+    Red,
+    Amber,
+    Green,
+}
+
+/// <summary>Filled: the draft says it (a quote proves it). Missing: it doesn't. Unsupported: the model said filled but its quote is not in the draft; counts as missing.</summary>
+public enum SlotStatus
+{
+    Filled,
+    Missing,
+    Unsupported,
+}
+
+/// <summary>One slot's report. <paramref name="Quote"/> is draft text: it stays on the in-memory result, never in logs, history or saved results.</summary>
+public sealed record SlotReport(string Id, SlotStatus Status, string? Quote);
+
 public sealed record OptimizeRequest
 {
     public required string Text { get; init; }
@@ -76,6 +98,12 @@ public sealed record OptimizeResult
 
     /// <summary>Problems found by local validation, e.g. details that may have been dropped.</summary>
     public IReadOnlyList<string> Warnings { get; init; } = [];
+
+    /// <summary>How complete the draft is. Null when the model sent no slot report (an old system prompt file, or a reply without one): never guessed.</summary>
+    public Readiness? Readiness { get; init; }
+
+    /// <summary>The checked slot report, in catalog order. Empty when <see cref="Readiness"/> is null.</summary>
+    public IReadOnlyList<SlotReport> Slots { get; init; } = [];
 
     public required string Model { get; init; }
     public TimeSpan Elapsed { get; init; }
