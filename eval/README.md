@@ -100,6 +100,7 @@ Every bad rewrite reported on GitHub becomes a case before the rules change. Use
 | `repeat` | Minimum runs for this case. |
 | `expect` | How deep the ideal rewrite goes: `Keep` (asks for nothing new: fix the wording only), `Clarify`, `SpellOut` (turn a stated goal into the steps or checks it requires), `Propose` (suggest a structure for an open-ended request) or `Write` (the draft is a brief for a prompt, #43). See `docs/design/rewrite-intent.md`. A `Keep` case fails if it's rewritten or grows past 1.6x. |
 | `mustCover` | What the ideal rewrite must cover, in plain words. The judge reads it, with `expect`, and flags the rewrite as under-delivered if an item is missing (#34). Not checked by code. |
+| `expectReadiness` | The level the owner would give the draft: `Red` (doesn't say what the answer must contain), `Amber` or `Green`. A run fails if the model's slot report gives another level, or none. `Amber` is reported but not graded until a slot counts for amber (#266). |
 | `heldOut` | Left out of runs unless you pass `--include-held-out`. These cases are for the final measurement of a rules change, so the rules can't be tuned to them. Don't look at their results while changing rules. |
 | `source` | Where the case comes from: an issue, the user's own draft, or a pattern found in #32. |
 

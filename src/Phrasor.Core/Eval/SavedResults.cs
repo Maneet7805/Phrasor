@@ -19,6 +19,10 @@ public sealed record SavedRun
     public string? Verdict { get; init; }
     public IReadOnlyList<string> Questions { get; init; } = [];
     public IReadOnlyList<string> Warnings { get; init; } = [];
+
+    /// <summary>Null in files saved before the slot report existed.</summary>
+    public string? Readiness { get; init; }
+
     public double Ms { get; init; }
     public int PromptTokens { get; init; }
     public int CachedTokens { get; init; }
@@ -45,6 +49,9 @@ public static class SavedResults
         Verdict = r.Result?.Verdict.ToString(),
         r.Result?.Questions,
         r.Result?.Warnings,
+        Readiness = r.Result?.Readiness?.ToString(),
+        // Ids and statuses only: a quote is draft text and is never saved.
+        Slots = r.Result?.Slots.Select(s => $"{s.Id}:{s.Status}"),
         Ms = r.Result?.Elapsed.TotalMilliseconds,
         r.Result?.PromptTokens,
         r.Result?.CachedTokens,
@@ -67,6 +74,7 @@ public static class SavedResults
             Verdict = Str(e, "Verdict"),
             Questions = Strings(e, "Questions"),
             Warnings = Strings(e, "Warnings"),
+            Readiness = Str(e, "Readiness"),
             Ms = e.TryGetProperty("Ms", out var ms) && ms.ValueKind == JsonValueKind.Number ? ms.GetDouble() : 0,
             PromptTokens = Int(e, "PromptTokens"),
             CachedTokens = Int(e, "CachedTokens"),
@@ -84,6 +92,7 @@ public static class SavedResults
         Model = run.Model ?? "",
         Questions = run.Questions,
         Warnings = run.Warnings,
+        Readiness = Enum.TryParse<Readiness>(run.Readiness, out var readiness) ? readiness : null,
         Elapsed = TimeSpan.FromMilliseconds(run.Ms),
         PromptTokens = run.PromptTokens,
         CachedTokens = run.CachedTokens,

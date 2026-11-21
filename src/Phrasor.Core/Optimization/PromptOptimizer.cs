@@ -188,14 +188,25 @@ public sealed class PromptOptimizer(ILlmClient client, Func<TimeSpan, Cancellati
             }
         }
 
+        // Checked against the draft the model saw, and before the user's standing requirements are appended (the caller does that).
+        var taskType = request.TaskOverride != TaskType.Auto ? request.TaskOverride : parsed.TaskType;
+        var slotCheck = SlotValidator.Check(masked.Text, taskType, parsed.Slots);
+        if (slotCheck.HasUnsupported)
+            warnings.Add("A detail was reported that is not in your draft.");
+        var questions = slotCheck.Readiness == Readiness.Red && !parsed.Questions.Contains(ReadinessRule.RedHint)
+            ? [.. parsed.Questions, ReadinessRule.RedHint]
+            : parsed.Questions;
+
         return new OptimizeResult
         {
             Original = original,
             Prompt = finalPrompt,
-            TaskType = request.TaskOverride != TaskType.Auto ? request.TaskOverride : parsed.TaskType,
+            TaskType = taskType,
             Verdict = verdict,
             Changes = verdict == Verdict.Unchanged ? [] : parsed.Changes,
-            Questions = parsed.Questions,
+            Questions = questions,
+            Readiness = slotCheck.Readiness,
+            Slots = slotCheck.Slots,
             Warnings = warnings,
             Model = endpoint.Label,
             Elapsed = stopwatch.Elapsed,

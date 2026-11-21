@@ -4,6 +4,7 @@ All notable changes to Phrasor are listed here. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+- **Added:** Phrasor now works out how complete a draft is (red, amber or green) from what the draft itself says, and shows a hint for a red one. Nothing is shown as a colour yet and the rewrite is unchanged. Only the user's own words count: a detail the model reports that is not in the draft is ignored and flagged (#266).
 - **Fixed:** The private-key check could freeze on a very long run of text that looks like key header lines. It now finishes straight away (#263).
 - **Added:** `--data-dir <folder>` starts a test copy with its own settings, keys, History and logs, so you can try a build while your installed copy keeps running. It never offers to install, never updates and never touches Start with Windows (#244).
 - **Fixed:** A bad `--data-dir` value (such as one ending in a quote from PowerShell, or a device name like `CON`) now shows an error and exits instead of crashing at start-up (#255).
