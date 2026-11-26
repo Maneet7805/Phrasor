@@ -91,6 +91,36 @@ public class SpeechDetectorTests
         Assert.Equal(AudioLevel.Silent, SpeechDetector.Analyze(ToneAt(rate, 3, dbfs: -65), rate));
     }
 
+    /// <summary>Stands in for Silero, which hears quiet speech less well: says "speech" only when the clip is loud enough.</summary>
+    private sealed class LevelSensitiveModel : ISpeechModel
+    {
+        public int SampleRate => Rate;
+
+        public IReadOnlyList<float> Probabilities(ReadOnlySpan<byte> pcm16) =>
+            Enumerable.Repeat(SpeechDetector.LoudestFrameDbfs(pcm16, Rate) >= -35 ? 0.9f : 0.1f, pcm16.Length / 1024).ToList();
+    }
+
+    [Theory]
+    [InlineData(-45)] // quiet speech on a weak mic: the model alone would miss it
+    [InlineData(-55)]
+    public void Quiet_speech_is_brought_up_before_the_model_hears_it(double dbfs)
+    {
+        Assert.Equal(AudioLevel.HasSound, SpeechDetector.Analyze(Tone(1, dbfs), Rate, new LevelSensitiveModel()));
+    }
+
+    [Fact]
+    public void Noise_floor_audio_is_not_boosted_into_speech()
+    {
+        Assert.Equal(AudioLevel.Silent, SpeechDetector.Analyze(Tone(3, dbfs: -65), Rate, new LevelSensitiveModel()));
+    }
+
+    [Fact]
+    public void Normalizing_never_makes_a_clip_quieter()
+    {
+        var loud = Tone(1, dbfs: -10);
+        Assert.Equal(loud, SpeechDetector.Normalize(loud, Rate));
+    }
+
     private static byte[] ToneAt(int rate, double seconds, double dbfs)
     {
         var count = (int)(seconds * rate);

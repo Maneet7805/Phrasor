@@ -174,7 +174,8 @@ internal sealed class VoiceController(AppServices services, OptimizeController o
             var level = Analyze(_recorder.LastPcm);
             if (level != AudioLevel.HasSound)
             {
-                Log.Info($"voice skipped level={level} seconds={duration.TotalSeconds:0.0}");
+                var loudest = SpeechDetector.LoudestFrameDbfs(_recorder.LastPcm, VoiceRecorder.Format.SampleRate);
+                Log.Info($"voice skipped level={level} seconds={duration.TotalSeconds:0.0} loudestFrameDbfs={loudest:0.0}");
                 services.Notify(level == AudioLevel.Muted
                     ? "The microphone recorded nothing. It may be muted or turned off in Windows Settings → Sound."
                     : "Didn't hear any speech, so nothing was typed. Check your microphone isn't muted, or speak a little closer to it.",
