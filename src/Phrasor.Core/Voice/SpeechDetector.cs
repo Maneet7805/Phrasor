@@ -40,7 +40,57 @@ public static class SpeechDetector
     {
         var level = Analyze(pcm16, sampleRate);
         if (level == AudioLevel.Muted || model is null || sampleRate != model.SampleRate) return level;
-        return SpeechRuns.HasSustainedSpeech(model.Probabilities(pcm16)) ? AudioLevel.HasSound : AudioLevel.Silent;
+        var boosted = Normalize(pcm16, sampleRate);
+        return SpeechRuns.HasSustainedSpeech(model.Probabilities(boosted)) ? AudioLevel.HasSound : AudioLevel.Silent;
+    }
+
+    /// <summary>Loudest frames below this are background noise, never boosted. Quiet speech on a weak mic sits above it.</summary>
+    public const double NoiseFloorDbfs = -60;
+
+    /// <summary>The loudest frame is brought up to this level before the model hears it; the model is trained on normal-level speech.</summary>
+    public const double TargetDbfs = -20;
+
+    /// <summary>Most gain ever applied, so a recording that is nearly all noise isn't turned into something speech-like.</summary>
+    public const double MaxGainDb = 30;
+
+    /// <summary>Returns the clip amplified so its loudest frame reaches <see cref="TargetDbfs"/>. Never makes it quieter, never boosts noise-floor clips.</summary>
+    internal static byte[] Normalize(ReadOnlySpan<byte> pcm16, int sampleRate)
+    {
+        var loudest = LoudestFrameDbfs(pcm16, sampleRate);
+        var gainDb = Math.Min(TargetDbfs - loudest, MaxGainDb);
+        if (loudest < NoiseFloorDbfs || gainDb <= 0) return pcm16.ToArray();
+
+        var gain = Math.Pow(10, gainDb / 20);
+        var result = new byte[pcm16.Length / 2 * 2];
+        for (var i = 0; i + 1 < pcm16.Length; i += 2)
+        {
+            var sample = (short)(pcm16[i] | (pcm16[i + 1] << 8));
+            var scaled = (short)Math.Clamp(Math.Round(sample * gain), short.MinValue, short.MaxValue);
+            result[i] = (byte)scaled;
+            result[i + 1] = (byte)(scaled >> 8);
+        }
+        return result;
+    }
+
+    /// <summary>RMS of the loudest 20 ms frame in dBFS (-infinity for silence). Levels only, safe to log.</summary>
+    public static double LoudestFrameDbfs(ReadOnlySpan<byte> pcm16, int sampleRate)
+    {
+        var samples = pcm16.Length / 2;
+        var frameSamples = Math.Max(1, sampleRate * FrameMs / 1000);
+        double loudest = 0;
+        for (var start = 0; start < samples; start += frameSamples)
+        {
+            var count = Math.Min(frameSamples, samples - start);
+            double sumSquares = 0;
+            for (var i = 0; i < count; i++)
+            {
+                var offset = (start + i) * 2;
+                var sample = (short)(pcm16[offset] | (pcm16[offset + 1] << 8));
+                sumSquares += (double)sample * sample;
+            }
+            loudest = Math.Max(loudest, sumSquares / count);
+        }
+        return 10 * Math.Log10(loudest / (32768.0 * 32768.0));
     }
 
     /// <summary>Classifies 16-bit little-endian mono PCM recorded at <paramref name="sampleRate"/>.</summary>
