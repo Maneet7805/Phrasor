@@ -21,6 +21,16 @@ public sealed record DataRoot
     // These take their own arguments and are not app starts, so the switch means nothing to them.
     private static readonly string[] ModeSwitches = ["--eval", "--eval-compare", "--rejudge"];
 
+    private static readonly char[] BadChars = ['"', '<', '>', '|', '?', '*'];
+
+    /// <summary>CON, PRN, AUX, NUL, COM0-9 and LPT0-9, with or without an extension ("com1.txt" is still the port).</summary>
+    private static bool IsReservedName(string name)
+    {
+        var stem = name.Split('.')[0].TrimEnd();
+        return stem.ToUpperInvariant() is "CON" or "PRN" or "AUX" or "NUL"
+            || (stem.Length == 4 && stem[3] is >= '0' and <= '9' && stem[..3].ToUpperInvariant() is "COM" or "LPT");
+    }
+
     public bool Ok => Error is null;
     public string? Error { get; init; }
     public bool IsOverridden { get; init; }
@@ -74,6 +84,12 @@ public sealed record DataRoot
         try { root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(value)); }
         catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
         { return Fail(real, "--data-dir is not a valid folder path."); }
+
+        // Windows would accept none of these as a folder name, and creating the folder would throw later.
+        // (PowerShell 5.1 turns "D:\scratch\" into D:\scratch" and so lands here.)
+        var rest = root[(Path.GetPathRoot(root)?.Length ?? 0)..];
+        if (rest.IndexOfAny(BadChars) >= 0 || rest.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Any(IsReservedName))
+            return Fail(real, "--data-dir is not a valid folder path.");
 
         var driveRoot = Path.GetPathRoot(root);
         if (driveRoot is null || Path.TrimEndingDirectorySeparator(driveRoot).Equals(root, StringComparison.OrdinalIgnoreCase))

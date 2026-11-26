@@ -45,6 +45,24 @@ public class DataRootTests
     }
 
     [Theory]
+    [InlineData(@"D:\scratch""")] // PowerShell 5.1 turns "D:\scratch\" into this
+    [InlineData(@"D:\scr<atch")]
+    [InlineData(@"D:\scr>atch")]
+    [InlineData(@"D:\scr|atch")]
+    [InlineData(@"D:\scr?atch")]
+    [InlineData(@"D:\scr*atch")]
+    [InlineData(@"D:\CON")]
+    [InlineData(@"D:\scratch\nul")]
+    [InlineData(@"D:\scratch\com1.txt")]
+    [InlineData(@"D:\LPT9")]
+    public void A_value_that_cannot_be_a_folder_is_refused(string value)
+    {
+        var r = Resolve("--data-dir", value);
+        Assert.False(r.Ok);
+        Assert.False(string.IsNullOrWhiteSpace(r.Error));
+    }
+
+    [Theory]
     [InlineData("--data-dir")]
     [InlineData("--data-dir|")]
     [InlineData("--data-dir|   ")]
